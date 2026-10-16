@@ -145,14 +145,21 @@ function PatientStep({ c, record, next }: StepProps) {
   )
 }
 
+const UNROLLED = 4
+
 function FactsStep({ c, record, next }: StepProps) {
   const S = renderer(record)
   const flags = (sev: RedFlag['severity']) => [...c.red_flags.entries()].filter(([, f]) => f.severity === sev)
-  const [critical, important, minor] = [flags('high'), flags('medium'), flags('low')]
+  // at most UNROLLED findings in full (critical first), so the screen doesn't scroll
+  const critical = flags('high').slice(0, UNROLLED)
+  const important = flags('medium').slice(0, UNROLLED - critical.length)
+  const more = [...flags('high').slice(critical.length), ...flags('medium').slice(important.length)]
+  const minor = flags('low')
   const gaps = c.sections.flatMap((sec) =>
     sec.items.flatMap((s, i) => (s.text.endsWith(NOT_FOUND) ? [[`sections.${sec.id}.${i}`, s] as const] : [])),
   )
   const groups: [string, (readonly [string, Statement])[]][] = [
+    ['Další důležitá upozornění', more.map(([i, f]) => [`red_flags.${i}`, f.statement] as const)],
     ['Méně závažná upozornění', minor.map(([i, f]) => [`red_flags.${i}`, f.statement] as const)],
     ['Chybějící údaje', gaps],
     ...c.sections.map((sec): [string, (readonly [string, Statement])[]] => [
@@ -186,20 +193,22 @@ function FactsStep({ c, record, next }: StepProps) {
       )}
       {!critical.length && !important.length && <p className="big">Žádná kritická ani důležitá upozornění.</p>}
       <h2>Další informace</h2>
-      {groups
-        .filter(([, items]) => items.length)
-        .map(([title, items]) => (
-          <details key={title} className="more">
-            <summary>
-              {title} <span className="muted">({items.length})</span>
-            </summary>
-            <ul className="plain">
-              {items.map(([k, s]) => (
-                <li key={k}>{S(k, s, 'inline')}</li>
-              ))}
-            </ul>
-          </details>
-        ))}
+      <div className="more-grid">
+        {groups
+          .filter(([, items]) => items.length)
+          .map(([title, items]) => (
+            <details key={title} className="more">
+              <summary>
+                {title} <span className="muted">({items.length})</span>
+              </summary>
+              <ul className="plain">
+                {items.map(([k, s]) => (
+                  <li key={k}>{S(k, s, 'inline')}</li>
+                ))}
+              </ul>
+            </details>
+          ))}
+      </div>
       <Next onClick={next} />
     </>
   )

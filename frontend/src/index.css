@@ -984,11 +984,11 @@ button.next {
   list-style: none;
   padding: 0;
   margin: 0;
-  font-size: 1.35rem;
-  line-height: 1.45;
+  font-size: 1.15rem;
+  line-height: 1.4;
 }
 .key-facts li {
-  padding: 0.9rem 0;
+  padding: 0.6rem 0;
   border-bottom: 1px solid var(--line);
 }
 .key-facts.crit .icon,
@@ -1010,6 +1010,12 @@ button.next {
 }
 .more ul {
   margin-top: 0.5rem;
+}
+.more-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 0 2rem;
+  align-items: start;
 }
 .scroll-box,
 .more > ul {
