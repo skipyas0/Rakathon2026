@@ -64,7 +64,7 @@ def case_ids() -> list[str]:
     return [*meetings(), *stub_paths()]
 
 
-def _record(patient: str) -> Bundle:
+def record(patient: str) -> Bundle:
     if path := uploads().get(patient):
         return bundles.load(path)
     try:
@@ -82,7 +82,7 @@ def get_case(case_id: str) -> Case:
         if (ai := agent.OUT_DIR / f"{patient}.json").exists():
             case = Case.model_validate_json(ai.read_text(encoding="utf-8"))
             return case.model_copy(update={"id": case_id})
-        return build_case(case_id, _record(patient))
+        return build_case(case_id, record(patient))
     if path := stub_paths().get(case_id):
         return Case.model_validate_json(path.read_text(encoding="utf-8"))
     raise HTTPException(404, f"No case {case_id!r}")

@@ -3,12 +3,13 @@ import { api, type CaseRecord } from './api'
 import type { Case } from './briefing'
 import { FollowupPhase } from './FollowupPhase'
 import { Back, Check, IntentChip } from './icons'
-import { fmtDate, type Phase, PHASES, TUMOURS } from './layout'
+import { History } from './History'
+import { fmtDate, type Phase, PHASES, TUMOURS, type View } from './layout'
 import { MeetingPhase } from './MeetingPhase'
 import { PrepPhase } from './PrepPhase'
 import { SpecialistView } from './SpecialistView'
 
-type Props = { id: string; phase: Phase; user: string; role: string }
+type Props = { id: string; phase: View; user: string; role: string }
 
 const go = (id: string, p: Phase) => (location.hash = `#/case/${encodeURIComponent(id)}/${p}`)
 
@@ -70,6 +71,9 @@ export function CasePage({ id, phase, user, role }: Props) {
             </li>
           ))}
         </ol>
+        <a href={`#/case/${encodeURIComponent(c.id)}/history`} className={`history-link ${phase === 'history' ? 'on' : ''}`}>
+          Historie pacienta
+        </a>
       </header>
       {error && (
         <div className="banner bad" role="alert">
@@ -85,6 +89,7 @@ export function CasePage({ id, phase, user, role }: Props) {
         ))}
       {phase === 'meeting' && <MeetingPhase c={c} record={record} save={persist} user={user} go={(p) => go(c.id, p)} />}
       {phase === 'followup' && <FollowupPhase c={c} record={record} save={save} user={user} />}
+      {phase === 'history' && <History c={c} record={record} />}
     </div>
   )
 }

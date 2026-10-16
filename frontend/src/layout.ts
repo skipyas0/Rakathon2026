@@ -84,6 +84,7 @@ export const PHASES = [
   { id: 'followup', label: 'Po zasedání', hint: 'Závěr a úkoly' },
 ] as const
 export type Phase = (typeof PHASES)[number]['id']
+export type View = Phase | 'history' // what a case URL can show
 
 /** Index of the phase a case is in; `closed` = all three done. */
 export const STATUS_STEP: Record<Status, number> = { prep: 0, meeting: 1, followup: 2, closed: 3 }

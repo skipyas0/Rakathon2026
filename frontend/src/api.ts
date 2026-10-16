@@ -63,6 +63,11 @@ export type CaseRecord = {
 
 export type IntakeKind = 'fhir' | 'pdf'
 
+export type History = {
+  documents: { reference: string; title: string; date: string | null; author: string | null; sections: { title: string; text: string }[] }[]
+  meetings: { id: string; mdt_date: string | null; status: Status; decision: Decision }[]
+}
+
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, init)
   const body = await r.json()
@@ -85,6 +90,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record),
     }),
+  history: (id: string) => call<History>(`${caseUrl(id)}/history`),
   intake: (kind: IntakeKind, files: { name: string; data: string }[]) =>
     call<{ case_id: string }>('/api/intake', {
       method: 'POST',

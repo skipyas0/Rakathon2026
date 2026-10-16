@@ -77,3 +77,11 @@ def test_previous_board_from_care_team():
     board = build_case("p03", load(BUNDLES["p03"])).previous_board
     assert [m.name for m in board if m.chair] == ["LEK-P03-06"]  # "předseda GIT komise"
     assert any(m.role == "patolog" and m.name == "" for m in board)  # role without a member
+
+
+def test_history_has_previous_mdt_records():
+    if "p03" not in BUNDLES:
+        pytest.skip("P03 not in dataset")
+    h = TestClient(app).get("/api/cases/p03-2026-10-21/history").json()
+    assert [d["title"] for d in h["documents"]][-1] == "Rozhodnutí o léčbě"
+    assert h["documents"][0]["sections"][0]["title"] == "Projednaná otázka"

@@ -65,11 +65,12 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 | `features/cases.py` | Case list = patients on the FHIR server (IRIS). A case is one meeting: id = patient + planned MDT date (`p03-2026-10-21`, from `Task.restriction`), records are keyed by it; `GET /api/cases/{id}`: `data/ai_cases/<patient>.json` if the agent ran (id set to the meeting), else the IRIS record → `from_fhir`, else stub JSON from `data/stubs/`; `GET /api/sources/{type}/{id}`: full text of a record, read from IRIS by dataset id. Bundles on disk only while the server is unreachable (decision 18) |
 | `features/intake.py` | `POST /api/intake` (one FHIR Bundle, base64 in JSON) → `data/intake/<patient>/bundle.json`, replacing that patient's dataset bundle; returns the case id. `kind: "pdf"` answers 501 until AI extraction exists |
 | `features/records.py` | `CaseRecord` (confirmations, prep, specialist notes, decision, tasks; coordinator's board, finding triage, section layout + detail level, visibility per specialty; after the meeting: patient's stance, agreed plan), phase status, agenda |
+| `features/history.py` | `GET /api/cases/{id}/history`: the patient's previous MDT records and treatment decisions from the health record (`Composition`, sections as text) and every meeting of the patient recorded in the app (status, decision). Read-only |
 
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =
 `prep`/`meeting`/`followup`/`closed`, board `specialties`; specialists see only their cases), `GET /api/cases/{id}` (`Case`),
-`GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
+`GET /api/cases/{id}/history` (patient's MDT history), `GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
 case prepared without an MDT question or with fewer than 3 specialties on the board), `GET /api/sources/{type}/{id}` (title, date, author, full
 text of one record — for the source drawer; searches intake bundles too), `POST /api/intake` (upload a
 case).
@@ -93,6 +94,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |
 | `PrepPhase.tsx`     | Coordinator's workspace in tabs: Podklady (question, summary, discussion questions, sources), Nálezy (`Findings.tsx`: triage of each red flag / missing datum: na zasedání, předem → specialty, zamítnout + důvod), Komise (`Board.tsx`: members, specialty, chair; adopt the previous MDT's board, roles mapped by `specialtyOf`), Struktura (`Structure.tsx`: section order by drag & drop or ↑↓, hidden sections, detail level → `CaseRecord.layout`), Viditelnost (`Visibility.tsx`: specialty × section table → `CaseRecord.visibility`, default own section + patient via `visibleSections`), Odborníci (`Specialists.tsx`: per member AI claims confirmed in their section, assigned findings resolved, opinion written); readiness checklist (≥ 3 specialties to mark the case prepared). No confirm buttons here: clinicians confirm |
 | `SpecialistView.tsx` | Phase 1 for a specialist role ("Můj pohled"): shared header, sections per `visibleSections`, Potvrdit only in their own section, assigned findings with a resolution field, their opinion (`notes[specialty]`). Not on the board = no access |
+| `History.tsx`       | `#/case/<id>/history`: meetings recorded in the app (locked conclusion, consent, who recorded it), previous MDTs from the record (expandable, source on click), audit trail of this meeting built from the record's signatures |
 | `DecisionForm.tsx`  | Attendees + consent ticks, intent cards, structured decision; lock needs everyone's consent; locked read-only view |
 | `CaseView.tsx`      | Shared blocks: flags, missing data, trials, `Soon` (greyed-out "Připravujeme" for features waiting on the AI pipeline), `SectionItems` (items or running text per the detail level), full `CaseDetail` |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band), `TimelineStrip`     |

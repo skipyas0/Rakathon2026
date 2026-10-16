@@ -22,7 +22,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   (urgent-only warnings, greyed-out decision support). Step 5: minutes with
   per-member consent and lock, AI compliance check + FHIR export greyed out. Step 6: specialist view
   (own cases only, visible sections, confirm own AI claims, resolve assigned findings, opinion).
-  Step 7 (after the meeting + history) next.
+  Step 7: four states after
+  the meeting, patient's MDT history + audit trail. All 7 plan steps done; awaiting review.
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
   `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.

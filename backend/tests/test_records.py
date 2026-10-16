@@ -104,3 +104,11 @@ def test_triage_needs_assignee_or_reason():
 
 def test_unknown_case_is_404(client):
     assert client.get("/api/cases/nope/record").status_code == 404
+
+
+def test_history_lists_the_patients_meetings(client):
+    h = client.get("/api/cases/example/history").json()
+    # both test cases belong to "Patient/t": one patient, two meetings
+    assert {m["id"] for m in h["meetings"]} == {"example", "lung-incomplete"}
+    assert h["documents"] == []  # a stub has no health record behind it
+    assert client.get("/api/cases/nope/history").status_code == 404

@@ -3,14 +3,16 @@ import { CasePage } from './CasePage'
 import { Home } from './Home'
 import { Intake } from './Intake'
 import { User } from './icons'
-import { load, type Phase, PHASES, ROLES, save } from './layout'
+import { load, PHASES, ROLES, save, type View } from './layout'
 import { SourceDrawer } from './SourceDrawer'
 
-/** #/ = agenda, #/new = intake (coordinator), #/case/<id>/<phase> = a case in one of its phases. */
-function parse(hash: string): { id: string; phase: Phase } | null {
+/** #/ = agenda, #/new = intake (coordinator), #/case/<id>/<phase> = a case in one of its phases,
+ * #/case/<id>/history = the patient's MDT history. */
+function parse(hash: string): { id: string; phase: View } | null {
   const [, kind, id, phase] = hash.split('/')
   if (kind !== 'case' || !id) return null
-  return { id: decodeURIComponent(id), phase: PHASES.some((p) => p.id === phase) ? (phase as Phase) : 'prep' }
+  const known = phase === 'history' || PHASES.some((p) => p.id === phase)
+  return { id: decodeURIComponent(id), phase: known ? (phase as View) : 'prep' }
 }
 
 export default function App() {
