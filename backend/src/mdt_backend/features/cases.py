@@ -19,6 +19,8 @@ from mdt_backend.from_fhir import build_case, planned_date
 from mdt_backend.load_fhir import fhir_id
 
 STUBS = Path(__file__).parents[4] / "data" / "stubs"
+STUBS = Path(__file__).parents[4] / "data" / "stubs"
+INTAKE = Path(__file__).parents[4] / "data" / "intake"  # <patient>/bundle.json, see intake.py
 _AUTHOR_FIELDS = ("performer", "author", "requester", "recorder")
 
 router = APIRouter(prefix="/api")
@@ -28,26 +30,34 @@ def stub_paths() -> dict[str, Path]:
     return {p.stem: p for p in sorted(STUBS.glob("*.json"))}
 
 
-def _meeting(patient: str, task: dict | None) -> str:
-    date = planned_date(Bundle({"entry": [{"resource": task}] if task else []}))
+def uploads() -> dict[str, Path]:
+    """Patient ("p03") → bundle added through intake; it replaces that patient's record."""
+    return {p.parent.name: p for p in sorted(INTAKE.glob("*/bundle.json"))}
+
+
+def meeting_id(patient: str, b: Bundle) -> str:
+    """ "p03-2026-10-21", or just "p03" without a planned date."""
+    date = planned_date(b)
     return f"{patient}-{date}" if date else patient
 
 
 def meetings() -> dict[str, str]:
-    """Case id ("p03-2026-10-21", or just "p03" without a planned date) → patient ("p03")."""
+    """Case id → patient: the patients on the FHIR server (the dataset's bundles while it's
+    unreachable), each replaced by an upload when there is one."""
     try:
-        patients = [p.lower() for p in agent.patient_ids()]
         tasks = {
             t["for"]["reference"].split("/")[-1].lower(): t
             for t in (e["resource"] for e in fhir.get("Task", _count=200).get("entry", []))
             if "for" in t
         }
-        return {_meeting(p, tasks.get(p)): p for p in patients}
+        found = {
+            p: Bundle({"entry": [{"resource": tasks[p]}] if p in tasks else []})
+            for p in (p.lower() for p in agent.patient_ids())
+        }
     except httpx.HTTPError:
-        out = {}
-        for p, path in bundles.bundle_paths().items():
-            out[_meeting(p, next(iter(bundles.load(path).all("Task")), None))] = p
-        return out
+        found = {p: bundles.load(path) for p, path in bundles.bundle_paths().items()}
+    found |= {p: bundles.load(path) for p, path in uploads().items()}
+    return {meeting_id(p, b): p for p, b in found.items()}
 
 
 def case_ids() -> list[str]:
@@ -55,6 +65,8 @@ def case_ids() -> list[str]:
 
 
 def _record(patient: str) -> Bundle:
+    if path := uploads().get(patient):
+        return bundles.load(path)
     try:
         return agent.Record(patient, "iris").bundle
     except httpx.HTTPError:
@@ -101,14 +113,16 @@ def _from_iris(resource_type: str, resource_id: str) -> tuple[Bundle, dict] | No
 @router.get("/sources/{resource_type}/{resource_id}")
 def get_source(resource_type: str, resource_id: str) -> dict:
     """The full text of a source record, for the 'whole record' view in the source drawer."""
+    ref = f"{resource_type}/{resource_id}"
     if not re.fullmatch(r"[A-Z][A-Za-z]+", resource_type) or not re.fullmatch(
         r"[\w.-]+", resource_id
     ):
         raise HTTPException(404, "Záznam není v dostupných datech")
+    found = bundles.find(ref, uploads().values()) if uploads() else None
     try:
-        found = _from_iris(resource_type, resource_id)
+        found = found or _from_iris(resource_type, resource_id)
     except httpx.HTTPError:  # server unreachable
-        found = bundles.find(f"{resource_type}/{resource_id}")
+        found = bundles.find(ref)
     if not found:
         raise HTTPException(404, "Záznam není v dostupných datech")
     b, r = found
