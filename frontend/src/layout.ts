@@ -1,5 +1,6 @@
 // Labels, the journey's steps, formatting and per-browser settings.
 import type { Intent } from './api'
+import type { TimelineEvent } from './briefing'
 
 /** Specialties that can sit on the board (the dataset's board members plus the brief's extra
  * roles); the id is also the briefing's section id (the converter fills only the first four). */
@@ -37,6 +38,18 @@ export const INTENTS: Record<Intent, { label: string; desc: string }> = {
   supportive: { label: 'Podpůrná péče', desc: 'Úleva od obtíží bez protinádorové léčby' },
   surveillance: { label: 'Sledování', desc: 'Aktivní sledování, léčba zatím ne' },
   deferred: { label: 'Odloženo', desc: 'Rozhodnutí po doplnění vyšetření' },
+}
+
+export const KIND: Record<TimelineEvent['kind'], string> = {
+  diagnosis: 'Diagnóza',
+  staging: 'Staging',
+  pathology: 'Patologie',
+  surgery: 'Operace',
+  systemic: 'Systémová léčba',
+  radiotherapy: 'Radioterapie',
+  imaging: 'Zobrazení',
+  progression: 'Progrese',
+  mdt: 'MDT',
 }
 
 /** The coordinator's journey (docs/workflow-plan.md); `upload` lives at #/new, the rest at #/case/<id>/<id>. */

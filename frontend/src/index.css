@@ -805,11 +805,75 @@ code {
   font-size: 1.35rem;
   line-height: 1.4;
 }
-.journey .question {
+.journey h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 1.25rem 0 0.5rem;
+}
+.question-card {
+  margin: 1.5rem 0;
+  padding: 1.25rem 1.5rem;
+  border-left: 4px solid var(--teal);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.question-card .question {
+  margin: 0;
+  font-size: 1.45rem;
+  line-height: 1.4;
   font-weight: 600;
 }
-.journey .missing-q {
+.question-card.missing {
+  border-left-color: var(--crit);
+}
+.question-card.missing .question {
   color: var(--crit);
+}
+.patient-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0 2.5rem;
+  font-size: 1.05rem;
+}
+.plain {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.plain li {
+  padding: 0.3rem 0;
+}
+.course {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-left: 2px solid var(--line);
+}
+.course li {
+  position: relative;
+  padding: 0 0 0.75rem 1rem;
+}
+.course li::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 0.45rem;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.course time {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.course .kind {
+  font-weight: 600;
+  margin-right: 0.4rem;
 }
 .steps {
   display: flex;

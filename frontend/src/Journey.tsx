@@ -3,7 +3,7 @@ import { api, type CaseRecord, type Decision, type Intent, type Recommendation }
 import type { Case } from './briefing'
 import { TrendChart } from './Charts'
 import { Alert, Check, Doc, IntentIcon } from './icons'
-import { fmtDate, fmtDateTime, INTENTS, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
+import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Steps } from './Steps'
 
@@ -86,13 +86,41 @@ function BoardStep({ record, save, next }: StepProps) {
 function PatientStep({ c, record, next }: StepProps) {
   const S = renderer(record)
   const question = record.prep.question || c.question?.text
+  const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
   return (
     <>
       <h1 className="huge">{c.label}</h1>
-      <p className="big">{c.summary[0] ? S('summary.0', c.summary[0], 'inline') : TUMOURS[c.tumour]}</p>
-      <p className="muted">{[c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
-      <p className="eyebrow">Otázka pro komisi</p>
-      {question ? <p className="huge question">{question}</p> : <p className="huge missing-q">Chybí otázka pro komisi</p>}
+      <p className="muted">{[TUMOURS[c.tumour], c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
+      <section className={`question-card ${question ? '' : 'missing'}`}>
+        <p className="eyebrow">Otázka pro komisi</p>
+        <p className="question">{question ?? 'Chybí otázka pro komisi'}</p>
+      </section>
+      <div className="patient-grid">
+        <section>
+          <h2>Diagnóza</h2>
+          <ul className="plain">
+            {c.summary.map((s, i) => i !== ecog && <li key={i}>{S(`summary.${i}`, s, 'inline')}</li>)}
+          </ul>
+          {ecog >= 0 && (
+            <>
+              <h2>Výkonnostní stav</h2>
+              <p>{S(`summary.${ecog}`, c.summary[ecog], 'inline')}</p>
+            </>
+          )}
+        </section>
+        <section>
+          <h2>Průběh onemocnění</h2>
+          <ol className="course">
+            {c.timeline.map((e, i) => (
+              <li key={i}>
+                <time>{fmtDate(e.date)}</time>
+                <span className="kind">{KIND[e.kind]}</span>
+                {S(`timeline.${i}`, e.statement, 'inline')}
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
       <Next onClick={next} />
     </>
   )
