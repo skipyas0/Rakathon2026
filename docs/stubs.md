@@ -38,8 +38,8 @@ checked by the validator:
   and for trials use `trial:<trial-id>#<criterion>`. Use the ids from the organisers' documents.
 - **`excerpt` is the verbatim passage** from that record (the UI highlights it when clicked). Copy
   it; don't paraphrase. Add `date` and `author` when the record has them.
-- **Missing data:** if something isn't in the records, write exactly
-  `"V dostupné dokumentaci se nenachází."` with `sources: []`. Never fill gaps from general
+- **Missing data:** if something isn't in the records, name it and end with the exact wording,
+  e.g. `"Stav MSI/MMR: V dostupné dokumentaci se nenachází."`, with `sources: []`. Never fill gaps from general
   medical knowledge. Gaps are a feature the demo needs to show.
 - **No question in the nomination → `"question": null`.** That marks the case as incomplete. Don't
   invent a question.
@@ -58,6 +58,22 @@ cited options.
 | `red_flags`        | inconsistencies with `severity`; **each cites both sources** (e.g. lab + questionnaire). The test enforces ≥ 2 sources |
 | `sections`         | at least 3 of `surgery`, `oncology`, `radiology`, `pathology`, `patient` (PROMs, goals, preferences) |
 | `decision_support` | `options` cite a guideline passage; `trials` give one criterion statement each with `eligible` / `ineligible` / `missing_data`; 2–3 `questions` |
+| `trends`           | measured values over time for the meeting charts (see below). Not AI: copy the numbers from the records |
+
+### Trends (charts on the meeting screen)
+
+Pick the 2–4 series that matter for the MDT question: tumour markers (CEA, CA 19-9, PSA…), a
+lab tied to a red flag (e.g. Hb), and PROMs scores with at least two time points. Each point needs
+its own source (the exact `Observation` or `QuestionnaireResponse#linkId`), so clicking a dot opens it.
+
+```json
+{ "id": "cea", "label": "CEA", "unit": "µg/l", "ref_high": 5.0,
+  "points": [{ "date": "2026-07-01", "value": 6.1,
+               "source": { "reference": "Observation/abc", "excerpt": "CEA 6,1 µg/l", "date": "2026-07-01" } }] }
+```
+
+Use `ref_low` / `ref_high` for the reference range (drawn as a band). For questionnaire scales,
+set `"axis": [0, 10]` so the chart shows the full scale.
 
 The brief says the dataset has deliberate inconsistencies and gaps with ground-truth answers. Make
 sure each stub surfaces the ones for its patient. Those are what the judges will click.

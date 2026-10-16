@@ -18,7 +18,7 @@ Full brief (Czech): [docs/brief.md](docs/brief.md). Read it before working on a 
 2. **Label everything AI-produced.** AI content must be visually distinct from clinician-confirmed
    content, everywhere it appears (UI, exports).
 3. **Every AI claim has a source** — the exact FHIR resource / questionnaire answer, viewable on
-   click. If the data isn't there, say `V dostupné dokumentaci se nenachází.` — never guess.
+   click. If the data isn't there, say what is missing + `V dostupné dokumentaci se nenachází.` — never guess.
 4. **Record human decisions** with who made them and when.
 
 These are enforced in code — use them, don't work around them:

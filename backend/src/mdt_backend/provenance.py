@@ -31,8 +31,8 @@ class Statement(BaseModel):
         if self.origin == "ai":
             if not self.model:
                 raise ValueError("AI statement must record which model produced it")
-            if not self.sources and self.text != NOT_FOUND:
-                raise ValueError(f"AI statement needs a source, or must say {NOT_FOUND!r}")
+            if not self.sources and not self.text.endswith(NOT_FOUND):
+                raise ValueError(f"AI statement needs a source, or must end with {NOT_FOUND!r}")
         if self.origin == "human" and not self.confirmed_by:
             raise ValueError("Human statement must name the clinician (confirmed_by)")
         return self

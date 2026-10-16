@@ -43,3 +43,32 @@ Decision: Hand-made briefings in `data/stubs/` validate against `Case` (`briefin
 served by `/api/cases`. The AI pipeline will return the same shape.
 Why: Frontend and data work can run in parallel; swapping stubs for real output needs no frontend
 change.
+
+## 6. MDT records as JSON files per case — 2026-10-16, yes-and
+Status: accepted
+Decision: Confirmations and the board's decision are stored in `data/records/<case>.json` via
+`GET|PUT /api/cases/{id}/record`; the chair's confirmation locks the decision (409 on change).
+Why: Fastest persistent store for the demo. Replace with FHIR CarePlan/Task/Provenance (brief
+BONUS) or a DB when export is built — the API shape can stay.
+
+## 7. "Not found" statements name what is missing — 2026-10-16, yes-and
+Status: accepted
+Decision: An unsourced AI statement must *end with* `V dostupné dokumentaci se nenachází.`
+(e.g. `Stav MSI/MMR: V dostupné dokumentaci se nenachází.`) instead of being exactly that text.
+Why: A bare "not found" doesn't tell the clinician what is missing.
+
+## 8. Three-phase workflow, single chair view — 2026-10-16, yes-and
+Status: accepted (supersedes the role-based views from the first demo)
+Decision: Each case has phases Před zasedáním → Zasedání → Po zasedání, all reopenable. Only the
+chair has the app open during the meeting, so there are no per-specialty views; specialist
+sections expand on demand and store the specialist's view as a note. Section order/visibility is a
+per-board template.
+Why: Matches how the MDT actually runs (one shared screen, 3–5 min per patient).
+
+## 9. Trends in the Case contract; AI shown in blue — 2026-10-16, yes-and
+Status: accepted
+Decision: `Case.trends` (optional) carries measured values with per-point sources for charts.
+Unconfirmed AI output is blue with a robot icon; record data, clinician input and confirmed AI
+render as plain text. Treatment intent (curative/palliative/supportive/surveillance) is part of
+the decision and has its own colour + icon everywhere.
+Why: Quick orientation on one screen; the brief requires AI output to be visually distinct.

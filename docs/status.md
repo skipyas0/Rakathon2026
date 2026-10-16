@@ -11,9 +11,14 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   (https://github.com/intersystems-community/FHIR-AI-Hackathon-Kit/tree/V2)? Backend works with
   either via `.env`.
 
-## Contributor 1
+## yes-and (Claude Code)
 
--
+- Branch `yes-and/frontend-demo`: three-phase MDT app (prep → meeting slide → decision/follow-up),
+  clinical palette, AI in blue with robot icon, trend charts, source drawer, specialist notes,
+  intent + locked decision, action plan, print export.
+- **For stub authors:** `Case.trends` now exists (see docs/stubs.md) — please add 2–4 series per patient.
+- Demo stubs: `data/stubs/example.json` (colorectal, full, with trends) and `lung-incomplete.json`.
+- Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
 
 ## Contributor 2
 

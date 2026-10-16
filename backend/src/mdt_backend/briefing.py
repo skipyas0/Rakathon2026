@@ -7,7 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from mdt_backend.provenance import Statement
+from mdt_backend.provenance import Source, Statement
 
 
 class TimelineEvent(BaseModel):
@@ -51,6 +51,24 @@ class DecisionSupport(BaseModel):
     questions: list[Statement]  # 2–3 questions for the board to resolve
 
 
+class TrendPoint(BaseModel):
+    date: dt.date
+    value: float
+    source: Source  # the exact lab result / questionnaire answer
+
+
+class Trend(BaseModel):
+    """A measured value over time, taken directly from the records (not AI-generated)."""
+
+    id: str  # e.g. "cea", "hb", "proms-fatigue"
+    label: str  # e.g. "CEA", "Únava (PROMs)"
+    unit: str  # e.g. "µg/l", "/10"
+    ref_low: float | None = None  # reference range, drawn as a band
+    ref_high: float | None = None
+    axis: tuple[float, float] | None = None  # fixed y-axis, e.g. (0, 10) for PROMs scales
+    points: list[TrendPoint]
+
+
 class Case(BaseModel):
     id: str  # matches the stub filename
     patient: str  # FHIR reference, e.g. "Patient/123"
@@ -62,3 +80,4 @@ class Case(BaseModel):
     red_flags: list[RedFlag]
     sections: list[Section]
     decision_support: DecisionSupport
+    trends: list[Trend] = []  # lab markers and PROMs over time, for the meeting charts
