@@ -9,3 +9,4 @@ dist/
 .DS_Store
 # Per-user agent settings (shared settings stay committed)
 .claude/settings.local.json
+Dataset
