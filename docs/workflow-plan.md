@@ -6,14 +6,14 @@ no descriptions, no extra buttons, one **Další** per screen.
 
 | # | Screen | What's on it |
 |---|--------|--------------|
-| 1 | Nahrání | Two bubbles: FHIR (pick or drop a file → uploads at once) and PDF (greyed out, "Připravujeme") |
+| 1 | Nahrání | Two rectangles with "nebo" between: FHIR (pick or drop a file → uploads at once) and PDF (greyed out, "Připravujeme") |
 | 2 | Komise | Specialty bubbles; a tap adds it (green outline). At least 3 |
-| 3 | Pacient | Patient, diagnosis and the MDT question in big letters; a missing question shows in red |
-| 4 | Klíčové informace | 3–4 statements: the most urgent red flags first, then key facts (ECOG doctor vs patient) |
-| 5 | Vývoj | 2–3 trend charts |
-| 6 | Léčebný záměr | Bubbles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
+| 3 | Pacient | Patient and board, the MDT question in a highlighted card (red when missing), diagnoses + ECOG, course of the disease |
+| 4 | Klíčové informace | Critical (high) and important (medium) red flags unrolled; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
+| 5 | Vývoj | Two charts per screen, no scrolling; Další pages through further series |
+| 6 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
 | 7 | Závěr | Zvolený postup, Zdůvodnění |
-| 8 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit first asks for Důvod odchylky. Stanoviska per role (bubble → that role's facts + opinion). After Potvrdit: Stáhnout PDF |
+| 8 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); a name field appears when none is set. Stanoviska per role (bubble → that role's facts + opinion). After Potvrdit: Stáhnout PDF |
 
 Plus **Přehled** (`#/`): the cases and whether their conclusion is confirmed; a confirmed case opens
 its record.
