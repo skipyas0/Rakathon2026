@@ -49,4 +49,5 @@ def test_case_list_falls_back_to_disk_when_server_is_down(monkeypatch):
 
     monkeypatch.setattr(fhir, "get", get)
     monkeypatch.setattr(cases.bundles, "bundle_paths", lambda: {"p77": None})
-    assert cases.patient_case_ids() == ["p77"]
+    monkeypatch.setattr(cases.bundles, "load", lambda path: cases.Bundle({"entry": []}))
+    assert cases.meetings() == {"p77": "p77"}  # no Task → no planned date

@@ -58,6 +58,13 @@ def rec(text: str, *sources: Source) -> Statement:
     return Statement(text=text, origin="record", sources=list(sources))
 
 
+def planned_date(b: Bundle) -> dt.date | None:
+    """Planned meeting = the nomination Task's restriction (ServiceRequest.occurrence is another
+    date)."""
+    task = next(iter(b.all("Task")), {})
+    return date_of({"date": task.get("restriction", {}).get("period", {}).get("start", "")})
+
+
 def build_case(case_id: str, b: Bundle) -> Case:
     patient = b.all("Patient")[0]
     nomination = b.all("ServiceRequest")[0]
@@ -69,9 +76,7 @@ def build_case(case_id: str, b: Bundle) -> Case:
     pathology = [r for r in reports if category_text(r).startswith("Patologie")]
     imaging = [r for r in reports if category_text(r).startswith("Zobrazovací")]
     notes = {n["text"].split(":")[0]: n["text"] for n in nomination.get("note", [])}
-    # planned meeting = the nomination Task's restriction (ServiceRequest.occurrence is another date)
-    task = next(iter(b.all("Task")), {})
-    mdt_date = date_of({"date": task.get("restriction", {}).get("period", {}).get("start", "")})
+    mdt_date = planned_date(b)
 
     age = next((e["valueInteger"] for e in patient.get("extension", []) if "vek" in e["url"]), None)
     label = patient["name"][0]["text"] + (f", {age} let" if age else "")

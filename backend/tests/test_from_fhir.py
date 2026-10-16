@@ -61,3 +61,11 @@ def test_source_endpoint_returns_full_text():
     r = c.get(f"/api/sources/{ref.split('#')[0]}")
     assert r.status_code == 200 and r.json()["text"]
     assert c.get("/api/sources/Patient/nope").status_code == 404
+
+
+def test_case_ids_are_meetings():
+    from mdt_backend.features.cases import meetings
+
+    ids = list(meetings())
+    assert len(ids) == len(BUNDLES)  # one open meeting per patient in the dataset
+    assert all(i[:3] in BUNDLES and dt.date.fromisoformat(i[4:]) for i in ids), ids

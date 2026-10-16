@@ -55,7 +55,7 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 | `knowledge.py`  | Guideline passages (`Dataset/guidelines/*.md`) and trial criteria (`Dataset/studie/studie.json`) as verbatim `Source`s: `guideline:KRC-2.3`, `trial:RKT-01#Z2` |
 | `from_fhir.py`  | Builds a `Case` from a bundle deterministically (no LLM): question, summary, timeline, sections, trends |
 | `rules.py`      | Rule-based red flags (`origin: "ai"`, model `pravidla-v1`): ECOG doctor vs patient, anaemia + fatigue, rising marker, worsening PROMs, new symptom, stale imaging |
-| `features/cases.py` | Case list = patients on the FHIR server (IRIS); `GET /api/cases/{id}`: `data/ai_cases/<id>.json` if the agent ran, else the IRIS record → `from_fhir`, else stub JSON from `data/stubs/`; `GET /api/sources/{type}/{id}`: full text of a record, read from IRIS by dataset id. Bundles on disk only while the server is unreachable (decision 18) |
+| `features/cases.py` | Case list = patients on the FHIR server (IRIS). A case is one meeting: id = patient + planned MDT date (`p03-2026-10-21`, from `Task.restriction`), records are keyed by it; `GET /api/cases/{id}`: `data/ai_cases/<patient>.json` if the agent ran (id set to the meeting), else the IRIS record → `from_fhir`, else stub JSON from `data/stubs/`; `GET /api/sources/{type}/{id}`: full text of a record, read from IRIS by dataset id. Bundles on disk only while the server is unreachable (decision 18) |
 | `features/records.py` | `CaseRecord` (confirmations, prep, specialist notes, decision, tasks), phase status, agenda |
 
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),

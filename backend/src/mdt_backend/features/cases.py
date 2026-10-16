@@ -1,8 +1,10 @@
-"""Serves MDT briefings: the AI-augmented briefing when the agent has been run for the case
+"""Serves MDT briefings: the AI-augmented briefing when the agent has been run for the patient
 (agent.py → data/ai_cases/), otherwise the deterministic one built from the patient's record
 (from_fhir.py), or hand-made stubs in data/stubs/. All are the same `Case` shape, so the frontend
 can't tell them apart. Patient data come from the IRIS FHIR server; the bundles on disk are only
-a fallback while the server is unreachable (decision #18)."""
+a fallback while the server is unreachable (decision #18).
+A case is one meeting about one patient: its id is the patient plus the planned MDT date
+("p03-2026-10-21"), so a patient's next MDT gets its own case and record."""
 
 import re
 from pathlib import Path
@@ -13,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from mdt_backend import agent, bundles, fhir
 from mdt_backend.briefing import Case
 from mdt_backend.bundles import Bundle
-from mdt_backend.from_fhir import build_case
+from mdt_backend.from_fhir import build_case, planned_date
 from mdt_backend.load_fhir import fhir_id
 
 STUBS = Path(__file__).parents[4] / "data" / "stubs"
@@ -26,22 +28,37 @@ def stub_paths() -> dict[str, Path]:
     return {p.stem: p for p in sorted(STUBS.glob("*.json"))}
 
 
-def patient_case_ids() -> list[str]:
+def _meeting(patient: str, task: dict | None) -> str:
+    date = planned_date(Bundle({"entry": [{"resource": task}] if task else []}))
+    return f"{patient}-{date}" if date else patient
+
+
+def meetings() -> dict[str, str]:
+    """Case id ("p03-2026-10-21", or just "p03" without a planned date) → patient ("p03")."""
     try:
-        return [p.lower() for p in agent.patient_ids()]
+        patients = [p.lower() for p in agent.patient_ids()]
+        tasks = {
+            t["for"]["reference"].split("/")[-1].lower(): t
+            for t in (e["resource"] for e in fhir.get("Task", _count=200).get("entry", []))
+            if "for" in t
+        }
+        return {_meeting(p, tasks.get(p)): p for p in patients}
     except httpx.HTTPError:
-        return list(bundles.bundle_paths())
+        out = {}
+        for p, path in bundles.bundle_paths().items():
+            out[_meeting(p, next(iter(bundles.load(path).all("Task")), None))] = p
+        return out
 
 
 def case_ids() -> list[str]:
-    return [*patient_case_ids(), *stub_paths()]
+    return [*meetings(), *stub_paths()]
 
 
-def _record(case_id: str) -> Bundle:
+def _record(patient: str) -> Bundle:
     try:
-        return agent.Record(case_id, "iris").bundle
+        return agent.Record(patient, "iris").bundle
     except httpx.HTTPError:
-        if path := bundles.bundle_paths().get(case_id):
+        if path := bundles.bundle_paths().get(patient):
             return bundles.load(path)
         raise HTTPException(503, "FHIR server nedostupný") from None
 
@@ -49,10 +66,11 @@ def _record(case_id: str) -> Bundle:
 @router.get("/cases/{case_id}")
 def get_case(case_id: str) -> Case:
     # lookups, not path joins: case_id never reaches the filesystem unchecked
-    if case_id in patient_case_ids():
-        if (ai := agent.OUT_DIR / f"{case_id}.json").exists():
-            return Case.model_validate_json(ai.read_text(encoding="utf-8"))
-        return build_case(case_id, _record(case_id))
+    if patient := meetings().get(case_id):
+        if (ai := agent.OUT_DIR / f"{patient}.json").exists():
+            case = Case.model_validate_json(ai.read_text(encoding="utf-8"))
+            return case.model_copy(update={"id": case_id})
+        return build_case(case_id, _record(patient))
     if path := stub_paths().get(case_id):
         return Case.model_validate_json(path.read_text(encoding="utf-8"))
     raise HTTPException(404, f"No case {case_id!r}")
