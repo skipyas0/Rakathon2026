@@ -1,6 +1,6 @@
 """R4 repairs applied when loading the organisers' bundles. Run: uv run pytest tests/test_load_fhir.py"""
 
-from mdt_backend.load_fhir import DERIVED_FROM_REPORT, to_r4, to_transaction
+from mdt_backend.load_fhir import DERIVED_FROM_REPORT, dataset_id, to_r4, to_transaction
 
 
 def test_invalid_ids_and_references_are_rewritten():
@@ -13,6 +13,13 @@ def test_invalid_ids_and_references_are_rewritten():
     )
     assert res["result"] == [{"reference": "Observation/P01-lab01-hb-f"}]
     assert to_r4({"resourceType": "Observation", "id": "P01-lab01-hb_f"})["id"] == "P01-lab01-hb-f"
+
+
+def test_original_id_is_kept_as_tag():
+    res = to_r4({"resourceType": "Observation", "id": "P01-lab01-hb_f", "meta": {"tag": []}})
+    assert dataset_id(res) == "P01-lab01-hb_f"
+    plain = to_r4({"resourceType": "Observation", "id": "P01-ecog01"})
+    assert "meta" not in plain and dataset_id(plain) == "P01-ecog01"
 
 
 def test_derived_from_report_moves_to_extension():

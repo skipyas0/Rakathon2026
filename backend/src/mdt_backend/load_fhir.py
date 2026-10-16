@@ -8,7 +8,9 @@ reloading idempotent (shared resources such as Organization/ORG-FN are just over
 
 Some dataset IDs contain "_", which FHIR R4 forbids ([A-Za-z0-9.-]{1,64}) and IRIS rejects; they
 are stored with "_" replaced by "-" (e.g. Observation/P01-lab01-hb_f -> P01-lab01-hb-f), and
-references to them are rewritten to match.
+references to them are rewritten to match. The original id is kept on the resource as
+meta.tag {system: DATASET_ID, code: <original id>}, so readers of the server can cite the dataset's
+ids without the bundle files (`dataset_id`).
 
 Two other R4 violations IRIS rejects are repaired without losing data:
 - Observation.derivedFrom -> DiagnosticReport (type not allowed) is moved to the extension
@@ -27,10 +29,17 @@ from mdt_backend.config import settings
 
 DEFAULT_PATH = settings.dataset_dir / "fhir" / "bundles.ndjson"
 DERIVED_FROM_REPORT = "https://rakathon.example.org/fhir/StructureDefinition/derived-from-report"
+DATASET_ID = "https://rakathon.example.org/fhir/sid/dataset-id"
 
 
 def fhir_id(raw: str) -> str:
     return re.sub(r"[^A-Za-z0-9.-]", "-", raw)
+
+
+def dataset_id(res: dict) -> str:
+    """The resource's id as in the dataset (undoes the "_" rewrite using the DATASET_ID tag)."""
+    tags = (res.get("meta") or {}).get("tag", [])
+    return next((t["code"] for t in tags if t.get("system") == DATASET_ID), res["id"])
 
 
 def _fix_refs(node):
@@ -60,7 +69,10 @@ def _drop_empty_answers(items: list) -> None:
 def to_r4(res: dict) -> dict:
     """Return a copy of `res` repaired to pass strict R4 validation (see module docstring)."""
     res = _fix_refs(res)
-    res["id"] = fhir_id(res["id"])
+    if (new := fhir_id(res["id"])) != res["id"]:
+        meta = res.setdefault("meta", {})
+        meta["tag"] = [*meta.get("tag", []), {"system": DATASET_ID, "code": res["id"]}]
+        res["id"] = new
     if res["resourceType"] == "Observation" and "derivedFrom" in res:
         reports = [d for d in res["derivedFrom"] if d["reference"].startswith("DiagnosticReport/")]
         res["derivedFrom"] = [d for d in res["derivedFrom"] if d not in reports]

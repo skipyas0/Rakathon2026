@@ -40,7 +40,8 @@ def bundle_paths() -> dict[str, Path]:
     """Case id (e.g. "p01") → bundle file."""
     return {
         p.name.split("_")[0].lower(): p
-        for p in sorted((settings.dataset_dir / "pacienti").glob("*_bundle.json"))
+        # flat (pacienti/P01_bundle.json) or per-patient folders (pacienti/P01/P01_bundle.json)
+        for p in sorted((settings.dataset_dir / "pacienti").rglob("*_bundle.json"))
     }
 
 

@@ -36,6 +36,20 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   complete record from the server. The app itself still reads bundles from disk (`bundles.py`).
 - `uv run mdt-zaver P01`: MDT conclusion (form.md) as PDF, two gpt-6-luna calls (decision 13).
   CLI only — not wired into the API/UI yet; ~40 s per patient.
+- `uv run mdt-agent P01 [--runs 2]`: MDT agent over IRIS (decision 17): CACC → RED/YELLOW findings
+  → radiology/surgery/oncology views → 1–2 guideline options, every citation checked in code.
+  Writes `data/ai_cases/<id>.json`, which `/api/cases/{id}` then serves (delete it to get the plain
+  build back). Patient data comes only from IRIS (verified: no bundle file read, all reads are
+  `localhost:52773/fhir/r4`). ~2–2.5 min per run (8 LLM calls, 3 in parallel). Not triggered from the UI yet.
+- Reproducibility (2 runs each, 2026-10-16): P01 — same first option (biomarker-guided endocrine
+  line after ESR1/PIK3CA/BRCA + restaging, PRS-1.3/2.2, OBC-1.2; patient's no-chemo wish mentioned)
+  and same second option (chemo/T-DXd only if conditions, identical passages); all-option passage
+  Jaccard 0.88. P03 — same two options (restage + HBP resectability per KRC-2.1/2.4/2.5; else drop
+  oxaliplatin for neuropathy per KRC-3.2 + MMR/MSI), Jaccard 0.67. Wording and the exact list of
+  findings vary between runs; the RED findings overlapped (stale staging, new hip pain without
+  imaging / missing chest CT, MMR/MSI, neuropathy).
+- `bundles.bundle_paths()` now finds bundles in per-patient folders (`pacienti/P01/P01_bundle.json`,
+  the dataset's current layout) — before, the app found no FHIR cases with that layout.
 
 ## Contributor 3
 

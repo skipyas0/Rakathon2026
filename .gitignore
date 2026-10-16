@@ -15,3 +15,5 @@ data/records/
 Dataset
 # Generated MDT conclusions (AI drafts)
 data/zavery/
+# AI-augmented briefings and traces written by mdt-agent
+data/ai_cases/

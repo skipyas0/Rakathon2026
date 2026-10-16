@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     fhir_base_url: str = "http://localhost:8080/fhir"
     fhir_user: str | None = None  # Basic auth, needed for IRIS (HAPI needs none)
     fhir_password: str | None = None
-    # The organisers' dataset (git-ignored): pacienti/<ID>_bundle.json, guidelines/, studie/
+    # The organisers' dataset (git-ignored): pacienti/[<ID>/]<ID>_bundle.json, guidelines/, studie/
     dataset_dir: Path = Path(__file__).parents[3] / "Dataset"
     # OpenAI-compatible chat endpoint (Azure APIM, EU data zone); key sent as `api-key` header
     azure_api_key: str | None = None

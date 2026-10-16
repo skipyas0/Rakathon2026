@@ -104,6 +104,9 @@ to extension `https://rakathon.example.org/fhir/StructureDefinition/derived-from
 `valueReference`; one empty `valueString` answer (P03-prom02 `bolest-misto`) is dropped.
 Why: Strict servers refuse the raw bundles; these repairs are lossless, so source links still work.
 Code that reads from the server must use the repaired IDs and the extension, not the raw ones.
+Update 2026-10-16: each rewritten resource also carries `meta.tag` {system
+`https://rakathon.example.org/fhir/sid/dataset-id`, code = original id} (`load_fhir.dataset_id`),
+so server readers (the agent, #17) can cite the dataset's ids without reading the bundle files.
 
 ## 13. LLM: Azure OpenAI gpt-6-luna (EU data zone) with strict structured output — 2026-10-16
 Status: accepted
@@ -147,3 +150,23 @@ are per meeting, not per patient. Scope = POVINNÉ items of `problem_statement.m
 Why: The partners' process (MDT_ZASEDANI_PROCES.md) has the coordinator keep the record and all
 members consent; specialists need their own filtered view; patients return to the MDT, so one
 record per patient would overwrite history.
+
+## 17. MDT agent as a fixed pipeline over IRIS, citations verified in code — 2026-10-16, Contributor 2
+Status: accepted (builds on #12, #13)
+Decision: `agent.py` runs a fixed chain of steps — gather (IRIS) → diagnosis → CACC → findings →
+per-specialist context + view (radiology, surgery, oncology) → 1–2 options — each LLM step one
+strict-JSON `llm.chat_json` call. The kit's pattern (LangChain `create_agent` with tool calling,
+`FHIR-AI-Kit/skills/iris-ai-agents`) is followed in spirit, not adopted: the "tools" (FHIR
+`$everything`, read one resource from IRIS) are called by the pipeline, and the model chooses only
+*which* records each specialist reads. The diagnosis → guideline mapping is deterministic (ICD-10
+prefix → KRC/PLI/PRS, always + OBC). Passage ids outside those documents, references not in the
+patient's record and quotes not found verbatim (word-level) in the record are dropped and logged
+in the trace; an AI statement left without sources is dropped; an option without a passage is
+dropped; at most 2 options. RED → `high`, YELLOW → `medium` red flags; missing checklist items
+become `NOT_FOUND` statements in the area's section. Output is the existing `Case` (rule output
+from `build_case` kept, AI statements appended), no contract change.
+Why: The Azure endpoint rejects function tools with reasoning on `/chat/completions` (only
+`/responses` or `reasoning_effort: none`), and a free tool loop is harder to make reproducible and
+auditable than a fixed chain. Checking citations in code instead of trusting the prompt is what
+the brief's "no hallucinations, every claim sourced" rule needs. Two runs on the same patient give
+the same first-line recommendation, though wording and the set of findings vary (status.md).

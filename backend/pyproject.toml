@@ -20,6 +20,7 @@ mdt-backend = "mdt_backend:main"
 mdt-load-fhir = "mdt_backend.load_fhir:main"
 mdt-patient = "mdt_backend.fhir:main"
 mdt-zaver = "mdt_backend.zaver:main"
+mdt-agent = "mdt_backend.agent:main"
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]

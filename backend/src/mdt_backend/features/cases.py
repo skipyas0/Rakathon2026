@@ -1,11 +1,12 @@
-"""Serves MDT briefings: built from the FHIR bundles (from_fhir.py) or hand-made stubs in
-data/stubs/. Both produce the same `Case` shape, so the frontend can't tell them apart."""
+"""Serves MDT briefings: built from the FHIR bundles (from_fhir.py), the AI-augmented version of
+that briefing when the agent has been run for the case (agent.py → data/ai_cases/), or hand-made
+stubs in data/stubs/. All are the same `Case` shape, so the frontend can't tell them apart."""
 
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from mdt_backend import bundles
+from mdt_backend import agent, bundles
 from mdt_backend.briefing import Case
 from mdt_backend.from_fhir import build_case
 
@@ -26,6 +27,8 @@ def case_ids() -> list[str]:
 def get_case(case_id: str) -> Case:
     # lookups, not path joins: case_id never reaches the filesystem unchecked
     if path := bundles.bundle_paths().get(case_id):
+        if (ai := agent.OUT_DIR / f"{case_id}.json").exists():
+            return Case.model_validate_json(ai.read_text(encoding="utf-8"))
         return build_case(case_id, bundles.load(path))
     if path := stub_paths().get(case_id):
         return Case.model_validate_json(path.read_text(encoding="utf-8"))

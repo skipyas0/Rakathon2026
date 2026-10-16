@@ -47,6 +47,7 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 | `llm.py`        | `chat_json(system, user, schema)`: one chat completion with strict JSON-schema output (`LLM_BASE_URL`, `LLM_MODEL`, `AZURE_API_KEY`) |
 | `pdf.py`        | `PdfDoc`: flowing-text A4 PDF on pypdf (wrapping, pagination, bold/colour runs, blue AI bar); embeds a subset TrueType font for Czech (`PDF_FONT`/`PDF_FONT_BOLD`, default Arial/DejaVu) |
 | `zaver.py`      | CLI `uv run mdt-zaver P01`: fills `docs/template_zaver_zasedani/form.md` → `data/zavery/<id>_zaver.{md,pdf}`. HEADER = dummy data (no LLM); BODY = LLM call 1 over the full FHIR record from the server (one field per template line + its source resources; unknown references dropped, unsourced fields flagged); RESPONSE = LLM call 2 over the filled BODY only, as the MDT. All LLM output marked as unconfirmed AI |
+| `agent.py`      | CLI `uv run mdt-agent P01 [--runs 2] [--source iris\|file]`: the MDT agent (decision 17). Record from IRIS only (`$everything`, ids mapped back to the dataset's via the loader's `dataset-id` tag; `--source file` = bundle on disk, for offline use) → diagnosis → guideline docs (KRC/PLI/PRS + OBC) → LLM: completeness-and-consistency checklist (CACC) → LLM: RED/YELLOW findings → per radiology/surgery/oncology: LLM picks records, agent fetches them from IRIS, LLM writes the view citing passages → LLM: 1–2 guideline options (+ patient preference, questions). Every citation checked (passage allowed for the diagnosis, reference in the record, quote verbatim) or dropped and logged. Output = `build_case` + AI statements → `data/ai_cases/<id>.json` (+ `.trace.json`), served by `/api/cases/{id}` when present |
 | `load_fhir.py`  | CLI `uv run mdt-load-fhir`: loads `Dataset/fhir/bundles.ndjson` into the FHIR server as PUT transactions, repairing what strict R4 servers (IRIS) reject — see decision 12 |
 | `provenance.py` | `Statement`, `Source`: AI-vs-human labelling, sources, confirmation     |
 | `briefing.py`   | `Case`: the MDT briefing (summary, timeline, red flags, sections, decision support, trends) |
@@ -110,11 +111,16 @@ backend. Export = browser print-to-PDF (`@media print` in `index.css`).
   stubs were removed once the dataset was integrated.
 - `data/records/*.json`: records written by the running app (git-ignored).
 - `data/zavery/`: generated MDT conclusions (`mdt-zaver`, AI drafts, git-ignored).
+- `data/ai_cases/`: AI-augmented briefings (`mdt-agent`, `Case` JSON + trace of every step and
+  rejected citation, git-ignored). `/api/cases/{id}` serves these instead of the plain build.
 - FHIR R4 on HAPI (H2 DB inside the container: survives restarts, wiped by `docker compose down`).
   The app itself still reads the bundles from disk. The backend works with any FHIR R4
   server: set `FHIR_BASE_URL` (+ `FHIR_USER`/`FHIR_PASSWORD` for IRIS, see `.env.example`).
 - InterSystems IRIS for Health (alternative FHIR server), from the sponsor kit in `FHIR-AI-Kit/`
   (container `iris-fhir`, FHIR at `http://localhost:52773/fhir/r4`, `SuperUser`/`SYS`, data in a
   Docker volume). Holds only our dataset (all 6 patients, via `mdt-load-fhir`), not the kit's
-  Synthea samples. Known gap: `Practitioner/LEK-P05-09` is only named in `Procedure.note` text, never
+  Synthea samples. The container has restart policy `unless-stopped` (set with `docker update`;
+  needs Docker Desktop running). It is the only patient-data source of `mdt-agent`, `mdt-zaver`
+  and `mdt-patient`; the web API (`from_fhir.py`, source drawer) still reads the bundles on disk.
+  Known gap: `Practitioner/LEK-P05-09` is only named in `Procedure.note` text, never
   referenced, so `get_patient_record("P05")` can't reach it.
