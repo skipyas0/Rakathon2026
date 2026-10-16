@@ -219,10 +219,11 @@ function IntentStep({ record, save, next }: StepProps) {
   return (
     <>
       <h1>Léčebný záměr</h1>
-      <div className="bubbles">
+      <div className="tiles">
         {(Object.keys(INTENTS) as Intent[]).map((k) => (
-          <button key={k} className={`bubble intent-${k} ${intent === k ? 'on' : ''}`} aria-pressed={intent === k} disabled={locked} onClick={() => setIntent(k)}>
-            <IntentIcon intent={k} /> {INTENTS[k].label}
+          <button key={k} className={`tile intent-${k} ${intent === k ? 'on' : ''}`} aria-pressed={intent === k} disabled={locked} onClick={() => setIntent(k)}>
+            <IntentIcon intent={k} />
+            {INTENTS[k].label}
           </button>
         ))}
       </div>
@@ -241,15 +242,17 @@ function PlanStep({ record, save, next }: StepProps) {
   return (
     <>
       <h1>Závěr</h1>
-      <label className="big-field">
-        Zvolený postup
-        <textarea value={plan} disabled={locked} onChange={(e) => setPlan(e.target.value)} />
-      </label>
-      <label className="big-field">
-        Zdůvodnění
-        <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
-      </label>
-      <Next onClick={submit} disabled={!plan.trim() || !rationale.trim()} />
+      <section className="card form-card">
+        <label className="big-field">
+          Zvolený postup
+          <textarea value={plan} disabled={locked} onChange={(e) => setPlan(e.target.value)} />
+        </label>
+        <label className="big-field">
+          Zdůvodnění
+          <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
+        </label>
+        <Next onClick={submit} disabled={!plan.trim() || !rationale.trim()} />
+      </section>
     </>
   )
 }
