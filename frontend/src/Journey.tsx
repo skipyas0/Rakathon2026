@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, type CaseRecord, type Decision, type Intent, type Recommendation } from './api'
-import type { Case } from './briefing'
+import { type Case, NOT_FOUND, type RedFlag } from './briefing'
+import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
 import { Alert, Check, Doc, IntentIcon } from './icons'
 import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
@@ -8,6 +9,8 @@ import { now, renderer } from './render'
 import { Steps } from './Steps'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
+
+const SECTION_LABEL: Record<string, string> = { ...SPECIALTIES, patient: 'Pacient' }
 
 /** The coordinator's journey through one case, one screen per step (docs/workflow-plan.md). */
 export function Journey({ id, step, user }: { id: string; step: Step; user: string }) {
@@ -128,24 +131,59 @@ function PatientStep({ c, record, next }: StepProps) {
 
 function FactsStep({ c, record, next }: StepProps) {
   const S = renderer(record)
-  const flags = [...c.red_flags.entries()].filter(([, f]) => f.severity === 'high').slice(0, 2)
-  const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
-  const facts = [...c.summary.entries()].filter(([i]) => i > 0 && i !== ecog)
-  const items = [
-    ...flags.map(([i, f]) => ({ key: `red_flags.${i}`, s: f.statement, flag: true })),
-    ...(ecog >= 0 ? [{ key: `summary.${ecog}`, s: c.summary[ecog], flag: false }] : []),
-    ...facts.map(([i, s]) => ({ key: `summary.${i}`, s, flag: false })),
-  ].slice(0, 4)
+  const flags = (sev: RedFlag['severity']) => [...c.red_flags.entries()].filter(([, f]) => f.severity === sev)
+  const [critical, important, minor] = [flags('high'), flags('medium'), flags('low')]
+  const gaps = c.sections.flatMap((sec) =>
+    sec.items.flatMap((s, i) => (s.text.endsWith(NOT_FOUND) ? [[`sections.${sec.id}.${i}`, s] as const] : [])),
+  )
+  const groups: [string, (readonly [string, Statement])[]][] = [
+    ['Méně závažná upozornění', minor.map(([i, f]) => [`red_flags.${i}`, f.statement] as const)],
+    ['Chybějící údaje', gaps],
+    ...c.sections.map((sec): [string, (readonly [string, Statement])[]] => [
+      SECTION_LABEL[sec.id] ?? sec.title,
+      sec.items.flatMap((s, i) => (s.text.endsWith(NOT_FOUND) ? [] : [[`sections.${sec.id}.${i}`, s] as const])),
+    ]),
+  ]
+  const list = (items: [number, RedFlag][], cls: string) => (
+    <ul className={`key-facts ${cls}`}>
+      {items.map(([i, f]) => (
+        <li key={i}>
+          <Alert /> {S(`red_flags.${i}`, f.statement, 'inline')}
+        </li>
+      ))}
+    </ul>
+  )
   return (
     <>
       <h1>Klíčové informace</h1>
-      <ul className="key-facts">
-        {items.map((it) => (
-          <li key={it.key} className={it.flag ? 'flag' : ''}>
-            {it.flag && <Alert />} {S(it.key, it.s, 'inline')}
-          </li>
+      {critical.length > 0 && (
+        <>
+          <h2 className="crit-text">Kritické</h2>
+          {list(critical, 'crit')}
+        </>
+      )}
+      {important.length > 0 && (
+        <>
+          <h2 className="warn-text">Důležité</h2>
+          {list(important, 'warn')}
+        </>
+      )}
+      {!critical.length && !important.length && <p className="big">Žádná kritická ani důležitá upozornění.</p>}
+      <h2>Další informace</h2>
+      {groups
+        .filter(([, items]) => items.length)
+        .map(([title, items]) => (
+          <details key={title} className="more">
+            <summary>
+              {title} <span className="muted">({items.length})</span>
+            </summary>
+            <ul className="plain">
+              {items.map(([k, s]) => (
+                <li key={k}>{S(k, s, 'inline')}</li>
+              ))}
+            </ul>
+          </details>
         ))}
-      </ul>
       <Next onClick={next} />
     </>
   )

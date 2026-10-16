@@ -991,8 +991,25 @@ button.next {
   padding: 0.9rem 0;
   border-bottom: 1px solid var(--line);
 }
-.key-facts li.flag .icon {
+.key-facts.crit .icon,
+.crit-text {
   color: var(--crit);
+}
+.key-facts.warn .icon,
+.warn-text {
+  color: var(--warn);
+}
+.more {
+  border-bottom: 1px solid var(--line);
+  padding: 0.6rem 0;
+}
+.more summary {
+  cursor: pointer;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+.more ul {
+  margin-top: 0.5rem;
 }
 .journey-trends {
   display: grid;
