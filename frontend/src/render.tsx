@@ -41,3 +41,6 @@ export const findingKeys = (c: Case) => [
     .map(([i]) => `red_flags.${i}`),
   ...missing(c).map(([k]) => k),
 ]
+
+/** Sections a specialty sees in its own view: the coordinator's choice, else its own + the patient's. */
+export const visibleSections = (record: CaseRecord, specialty: string) => record.visibility[specialty] ?? [specialty, 'patient']

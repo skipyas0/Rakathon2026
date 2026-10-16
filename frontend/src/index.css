@@ -1556,3 +1556,32 @@ code {
 .warn-text {
   color: var(--warn);
 }
+
+/* Coordinator tables (visibility, specialists) */
+.table-scroll {
+  overflow-x: auto;
+}
+.matrix {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+.matrix th,
+.matrix td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+.matrix thead th {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.matrix tbody th,
+.matrix.progress td {
+  text-align: left;
+  font-weight: 500;
+}
+.matrix.progress td {
+  font-weight: 400;
+}
