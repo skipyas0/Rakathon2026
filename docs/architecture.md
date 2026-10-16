@@ -84,12 +84,13 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `Home.tsx`          | Agenda: patient cards with phase steps (each phase links directly) |
 | `CasePage.tsx`      | Loads case + record, phase stepper, saving (optimistic, rolls back on error) |
 | `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |
+| `PrepPhase.tsx`     | Coordinator's workspace in tabs: Podklady (question, summary, discussion questions, sources), Nálezy (`Findings.tsx`: triage of each red flag / missing datum: na zasedání, předem → specialty, zamítnout + důvod); readiness checklist. No confirm buttons here: clinicians confirm |
 | `DecisionForm.tsx`  | Intent cards + structured decision; locked read-only view     |
 | `CaseView.tsx`      | Shared blocks: flags, missing data, trials, full `CaseDetail` |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band), `TimelineStrip`     |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
 | `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records; `useSources()` opens it |
-| `render.tsx`        | `renderer`, `confirmer`, `isPending`, `missing` helpers       |
+| `render.tsx`        | `renderer`, `confirmer`, `isPending`, `missing`, `findingKeys` helpers |
 | `layout.ts`         | Labels (sections, tumours, intents, phases), board template, localStorage |
 | `icons.tsx`         | Inline SVG icons (robot, intents, …)                          |
 | `api.ts`            | Backend calls + TS mirror of records types                    |

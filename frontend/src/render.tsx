@@ -2,6 +2,7 @@
 import type { CaseRecord } from './api'
 import { type Case, NOT_FOUND, statements } from './briefing'
 import type { Statement } from './provenance'
+import { SEVERITY_RANK } from './layout'
 import { StatementView } from './StatementView'
 
 export type Render = (key: string, s: Statement, variant?: 'card' | 'inline') => React.ReactNode
@@ -32,3 +33,11 @@ export const isPending = (record: CaseRecord, key: string, s: Statement) =>
 
 /** Statements that say data is missing (no source, ends with the required wording). */
 export const missing = (c: Case) => statements(c).filter(([, s]) => !s.sources.length && s.text.endsWith(NOT_FOUND))
+
+/** Every finding (red flags + missing data) by its key, most severe first. */
+export const findingKeys = (c: Case) => [
+  ...[...c.red_flags.entries()]
+    .sort(([, a], [, b]) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
+    .map(([i]) => `red_flags.${i}`),
+  ...missing(c).map(([k]) => k),
+]

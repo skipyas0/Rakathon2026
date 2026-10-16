@@ -1450,3 +1450,69 @@ code {
   padding: 0.2rem 0;
   border-bottom: 1px solid var(--line);
 }
+
+/* Tabs (coordinator's preparation) */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-2);
+  padding: 0.5rem 0.8rem;
+}
+.tabs button.on {
+  border-bottom-color: var(--teal);
+  color: var(--teal-strong);
+}
+.tabs .count {
+  font-size: 0.75rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* Findings triage */
+.finding {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+.triage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+.triage .row {
+  margin: 0;
+}
+.segmented {
+  display: inline-flex;
+}
+.segmented button {
+  border-radius: 0;
+  margin-left: -1px;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+}
+.segmented button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+.segmented button:last-child {
+  border-radius: 0 8px 8px 0;
+}
+.segmented button.on {
+  background: var(--teal-soft);
+  border-color: var(--teal);
+  color: var(--teal-strong);
+  position: relative;
+}
