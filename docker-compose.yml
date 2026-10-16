@@ -7,3 +7,16 @@ services:
       hapi.fhir.allow_external_references: "true"
     # ponytail: data lives in the container (survives restart, not `down`); mock data is reloadable.
     # Add a volume if we ever need persistence (image runs as non-root: fix ownership first).
+
+  app: # whole app (frontend + API) → http://localhost:8000
+    build: .
+    restart: unless-stopped # comes back after a VM reboot
+    ports:
+      - "8000:8000"
+    environment:
+      FHIR_BASE_URL: http://fhir:8080/fhir
+    volumes:
+      - records:/app/data/records
+
+volumes:
+  records:

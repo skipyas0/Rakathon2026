@@ -18,6 +18,9 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   guidelines + trials → `knowledge.py`. Fictional stubs removed; the agenda is P01–P06 only.
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` —
   needs the LLM decision. Ground truth (`ground_truth/` in the dataset README) is not delivered.
+- Branch `yes-and/docker-deploy`: one `Dockerfile` (frontend built in, served by FastAPI on :8000),
+  `app` service in `docker-compose.yml`, deployed to https://mdt-copilot-rakathon.fly.dev behind a
+  shared password (ask yes-and). Fly app is on yes-and's personal Fly account.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
 
 ## Contributor 2

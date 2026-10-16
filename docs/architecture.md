@@ -8,6 +8,13 @@ browser ──► frontend (Vite dev server :5173) ──/api──► backend (
                                                             └──► LLM: Azure OpenAI gpt-6-luna-dz-eu (EU data zone, via APIM)
 ```
 
+Deployed (`Dockerfile`): one container on :8000 — FastAPI serves `/api` and the built frontend
+(`frontend/dist`, mounted in `app.py` when present). `Dataset/` is baked into the image (keep it in a
+private registry); mount a volume at `/app/data/records`. Live on Fly.io:
+https://mdt-copilot-rakathon.fly.dev (`fly.toml`, region `fra`, volume `records`, sleeps when idle).
+`APP_PASSWORD` (Fly secret) turns on one shared HTTP basic-auth password for everything except
+`/api/health`; unset (local dev) = no login.
+
 ## Workflow (what the UI is built around)
 
 One user at the screen (the board chair or preparing clinician); no per-specialty views. Each case

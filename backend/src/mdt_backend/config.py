@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     # TrueType fonts embedded in PDFs (need Czech glyphs); None = first found in pdf.FONT_CANDIDATES
     pdf_font: Path | None = None
     pdf_font_bold: Path | None = None
+    # Shared password (HTTP basic auth, any username) for the deployed app; unset = no login
+    app_password: str | None = None
 
 
 settings = Settings()
