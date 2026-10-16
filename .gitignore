@@ -11,3 +11,5 @@ dist/
 .claude/settings.local.json
 # MDT records written by the running app (demo state, not source)
 data/records/
+# Organisers' dataset (synthetic, redistribution terms unknown)
+Dataset
