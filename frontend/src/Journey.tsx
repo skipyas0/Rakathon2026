@@ -267,6 +267,7 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
   const [role, setRole] = useState<string | null>(null)
+  const [signer, setSigner] = useState(user) // the top-bar name, or typed here when it's empty
 
   const confirm = () => {
     if (compliant === false && !reason.trim()) return setAsking(true)
@@ -275,7 +276,7 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
       attendees: record.board.map((m) => ({ name: m.name, specialty: SPECIALTIES[m.specialty] ?? m.specialty })),
       guideline_compliant: compliant,
       deviation_reason: compliant === false ? reason.trim() : '',
-      confirmed_by: user,
+      confirmed_by: signer.trim(),
       confirmed_at: now(),
     }
     void save({ ...record, decision })
@@ -351,19 +352,19 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
       ) : (
         <>
           {asking && (
-            <label className="big-field">
-              Důvod odchylky
+            <label className="big-field deviation">
+              Důvod odchylky od doporučeného postupu
               <textarea autoFocus value={reason} onChange={(e) => setReason(e.target.value)} />
             </label>
           )}
-          <button
-            className="primary next"
-            onClick={confirm}
-            disabled={!user || compliant === null || (asking && !reason.trim())}
-            title={!user ? 'Zadejte své jméno vpravo nahoře' : ''}
-          >
-            Potvrdit
-          </button>
+          <div className="confirm-row">
+            {!user && (
+              <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Vaše jméno" aria-label="Kdo potvrzuje" />
+            )}
+            <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || (asking && !reason.trim())}>
+              {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
+            </button>
+          </div>
         </>
       )}
     </>
