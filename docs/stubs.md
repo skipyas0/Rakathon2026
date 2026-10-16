@@ -13,7 +13,7 @@ frontend works unchanged when the real pipeline replaces the stubs.
 ## The contract
 
 - One file per patient case: `data/stubs/<case-id>.json` (lowercase, hyphenated, e.g.
-  `crc-progression.json`). The `id` field must equal the filename without `.json`.
+  `crc-progression.json`). The folder doesn't exist while there are no stubs; create it. The `id` field must equal the filename without `.json`.
 - Shape: `Case` in [backend/src/mdt_backend/briefing.py](../backend/src/mdt_backend/briefing.py),
   built from `Statement` in [provenance.py](../backend/src/mdt_backend/provenance.py).
   As a template, save a generated case: `curl localhost:8000/api/cases/p03 > data/stubs/<id>.json`.
