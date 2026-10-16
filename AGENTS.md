@@ -61,6 +61,8 @@ cd backend && uv sync && uv run mdt-backend            # API → http://localhos
 cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check .
 cd frontend && npm install && npm run dev              # UI → http://localhost:5173, /api proxied to :8000
 cd frontend && npm run lint && npm run build
+docker compose up -d --build app                       # whole app in one container → http://localhost:8000
+fly deploy                                             # redeploy https://mdt-copilot-rakathon.fly.dev (needs Dataset/)
 ```
 
 Run the relevant checks before every commit; CI runs the same ones on each PR.

@@ -93,3 +93,12 @@ Decision: The organisers' dataset v1.1 lives in `Dataset/` at the repo root (git
 `Task.restriction.period.start`.
 Why: One dataset location for everyone; citation ids are the ones the dataset tells us to cite; the
 fictional cases would mix made-up guidelines/trials with the real ones.
+
+## 12. Deploy on Fly.io behind one shared password — 2026-10-16, yes-and
+Status: accepted
+Decision: The `Dockerfile` image (frontend + API, `Dataset/` baked in) runs on Fly.io as
+`mdt-copilot-rakathon` in `fra`, one machine with a `records` volume. `APP_PASSWORD` (Fly secret)
+enables HTTP basic auth for everything but `/api/health`.
+Why: A public URL for the team and the jury without exposing the organisers' dataset (redistribution
+terms unknown) or letting anyone lock decisions. Per-user login only when decisions must be
+attributed to authenticated clinicians.
