@@ -70,6 +70,8 @@ def test_phases_and_lock(client):
         == 200
     )
     assert status_of(client, "example") == "meeting"
+    agenda = {c["id"]: c for c in client.get("/api/cases").json()}
+    assert agenda["example"]["specialties"] == ["oncology", "radiology", "surgery"]
 
     task = {"what": "Informovat pacienta", "done": False}
     body = {"prep": prep, "board": BOARD, "decision": FINAL, "tasks": [task]}

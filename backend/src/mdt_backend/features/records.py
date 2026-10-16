@@ -172,6 +172,7 @@ def agenda() -> list[dict]:
                 "flags": sum(f.severity == "high" for f in c.red_flags),
                 "intent": r.decision.intent,
                 "status": status(r),
+                "specialties": sorted({m.specialty for m in r.board}),  # who may open it
             }
         )
     return out

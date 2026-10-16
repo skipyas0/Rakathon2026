@@ -66,7 +66,7 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =
-`prep`/`meeting`/`followup`/`closed`), `GET /api/cases/{id}` (`Case`),
+`prep`/`meeting`/`followup`/`closed`, board `specialties`; specialists see only their cases), `GET /api/cases/{id}` (`Case`),
 `GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
 case prepared without an MDT question or with fewer than 3 specialties on the board), `GET /api/sources/{type}/{id}` (title, date, author, full
 text of one record — for the source drawer; searches intake bundles too), `POST /api/intake` (upload a
@@ -90,6 +90,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `CasePage.tsx`      | Loads case + record, phase stepper, saving (optimistic, rolls back on error) |
 | `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |
 | `PrepPhase.tsx`     | Coordinator's workspace in tabs: Podklady (question, summary, discussion questions, sources), Nálezy (`Findings.tsx`: triage of each red flag / missing datum: na zasedání, předem → specialty, zamítnout + důvod), Komise (`Board.tsx`: members, specialty, chair; adopt the previous MDT's board, roles mapped by `specialtyOf`), Struktura (`Structure.tsx`: section order by drag & drop or ↑↓, hidden sections, detail level → `CaseRecord.layout`), Viditelnost (`Visibility.tsx`: specialty × section table → `CaseRecord.visibility`, default own section + patient via `visibleSections`), Odborníci (`Specialists.tsx`: per member AI claims confirmed in their section, assigned findings resolved, opinion written); readiness checklist (≥ 3 specialties to mark the case prepared). No confirm buttons here: clinicians confirm |
+| `SpecialistView.tsx` | Phase 1 for a specialist role ("Můj pohled"): shared header, sections per `visibleSections`, Potvrdit only in their own section, assigned findings with a resolution field, their opinion (`notes[specialty]`). Not on the board = no access |
 | `DecisionForm.tsx`  | Attendees + consent ticks, intent cards, structured decision; lock needs everyone's consent; locked read-only view |
 | `CaseView.tsx`      | Shared blocks: flags, missing data, trials, `Soon` (greyed-out "Připravujeme" for features waiting on the AI pipeline), `SectionItems` (items or running text per the detail level), full `CaseDetail` |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band), `TimelineStrip`     |

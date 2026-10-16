@@ -64,11 +64,11 @@ export default function App() {
 
       <main>
         {route ? (
-          <CasePage key={route.id} id={route.id} phase={route.phase} user={user} />
+          <CasePage key={route.id} id={route.id} phase={route.phase} user={user} role={role} />
         ) : hash === '#/new' && role === 'coordinator' ? (
           <Intake />
         ) : (
-          <Home />
+          <Home role={role} />
         )}
       </main>
 

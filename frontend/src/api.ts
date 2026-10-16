@@ -13,6 +13,7 @@ export type AgendaItem = {
   flags: number
   intent: Intent | null
   status: Status
+  specialties: string[] // on the board; a specialist sees only these cases
 }
 
 export type Confirmation = { by: string; at: string }

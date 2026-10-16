@@ -6,12 +6,13 @@ import { Back, Check, IntentChip } from './icons'
 import { fmtDate, type Phase, PHASES, TUMOURS } from './layout'
 import { MeetingPhase } from './MeetingPhase'
 import { PrepPhase } from './PrepPhase'
+import { SpecialistView } from './SpecialistView'
 
-type Props = { id: string; phase: Phase; user: string }
+type Props = { id: string; phase: Phase; user: string; role: string }
 
 const go = (id: string, p: Phase) => (location.hash = `#/case/${encodeURIComponent(id)}/${p}`)
 
-export function CasePage({ id, phase, user }: Props) {
+export function CasePage({ id, phase, user, role }: Props) {
   const [data, setData] = useState<{ c: Case; record: CaseRecord } | null>(null)
   const [error, setError] = useState('')
 
@@ -62,8 +63,8 @@ export function CasePage({ id, phase, user }: Props) {
               <a href={`#/case/${encodeURIComponent(c.id)}/${p.id}`} aria-current={p.id === phase ? 'step' : undefined} className={doneSteps[i] ? 'done' : ''}>
                 <span className="step-num">{doneSteps[i] ? <Check /> : i + 1}</span>
                 <span>
-                  <strong>{p.label}</strong>
-                  <small>{p.hint}</small>
+                  <strong>{p.id === 'prep' && role !== 'coordinator' ? 'Můj pohled' : p.label}</strong>
+                  <small>{p.id === 'prep' && role !== 'coordinator' ? 'Moje sekce a stanovisko' : p.hint}</small>
                 </span>
               </a>
             </li>
@@ -76,7 +77,12 @@ export function CasePage({ id, phase, user }: Props) {
         </div>
       )}
       {!user && <div className="banner">Zadejte své jméno vpravo nahoře – potvrzení a záznamy se podepisují vaším jménem.</div>}
-      {phase === 'prep' && <PrepPhase c={c} record={record} save={persist} user={user} go={(p) => go(c.id, p)} />}
+      {phase === 'prep' &&
+        (role === 'coordinator' ? (
+          <PrepPhase c={c} record={record} save={persist} user={user} go={(p) => go(c.id, p)} />
+        ) : (
+          <SpecialistView c={c} record={record} save={persist} user={user} role={role} />
+        ))}
       {phase === 'meeting' && <MeetingPhase c={c} record={record} save={persist} user={user} go={(p) => go(c.id, p)} />}
       {phase === 'followup' && <FollowupPhase c={c} record={record} save={save} user={user} />}
     </div>

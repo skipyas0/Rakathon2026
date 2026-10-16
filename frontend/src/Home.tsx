@@ -6,7 +6,8 @@ import { fmtDate, PHASES, STATUS_LABEL, STATUS_STEP, TUMOURS } from './layout'
 const TODAY = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })
 
 /** The meeting agenda: one card per patient; each phase can be (re)opened from the card. */
-export function Home() {
+/** Specialists see only the cases whose board includes their specialty. */
+export function Home({ role }: { role: string }) {
   const [items, setItems] = useState<AgendaItem[] | null>(null)
   const [error, setError] = useState('')
   useEffect(() => {
@@ -16,16 +17,21 @@ export function Home() {
     )
   }, [])
 
+  const visible = role === 'coordinator' ? items : items?.filter((it) => it.specialties.includes(role))
+
   return (
     <div className="page">
       <header className="home-head">
         <p className="eyebrow">{TODAY}</p>
         <h1>Program zasedání</h1>
-        {items && <p className="muted">{items.length} pacientů k projednání</p>}
+        {items && <p className="muted">{visible?.length} pacientů k projednání</p>}
+        {visible?.length === 0 && role !== 'coordinator' && (
+          <p className="banner">Nejste v komisi žádného případu. Komise sestavuje koordinátor v přípravě případu.</p>
+        )}
       </header>
       {error && <div className="banner bad">{error}</div>}
       <ul className="cards">
-        {items?.map((it) => {
+        {visible?.map((it) => {
           const step = STATUS_STEP[it.status]
           const href = (p: string) => `#/case/${encodeURIComponent(it.id)}/${p}`
           return (
