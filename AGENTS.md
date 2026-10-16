@@ -11,18 +11,22 @@ the agents never drift apart.
 the multidisciplinary tumour board (MDT), and records the board's final, human-made decision.
 Full brief (Czech): [docs/brief.md](docs/brief.md). Read it before working on a feature.
 
-Domain docs (Czech). When they conflict, the brief and the dataset's `README.md` win:
+Domain docs (Czech). `MDT_ZASEDANI_PROCES.md` is confirmed with the challenge partners and wins over
+the brief, which is general and may not hold. The consultation notes are unverified hints and defer
+to the brief, as their header says. The dataset's `README.md` is the authority on the data.
+Scope = the POVINNÉ items in `problem_statement.md`.
 
 | Doc | What it is |
 |-----|------------|
-| [docs/brief.md](docs/brief.md) | Official brief (original [brief.docx](docs/brief.docx)), the authority |
-| [docs/problem_statement.md](docs/problem_statement.md) | The same brief restructured as a checklist (mandatory vs BONUS) |
+| [docs/workflow-plan.md](docs/workflow-plan.md) | **Agreed target workflow, roles and screens** (English) |
+| [docs/brief.md](docs/brief.md) | Official brief (original [brief.docx](docs/brief.docx)), general |
+| [docs/problem_statement.md](docs/problem_statement.md) | The same brief restructured as a checklist (POVINNÉ vs BONUS) |
 | [docs/MDT_ZASEDANI_PROCES.md](docs/MDT_ZASEDANI_PROCES.md) | How a real MDT runs: roles, nomination, meeting, consensus, follow-up, repeat MDTs |
 | [docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md](docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md) | Mentor consultation notes: priorities and hints, not verified requirements |
 | [docs/template_zaver_zasedani/](docs/template_zaver_zasedani/) | Template for the board's final record, to be filled in live in the app |
 
-The board reaches its final conclusion by **consensus of all members**; in the app the **chair
-records it during the meeting** and confirms it on the board's behalf (decision #15).
+The board reaches its final conclusion by **consensus of all members**; in the app the
+**coordinator records it** and ticks each member's consent (decision #16).
 
 ## Ground rules (non-negotiable)
 
