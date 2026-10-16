@@ -14,16 +14,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 - Done (on `main`): three-phase MDT app (#1) on dataset v1.1, Docker image + Fly deploy (#2) at
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
   yes-and's personal account).
-- Role-based workflow per [workflow-plan.md](workflow-plan.md) (#16), one PR per step.
-  Branch `yes-and/meeting-records` = step 1: case ids per meeting (`p03-2026-10-21`; old records
-  keyed `p03` are dropped), role switcher with 14 specialties. Step 2: intake (`#/new`, FHIR
-  upload; PDF greyed out until AI extraction exists). Step 3: coordinator's
-  prep tabs (Podklady, Nálezy triage, Komise, Struktura, Viditelnost, Odborníci). Step 4: meeting dashboard
-  (urgent-only warnings, greyed-out decision support). Step 5: minutes with
-  per-member consent and lock, AI compliance check + FHIR export greyed out. Step 6: specialist view
-  (own cases only, visible sections, confirm own AI claims, resolve assigned findings, opinion).
-  Step 7: four states after
-  the meeting, patient's MDT history + audit trail. All 7 plan steps done; awaiting review.
+- Branch `yes-and/meeting-records` (pushed, not merged): the full role-based workflow (#16).
+- Branch `yes-and/simple-journey`: the simple coordinator journey (#18, docs/workflow-plan.md).
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
   `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.

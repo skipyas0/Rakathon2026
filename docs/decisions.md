@@ -199,3 +199,14 @@ role is recorded), role text as recorded, `chair` = the practitioner's qualifica
 silently.
 Why: The board for a repeat MDT is usually the same team; the dataset already has it, so the
 coordinator starts from facts instead of typing five names.
+
+## 18. One simple journey for the coordinator — 2026-10-17, yes-and
+Status: accepted (supersedes #16)
+Decision: The frontend is one linear journey (docs/workflow-plan.md): upload → board (specialty
+bubbles) → patient → key facts → trends → léčebný záměr → závěr → potvrzení, plus a case overview.
+No role switcher, specialist views, triage, visibility or section configuration in the UI.
+Soulad s doporučenými postupy is derived: the chosen léčebný záměr equals the recommended one.
+Until the AI pipeline recommends, a hand-written example per dataset patient ("ukázka", citing a
+real guideline passage) stands in; stanoviska are examples too. Potvrdit is the board's consensus,
+no per-member consent. The full role-based version stays on branch `yes-and/meeting-records`.
+Why: The demo has to be simple and legible end to end; the role-based screens were too much.
