@@ -135,3 +135,15 @@ Per-member sign-off is not built. In real practice the coordinator often keeps t
 prototype that is the chair.
 Why: Matches the confirmed process (the chair can't decide alone) while keeping one person at the
 screen (#8). "Chair's confirmation" in #6 means "the chair records the board's agreement".
+
+## 16. Role-based workflow: coordinator runs the case — 2026-10-16, yes-and
+Status: accepted (supersedes #8 and #15)
+Decision: Target workflow in [workflow-plan.md](workflow-plan.md). Roles via a switcher (no login):
+the coordinator (intake, triage, board, structure, visibility, minutes) and the specialists (own
+section, confirm AI claims, opinion); the chair is one of the specialists, marked, with no extra
+rights. The coordinator writes the minutes and ticks each member's consent before locking. Records
+are per meeting, not per patient. Scope = POVINNÉ items of `problem_statement.md`;
+`MDT_ZASEDANI_PROCES.md` wins over the brief (the consultation notes don't).
+Why: The partners' process (MDT_ZASEDANI_PROCES.md) has the coordinator keep the record and all
+members consent; specialists need their own filtered view; patients return to the MDT, so one
+record per patient would overwrite history.

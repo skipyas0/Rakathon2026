@@ -21,7 +21,8 @@ https://mdt-copilot-rakathon.fly.dev (`fly.toml`, region `fra`, volume `records`
 
 ## Workflow (what the UI is built around)
 
-One user at the screen (the board chair or preparing clinician); no per-specialty views. Each case
+Being replaced by the role-based workflow in [workflow-plan.md](workflow-plan.md) (decision #16).
+Today: one user at the screen (the board chair or preparing clinician); no per-specialty views. Each case
 goes through three phases, and any phase can be reopened at any time:
 
 1. **Před zasedáním** (`prep`) — consolidated sources, problems (red flags + missing data), MDT

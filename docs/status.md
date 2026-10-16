@@ -14,8 +14,9 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 - Done (on `main`): three-phase MDT app (#1) on dataset v1.1, Docker image + Fly deploy (#2) at
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
   yes-and's personal account).
-- Branch `yes-and/docs-refresh`: domain docs linked from `AGENTS.md`, consensus rule (#15); decision numbers fixed
-  after the #12/#13 collision (Fly deploy is now #14).
+- Branch `yes-and/mdt-workflow`: role-based workflow per [workflow-plan.md](workflow-plan.md) (#16).
+  Step 1 next: records per meeting + role switcher. Needs backend changes (listed in the plan),
+  kept in `features/` to avoid clashing with Contributor 2.
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
   `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
