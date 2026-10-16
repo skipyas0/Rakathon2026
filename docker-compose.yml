@@ -1,0 +1,9 @@
+services:
+  fhir:
+    image: hapiproject/hapi:v8.12.0-2 # FHIR R4, base URL http://localhost:8080/fhir
+    ports:
+      - "8080:8080"
+    environment:
+      hapi.fhir.allow_external_references: "true"
+    # ponytail: data lives in the container (survives restart, not `down`); mock data is reloadable.
+    # Add a volume if we ever need persistence (image runs as non-root: fix ownership first).

@@ -1,0 +1,32 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: light dark;
+  --ai: #b25e00;
+  --ai-bg: color-mix(in srgb, var(--ai) 12%, transparent);
+  --human: #1f7a3a;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* AI vs clinician-confirmed content must always be visually distinct (brief, section 1). */
+.statement {
+  border-left: 4px solid var(--human);
+  padding: 0.5rem 0.75rem;
+  margin: 0.5rem 0;
+}
+.statement.ai.pending {
+  border-left: 4px dashed var(--ai);
+  background: var(--ai-bg);
+}
+.statement .badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ai);
+}
+.statement p {
+  margin: 0.25rem 0;
+}
