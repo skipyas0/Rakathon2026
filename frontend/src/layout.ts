@@ -90,7 +90,9 @@ export const fmtDateTime = (d: string) => new Date(d).toLocaleString('cs-CZ', { 
 export function load<T>(key: string, fallback: T): T {
   try {
     const v = localStorage.getItem(key)
-    return v ? (JSON.parse(v) as T) : fallback
+    const parsed: unknown = v ? JSON.parse(v) : fallback
+    // storage outlives app versions: a value of another type (e.g. an old object) is ignored
+    return typeof parsed === typeof fallback ? (parsed as T) : fallback
   } catch {
     return fallback
   }
