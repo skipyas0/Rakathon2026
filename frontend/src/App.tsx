@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { CasePage } from './CasePage'
 import { Home } from './Home'
+import { Intake } from './Intake'
 import { Settings, User } from './icons'
 import { DEFAULT_TEMPLATE, load, type Phase, PHASES, ROLES, save, SECTIONS, type Template } from './layout'
 import { SourceDrawer } from './SourceDrawer'
 
-/** #/ = agenda, #/case/<id>/<phase> = a case in one of its three phases. */
+/** #/ = agenda, #/new = intake (coordinator), #/case/<id>/<phase> = a case in one of its phases. */
 function parse(hash: string): { id: string; phase: Phase } | null {
   const [, kind, id, phase] = hash.split('/')
   if (kind !== 'case' || !id) return null
@@ -13,7 +14,8 @@ function parse(hash: string): { id: string; phase: Phase } | null {
 }
 
 export default function App() {
-  const [route, setRoute] = useState(() => parse(location.hash))
+  const [hash, setHash] = useState(location.hash)
+  const route = parse(hash)
   const [name, setName] = useState(() => load('mdt.user', ''))
   const [role, setRole] = useState(() => load('mdt.role', 'coordinator'))
   const [template, setTemplate] = useState<Template>(() => load('mdt.template', DEFAULT_TEMPLATE))
@@ -26,7 +28,7 @@ export default function App() {
   useEffect(() => save('mdt.template', template), [template])
   useEffect(() => {
     const onHash = () => {
-      setRoute(parse(location.hash))
+      setHash(location.hash)
       scrollTo(0, 0)
     }
     addEventListener('hashchange', onHash)
@@ -52,6 +54,16 @@ export default function App() {
         <a href="#/" className="brand">
           <span className="logo">MDT</span> Copilot
         </a>
+        <nav className="topnav">
+          <a href="#/" className={hash === '#/new' || route ? '' : 'on'}>
+            Program
+          </a>
+          {role === 'coordinator' && (
+            <a href="#/new" className={hash === '#/new' ? 'on' : ''}>
+              + Nový případ
+            </a>
+          )}
+        </nav>
         <span className="spacer" />
         <label className="user">
           <User />
@@ -69,7 +81,15 @@ export default function App() {
         </button>
       </header>
 
-      <main>{route ? <CasePage key={route.id} id={route.id} phase={route.phase} user={user} template={template} /> : <Home />}</main>
+      <main>
+        {route ? (
+          <CasePage key={route.id} id={route.id} phase={route.phase} user={user} template={template} />
+        ) : hash === '#/new' && role === 'coordinator' ? (
+          <Intake />
+        ) : (
+          <Home />
+        )}
+      </main>
 
       <dialog ref={settings} className="modal" onClick={(e) => e.target === settings.current && settings.current.close()}>
         <div className="modal-body">

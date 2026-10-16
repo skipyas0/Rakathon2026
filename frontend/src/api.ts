@@ -42,6 +42,8 @@ export type CaseRecord = {
   tasks: Task[]
 }
 
+export type IntakeKind = 'fhir' | 'pdf'
+
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, init)
   const body = await r.json()
@@ -63,5 +65,11 @@ export const api = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record),
+    }),
+  intake: (kind: IntakeKind, files: { name: string; data: string }[]) =>
+    call<{ case_id: string }>('/api/intake', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, files }),
     }),
 }

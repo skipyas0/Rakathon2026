@@ -79,7 +79,8 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 
 | File                | Role                                                          |
 |---------------------|---------------------------------------------------------------|
-| `App.tsx`           | Shell: top bar (user name, role switcher, board template dialog), hash routing `#/`, `#/case/<id>/<phase>` |
+| `App.tsx`           | Shell: top bar (Program / Nový případ nav, user name, role switcher, board template dialog), hash routing `#/`, `#/new` (coordinator only), `#/case/<id>/<phase>` |
+| `Intake.tsx`        | Nový případ: a FHIR file (drag & drop; the PDF option is shown greyed out until extraction exists), upload as base64, then opens the case's preparation |
 | `Home.tsx`          | Agenda: patient cards with phase steps (each phase links directly) |
 | `CasePage.tsx`      | Loads case + record, phase stepper, saving (optimistic, rolls back on error) |
 | `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |

@@ -16,7 +16,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   yes-and's personal account).
 - Role-based workflow per [workflow-plan.md](workflow-plan.md) (#16), one PR per step.
   Branch `yes-and/meeting-records` = step 1: case ids per meeting (`p03-2026-10-21`; old records
-  keyed `p03` are dropped), role switcher with 14 specialties. Step 2 (intake) next.
+  keyed `p03` are dropped), role switcher with 14 specialties. Step 2: intake (`#/new`, FHIR
+  upload; PDF greyed out until AI extraction exists). Step 3 (coordinator prep) next.
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
   `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
