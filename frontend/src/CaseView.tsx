@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react'
-import type { CaseRecord } from './api'
-import type { Case, RedFlag } from './briefing'
+import { Fragment, type ReactNode } from 'react'
+import type { CaseRecord, Layout } from './api'
+import type { Case, RedFlag, Section } from './briefing'
 import { Alert, Missing } from './icons'
-import { fmtDate, fmtDateTime, KIND, orderedSections, SECTIONS, type Template } from './layout'
+import { fmtDate, fmtDateTime, KIND, orderedSections, SECTIONS } from './layout'
 import type { Statement } from './provenance'
 import type { Render } from './render'
 
@@ -44,6 +44,18 @@ export function TrialList({ c, S, variant = 'card' }: { c: Case; S: Render; vari
   ))
 }
 
+/** A section's statements as separate items, or as running text (the coordinator's detail level). */
+export function SectionItems({ sec, detail, S }: { sec: Section; detail: Layout['detail']; S: Render }) {
+  if (detail === 'bullets') return sec.items.map((s, i) => S(`sections.${sec.id}.${i}`, s))
+  return (
+    <p className="narrative">
+      {sec.items.map((s, i) => (
+        <Fragment key={i}>{S(`sections.${sec.id}.${i}`, s, 'inline')} </Fragment>
+      ))}
+    </p>
+  )
+}
+
 const Block = ({ title, children }: { title: string; children: ReactNode }) => (
   <section className="card">
     <h3>{title}</h3>
@@ -52,7 +64,7 @@ const Block = ({ title, children }: { title: string; children: ReactNode }) => (
 )
 
 /** Everything in the briefing, for the after-meeting overview and the printed record. */
-export function CaseDetail({ c, record, template, S }: { c: Case; record: CaseRecord; template: Template; S: Render }) {
+export function CaseDetail({ c, record, S }: { c: Case; record: CaseRecord; S: Render }) {
   const empty = <p className="muted">Bez položek.</p>
   return (
     <div className="detail">
@@ -71,11 +83,11 @@ export function CaseDetail({ c, record, template, S }: { c: Case; record: CaseRe
           ))}
         </ol>
       </Block>
-      {orderedSections(c, template).map((sec) => {
+      {orderedSections(c, record.layout).map((sec) => {
         const note = record.notes[sec.id]
         return (
           <Block key={sec.id} title={SECTIONS[sec.id] ?? sec.title}>
-            {sec.items.map((s, i) => S(`sections.${sec.id}.${i}`, s))}
+            <SectionItems sec={sec} detail={record.layout.detail} S={S} />
             {note && (
               <div className="note">
                 <span className="eyebrow">Stanovisko odbornosti</span>

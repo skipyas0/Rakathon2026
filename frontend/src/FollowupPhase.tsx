@@ -5,14 +5,12 @@ import { CaseDetail } from './CaseView'
 import { confirmer, renderer } from './render'
 import { DecisionForm } from './DecisionForm'
 import { Doc } from './icons'
-import type { Template } from './layout'
 
 type Props = {
   c: Case
   record: CaseRecord
   save: (r: CaseRecord) => Promise<void>
   user: string
-  template: Template
 }
 
 const STANDARD_TASKS = (d: Decision): Task[] => [
@@ -23,7 +21,7 @@ const STANDARD_TASKS = (d: Decision): Task[] => [
 ]
 
 /** Phase 3: record the decision, assign follow-up, export; full briefing alongside for reference. */
-export function FollowupPhase({ c, record, save, user, template }: Props) {
+export function FollowupPhase({ c, record, save, user }: Props) {
   const S = renderer(record, confirmer(record, (r) => void save(r).catch(() => {}), user))
   const setTasks = (tasks: Task[]) => save({ ...record, tasks }).catch(() => {})
   const exportPdf = () => {
@@ -55,7 +53,7 @@ export function FollowupPhase({ c, record, save, user, template }: Props) {
 
       <aside className="phase-aside wide-aside">
         <h3 className="aside-title">Podklady</h3>
-        <CaseDetail c={c} record={record} template={template} S={S} />
+        <CaseDetail c={c} record={record} S={S} />
       </aside>
     </div>
   )

@@ -79,14 +79,14 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 
 | File                | Role                                                          |
 |---------------------|---------------------------------------------------------------|
-| `App.tsx`           | Shell: top bar (Program / Nový případ nav, user name, role switcher, board template dialog), hash routing `#/`, `#/new` (coordinator only), `#/case/<id>/<phase>` |
+| `App.tsx`           | Shell: top bar (Program / Nový případ nav, user name, role switcher), hash routing `#/`, `#/new` (coordinator only), `#/case/<id>/<phase>` |
 | `Intake.tsx`        | Nový případ: a FHIR file (drag & drop; the PDF option is shown greyed out until extraction exists), upload as base64, then opens the case's preparation |
 | `Home.tsx`          | Agenda: patient cards with phase steps (each phase links directly) |
 | `CasePage.tsx`      | Loads case + record, phase stepper, saving (optimistic, rolls back on error) |
 | `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |
-| `PrepPhase.tsx`     | Coordinator's workspace in tabs: Podklady (question, summary, discussion questions, sources), Nálezy (`Findings.tsx`: triage of each red flag / missing datum: na zasedání, předem → specialty, zamítnout + důvod), Komise (`Board.tsx`: members, specialty, chair; adopt the previous MDT's board, roles mapped by `specialtyOf`); readiness checklist (≥ 3 specialties to mark the case prepared). No confirm buttons here: clinicians confirm |
+| `PrepPhase.tsx`     | Coordinator's workspace in tabs: Podklady (question, summary, discussion questions, sources), Nálezy (`Findings.tsx`: triage of each red flag / missing datum: na zasedání, předem → specialty, zamítnout + důvod), Komise (`Board.tsx`: members, specialty, chair; adopt the previous MDT's board, roles mapped by `specialtyOf`), Struktura (`Structure.tsx`: section order by drag & drop or ↑↓, hidden sections, detail level → `CaseRecord.layout`); readiness checklist (≥ 3 specialties to mark the case prepared). No confirm buttons here: clinicians confirm |
 | `DecisionForm.tsx`  | Intent cards + structured decision; locked read-only view     |
-| `CaseView.tsx`      | Shared blocks: flags, missing data, trials, full `CaseDetail` |
+| `CaseView.tsx`      | Shared blocks: flags, missing data, trials, `SectionItems` (items or running text per the detail level), full `CaseDetail` |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band), `TimelineStrip`     |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
 | `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records; `useSources()` opens it |
@@ -96,7 +96,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `api.ts`            | Backend calls + TS mirror of records types                    |
 | `provenance.ts` / `briefing.ts` | TS mirrors of backend models                      |
 
-Per-browser settings (user name, role, board template) live in localStorage. Confirmations, notes and
+Per-browser settings (user name, role) live in localStorage; the section layout is per case. Confirmations, notes and
 the decision are signed `name (role)`; roles = Koordinátor + `SPECIALTIES` in `layout.ts`. Shared state lives in the
 backend. Export = browser print-to-PDF (`@media print` in `index.css`).
 

@@ -1,29 +1,28 @@
 import { useState } from 'react'
 import type { CaseRecord } from './api'
 import type { Case } from './briefing'
-import { TrialList } from './CaseView'
+import { SectionItems, TrialList } from './CaseView'
 import { confirmer, isPending, now, renderer } from './render'
 import { TimelineStrip, TrendChart } from './Charts'
 import { Alert, Arrow, Back, Check, IntentChip, Quote, Robot } from './icons'
-import { fmtDateTime, orderedSections, type Phase, SECTIONS, SEVERITY_RANK, type Template, TUMOURS } from './layout'
+import { fmtDateTime, orderedSections, type Phase, SECTIONS, SEVERITY_RANK, TUMOURS } from './layout'
 
 type Props = {
   c: Case
   record: CaseRecord
   save: (r: CaseRecord) => void
   user: string
-  template: Template
   go: (p: Phase) => void
 }
 
 /** Phase 2: one calm screen for the whole board (the chair drives it). Statements are inline and
  * open their sources on click; specialist sections expand on demand for detail and the
  * specialist's view. */
-export function MeetingPhase({ c, record, save, user, template, go }: Props) {
+export function MeetingPhase({ c, record, save, user, go }: Props) {
   const S = renderer(record)
   const [open, setOpen] = useState<string | null>(null)
   const question = record.prep.question || c.question?.text
-  const sections = orderedSections(c, template)
+  const sections = orderedSections(c, record.layout)
   const patient = c.sections.find((s) => s.id === 'patient')
   const flags = [...c.red_flags.entries()].sort(([, a], [, b]) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
 
@@ -164,7 +163,7 @@ function SpecialistPanel({
   save,
   user,
   close,
-}: Omit<Props, 'template' | 'go'> & { id: string; close: () => void }) {
+}: Omit<Props, 'go'> & { id: string; close: () => void }) {
   const sec = c.sections.find((s) => s.id === id)!
   const note = record.notes[id]
   const [text, setText] = useState(note?.text ?? '')
@@ -183,7 +182,9 @@ function SpecialistPanel({
         </button>
       </header>
       <div className="panel-grid">
-        <div>{sec.items.map((s, i) => S(`sections.${id}.${i}`, s))}</div>
+        <div>
+          <SectionItems sec={sec} detail={record.layout.detail} S={S} />
+        </div>
         <form
           className="note-form"
           onSubmit={(e) => {

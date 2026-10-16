@@ -1,6 +1,5 @@
-// Labels and the board template (which specialist sections show, in what order). The template is a
-// per-browser setting in localStorage. ponytail: per-tumour-board templates (brief BONUS) can
-// replace DEFAULT_TEMPLATE later.
+// Labels, roles and section ordering. The section layout is per case (CaseRecord.layout, set by the
+// coordinator). ponytail: per-tumour-board default layouts (brief BONUS) can come later.
 import type { Intent, Status } from './api'
 import type { Case, Section, TimelineEvent } from './briefing'
 
@@ -96,7 +95,6 @@ export const STATUS_LABEL: Record<Status, string> = {
 }
 
 export type Template = { order: string[]; hidden: string[] }
-export const DEFAULT_TEMPLATE: Template = { order: Object.keys(SECTIONS), hidden: [] }
 
 /** The case's sections in template order; sections the template doesn't know go last. */
 export function orderedSections(c: Case, t: Template): Section[] {

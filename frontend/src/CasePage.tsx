@@ -3,15 +3,15 @@ import { api, type CaseRecord } from './api'
 import type { Case } from './briefing'
 import { FollowupPhase } from './FollowupPhase'
 import { Back, Check, IntentChip } from './icons'
-import { fmtDate, type Phase, PHASES, type Template, TUMOURS } from './layout'
+import { fmtDate, type Phase, PHASES, TUMOURS } from './layout'
 import { MeetingPhase } from './MeetingPhase'
 import { PrepPhase } from './PrepPhase'
 
-type Props = { id: string; phase: Phase; user: string; template: Template }
+type Props = { id: string; phase: Phase; user: string }
 
 const go = (id: string, p: Phase) => (location.hash = `#/case/${encodeURIComponent(id)}/${p}`)
 
-export function CasePage({ id, phase, user, template }: Props) {
+export function CasePage({ id, phase, user }: Props) {
   const [data, setData] = useState<{ c: Case; record: CaseRecord } | null>(null)
   const [error, setError] = useState('')
 
@@ -77,8 +77,8 @@ export function CasePage({ id, phase, user, template }: Props) {
       )}
       {!user && <div className="banner">Zadejte své jméno vpravo nahoře – potvrzení a záznamy se podepisují vaším jménem.</div>}
       {phase === 'prep' && <PrepPhase c={c} record={record} save={persist} user={user} go={(p) => go(c.id, p)} />}
-      {phase === 'meeting' && <MeetingPhase c={c} record={record} save={persist} user={user} template={template} go={(p) => go(c.id, p)} />}
-      {phase === 'followup' && <FollowupPhase c={c} record={record} save={save} user={user} template={template} />}
+      {phase === 'meeting' && <MeetingPhase c={c} record={record} save={persist} user={user} go={(p) => go(c.id, p)} />}
+      {phase === 'followup' && <FollowupPhase c={c} record={record} save={save} user={user} />}
     </div>
   )
 }

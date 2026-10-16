@@ -9,6 +9,7 @@ import type { Source } from './provenance'
 import { findingKeys, isPending, now, renderer } from './render'
 import { sourceType, useSources } from './sources'
 import { StatementView } from './StatementView'
+import { Structure } from './Structure'
 
 type Props = {
   c: Case
@@ -18,8 +19,8 @@ type Props = {
   go: (p: Phase) => void
 }
 
-/** Phase 1, the coordinator's workspace: documents and question, triage of findings, the board
- * (more tabs follow: structure, visibility, specialists). Clinicians confirm AI claims elsewhere. */
+/** Phase 1, the coordinator's workspace: documents and question, triage of findings, the board,
+ * section structure (more tabs follow: visibility, specialists). Clinicians confirm AI claims elsewhere. */
 export function PrepPhase({ c, record, save, user, go }: Props) {
   const [tab, setTab] = useState('docs')
   const [question, setQuestion] = useState(record.prep.question || c.question?.text || '')
@@ -47,6 +48,7 @@ export function PrepPhase({ c, record, save, user, go }: Props) {
       body: <Findings c={c} record={record} save={save} user={user} />,
     },
     { id: 'board', label: 'Komise', count: String(record.board.length), body: <Board c={c} record={record} save={save} /> },
+    { id: 'structure', label: 'Struktura', body: <Structure c={c} record={record} save={save} /> },
   ]
 
   return (

@@ -1221,8 +1221,7 @@ dialog::backdrop {
   max-height: 100vh;
   width: min(480px, 100vw);
 }
-.drawer-body,
-.modal-body {
+.drawer-body {
   padding: 1.25rem 1.5rem;
 }
 .drawer-body header {
@@ -1280,21 +1279,37 @@ code {
   font-size: 0.75rem;
   color: var(--muted);
 }
-.modal {
-  border-radius: var(--radius);
-  width: min(440px, 92vw);
+.structure {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
 }
-.template {
-  padding-left: 1.2rem;
-}
-.template li {
+.structure li {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.15rem 0;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  margin-bottom: 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: grab;
 }
-.template label {
+.structure li.dragging {
+  opacity: 0.5;
+}
+.structure li.off label {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.structure label {
   flex: 1;
+}
+.structure .handle {
+  color: var(--muted);
+}
+.narrative .stmt-inline {
+  margin-right: 0.15rem;
 }
 
 @media (max-width: 640px) {
