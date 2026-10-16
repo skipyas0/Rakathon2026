@@ -2,10 +2,10 @@ import { useState } from 'react'
 import type { CaseRecord } from './api'
 import type { Case } from './briefing'
 import { SectionItems, TrialList } from './CaseView'
-import { confirmer, isPending, now, renderer } from './render'
+import { confirmer, findingKeys, isPending, missing, now, renderer } from './render'
 import { TimelineStrip, TrendChart } from './Charts'
-import { Alert, Arrow, Back, Check, IntentChip, Quote, Robot } from './icons'
-import { fmtDateTime, orderedSections, type Phase, SECTIONS, SEVERITY_RANK, TUMOURS } from './layout'
+import { Alert, Arrow, Back, Check, IntentChip, Missing as MissingIcon, Quote, Robot } from './icons'
+import { fmtDateTime, orderedSections, type Phase, SECTIONS, TUMOURS } from './layout'
 
 type Props = {
   c: Case
@@ -15,16 +15,26 @@ type Props = {
   go: (p: Phase) => void
 }
 
-/** Phase 2: one calm screen for the whole board (the chair drives it). Statements are inline and
- * open their sources on click; specialist sections expand on demand for detail and the
- * specialist's view. */
+/** Phase 2: the board's dashboard, projected while the coordinator keeps the minutes. One calm
+ * screen: question, key facts, only urgent warnings; every statement opens its sources on click,
+ * specialist sections expand on demand. */
 export function MeetingPhase({ c, record, save, user, go }: Props) {
   const S = renderer(record)
   const [open, setOpen] = useState<string | null>(null)
   const question = record.prep.question || c.question?.text
   const sections = orderedSections(c, record.layout)
   const patient = c.sections.find((s) => s.id === 'patient')
-  const flags = [...c.red_flags.entries()].sort(([, a], [, b]) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
+  const [more, setMore] = useState(false)
+  const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
+  // findings the coordinator didn't dismiss; urgent = high severity or routed to the meeting
+  const gaps = new Map(missing(c))
+  const live = findingKeys(c).filter((k) => record.triage[k]?.action !== 'dismissed')
+  const urgent = (k: string) =>
+    record.triage[k]?.action === 'meeting' || (k.startsWith('red_flags.') && c.red_flags[Number(k.split('.')[1])].severity === 'high')
+  const shown = more ? live : live.filter(urgent)
+  const dismissed = findingKeys(c).length - live.length
+  const unresolved = (spec: string) =>
+    Object.values(record.triage).filter((t) => t.action === 'before' && t.assignee === spec && !t.resolution.trim()).length
 
   return (
     <div className="meeting">
@@ -33,8 +43,11 @@ export function MeetingPhase({ c, record, save, user, go }: Props) {
           <div className="slide-meta">
             <span className="chip">{TUMOURS[c.tumour] ?? c.tumour}</span>
             <IntentChip intent={record.decision.intent} />
+            {ecog >= 0 && <span className="ecog">{S(`summary.${ecog}`, c.summary[ecog], 'inline')}</span>}
           </div>
-          <p className="eyebrow">Otázka pro komisi</p>
+          <p className="eyebrow">
+            Otázka pro komisi{c.question?.confirmed_by && ` · z nominace, ${c.question.confirmed_by}`}
+          </p>
           <h2 className="slide-question">{question ?? 'Chybí otázka pro komisi'}</h2>
           {(record.prep.questions.length > 0 || c.decision_support.questions.length > 0) && (
             <ul className="discuss">
@@ -52,20 +65,29 @@ export function MeetingPhase({ c, record, save, user, go }: Props) {
           <section>
             <h3>Klíčová fakta</h3>
             <ul className="facts">
-              {c.summary.map((s, i) => (
-                <li key={i}>{S(`summary.${i}`, s, 'inline')}</li>
-              ))}
+              {c.summary.map((s, i) => i !== ecog && <li key={i}>{S(`summary.${i}`, s, 'inline')}</li>)}
             </ul>
-            {flags.length > 0 && (
+            {live.length > 0 && (
               <>
-                <h3>Upozornění</h3>
+                <h3>
+                  {more ? 'Všechna upozornění' : 'Urgentní upozornění'} ({shown.length})
+                </h3>
                 <ul className="facts flags-inline">
-                  {flags.map(([i, f]) => (
-                    <li key={i} className={`sev-${f.severity}`}>
-                      <Alert /> {S(`red_flags.${i}`, f.statement, 'inline')}
-                    </li>
-                  ))}
+                  {shown.map((k) => {
+                    const f = k.startsWith('red_flags.') ? c.red_flags[Number(k.split('.')[1])] : null
+                    return (
+                      <li key={k} className={f ? `sev-${f.severity}` : 'sev-missing'}>
+                        {f ? <Alert /> : <MissingIcon />} {S(k, f ? f.statement : gaps.get(k)!, 'inline')}
+                      </li>
+                    )
+                  })}
                 </ul>
+                {live.length > live.filter(urgent).length && (
+                  <button className="link" onClick={() => setMore(!more)}>
+                    {more ? 'Jen urgentní' : `+ ${live.length - live.filter(urgent).length} dalších`}
+                  </button>
+                )}
+                {dismissed > 0 && <small className="muted"> · {dismissed} zamítnuto koordinátorem</small>}
               </>
             )}
           </section>
@@ -89,15 +111,15 @@ export function MeetingPhase({ c, record, save, user, go }: Props) {
                 ))}
               </ol>
             ) : (
-              <p className="muted small">Doporučené postupy zatím nejsou k dispozici – AI analýza nebyla spuštěna.</p>
+              <Soon>Možnosti léčby s citací doporučených postupů doplní AI.</Soon>
             )}
-            {c.decision_support.trials.length > 0 && (
-              <>
-                <h3>Klinické studie</h3>
-                <div className="trials-inline">
-                  <TrialList c={c} S={S} variant="inline" />
-                </div>
-              </>
+            <h3>Klinické studie</h3>
+            {c.decision_support.trials.length ? (
+              <div className="trials-inline">
+                <TrialList c={c} S={S} variant="inline" />
+              </div>
+            ) : (
+              <Soon>Předběžný screening otevřených studií doplní AI.</Soon>
             )}
             {patient && patient.items.length > 0 && (
               <div className="patient-voice">
@@ -125,6 +147,7 @@ export function MeetingPhase({ c, record, save, user, go }: Props) {
                 onClick={() => setOpen(open === sec.id ? null : sec.id)}
               >
                 {SECTIONS[sec.id] ?? sec.title}
+                {unresolved(sec.id) > 0 && <Alert />}
                 {record.notes[sec.id] ? <Check /> : pending > 0 && <Robot label={`${pending} návrhů AI`} />}
               </button>
             )
@@ -211,5 +234,14 @@ function SpecialistPanel({
         </form>
       </div>
     </section>
+  )
+}
+
+/** A feature that waits for the AI pipeline: shown greyed out, never simulated. */
+function Soon({ children }: { children: string }) {
+  return (
+    <p className="soon">
+      <span className="chip muted-chip">Připravujeme</span> {children}
+    </p>
   )
 }

@@ -27,9 +27,12 @@ goes through three phases, and any phase can be reopened at any time:
 
 1. **Před zasedáním** (`prep`) — consolidated sources, problems (red flags + missing data), MDT
    question, discussion questions, confirming AI statements → "Připraveno k projednání".
-2. **Zasedání** (`meeting`) — one low-clutter "slide" for the board: question, key facts, trend
-   charts, timeline, options/trials, patient's voice; specialist sections expand for detail and
-   the specialist's view (stored as a note).
+2. **Zasedání** (`meeting`) — the board's dashboard, projected: question (with who asked it), ECOG
+   doctor vs patient in the header, key facts, only urgent warnings (high severity or routed *na
+   zasedání*; the rest behind "+ N dalších", dismissed ones left out), trend charts, timeline,
+   decision support (greyed out "Připravujeme" until the AI pipeline fills it), patient's voice;
+   specialist tiles expand for detail and the specialist's view (stored as a note) and flag
+   unresolved findings assigned to them.
 3. **Po zasedání** (`followup`) — treatment intent + structured decision, action plan tasks, PDF
    export; full briefing alongside. The board decides by consensus; the chair records the decision
    and locks it on the board's behalf (decisions #15).

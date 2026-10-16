@@ -1585,3 +1585,17 @@ code {
 .matrix.progress td {
   font-weight: 400;
 }
+
+/* Dashboard additions */
+.slide-meta .ecog {
+  margin-left: auto;
+  font-weight: 500;
+}
+.soon {
+  color: var(--muted);
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+.flags-inline .sev-missing {
+  color: var(--ink-2);
+}
