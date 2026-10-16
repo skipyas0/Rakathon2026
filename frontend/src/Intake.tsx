@@ -36,7 +36,7 @@ export function Intake() {
       <h1>Nahrání</h1>
       <div className="upload">
         <label
-          className={`bubble big-bubble ${over ? 'on' : ''}`}
+          className={`upload-box ${over ? 'over' : ''}`}
           onDragOver={(e) => {
             e.preventDefault()
             setOver(true)
@@ -52,8 +52,9 @@ export function Intake() {
           <Doc />
           <strong>{busy ? 'Nahrávám…' : 'FHIR'}</strong>
         </label>
+        <span className="or">nebo</span>
         {/* ponytail: enable once the backend extracts PDFs (POST /api/intake answers 501 until then) */}
-        <div className="bubble big-bubble soon" aria-disabled>
+        <div className="upload-box soon" aria-disabled>
           <Doc />
           <strong>PDF</strong>
           <span className="chip muted-chip">Připravujeme</span>

@@ -852,34 +852,63 @@ code {
 }
 .upload {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 2rem auto;
+  max-width: 760px;
 }
-.big-bubble {
+.upload-box {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 320px;
+  aspect-ratio: 4 / 3;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  font-size: 1.4rem;
-  cursor: pointer;
+  gap: 0.5rem;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 1.3rem;
   position: relative;
+  cursor: pointer;
 }
-.big-bubble:hover:not(.soon) {
-  border-color: var(--ok);
+.upload-box .icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--teal);
 }
-.big-bubble input {
+.upload-box:hover:not(.soon),
+.upload-box.over {
+  border-style: solid;
+  border-color: var(--teal);
+  background: var(--teal-soft);
+}
+.upload-box input {
   position: absolute;
   inset: 0;
   opacity: 0;
   cursor: pointer;
 }
-.big-bubble.soon {
+.upload-box.soon {
   opacity: 0.45;
   cursor: not-allowed;
+}
+.upload-box.soon .icon {
+  color: var(--muted);
+}
+.upload .or {
+  color: var(--muted);
+}
+@media (max-width: 560px) {
+  .upload {
+    flex-direction: column;
+  }
+  .upload-box {
+    width: 100%;
+  }
 }
 button.next {
   display: flex;
