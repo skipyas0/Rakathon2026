@@ -1,0 +1,1 @@
+Tohle je template na finalni output zaveru zasedani. Template ma byt k dispozici uz v te apce tak, aby do nej mohli pri zasedani komise prubezne doplnovat a menit veci, co se tam musi vyplnit. vyplneny template je pak outomatickym outputem, co se ulozi jako zaver zasedani.

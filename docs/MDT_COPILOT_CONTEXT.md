@@ -1,7 +1,7 @@
 # MDT Copilot | Projektový kontext pro tým a AI agenty
 
 **Projekt:** Rakathon 2026, výzva Asseco Central Europe „MDT Copilot – Asistovaná interpretace pro multidisciplinární onkologické konzilium“  
-**Stav dokumentu:** pracovní kontext, aktualizováno 16. 10. 2026 po dvou konzultacích s mentory  
+**Stav dokumentu:** pracovní kontext, aktualizováno 16. 10. 2026 po třech konzultacích (dvou mentorských a jedné s účastnicí znalou klinické praxe)  
 **Určení:** produktový návrh, implementace, evaluace, práce AI coding agentů  
 **Důvěrnost:** oficiální zadání je označeno `CONFIDENTIAL (by Asseco CE)`. Před publikací odvozeného kontextu ve veřejném repozitáři prověřit oprávnění.
 
@@ -13,10 +13,11 @@ Informace níže mají rozdílnou závaznost:
 - **[DATA]** – fakt doložený v dodaném datasetu a jeho `README.md`.
 - **[MENTOR 1]** – neformální konzultace s prvním mentorem (InterSystems/FHIR, obecný MDT workflow a klinický přínos).
 - **[MENTOR 2]** – neformální konzultace s druhým, datově orientovaným mentorem (role, pohledy, filtrování dat, multi-LLM kontroly).
+- **[KONZULTACE 3]** – poznámky z rozhovoru s medičkou o reálném průběhu MDT, účastnících, komunikaci s pacientem, konsenzu, zápisu a opakovaných jednáních. Jde o popis zkušenosti, nikoli univerzální klinický/procesní předpis.
 - **[NÁVRH]** – možné řešení od týmu/asistenta, které zatím není schválenou architekturou.
 - **[OVĚŘIT]** – nejasné, nedoslovené nebo potenciálně rozporné informace z poznámek.
 
-**Pokyn pro agenty:** Nikdy automaticky nepovažovat `[MENTOR]` nebo `[NÁVRH]` za povinný požadavek. Při rozporu dát přednost přesnému textu zadání a `README.md` datasetu, nejistotu explicitně označit.
+**Pokyn pro agenty:** Nikdy automaticky nepovažovat `[MENTOR]`, `[KONZULTACE 3]` nebo `[NÁVRH]` za povinný požadavek. Při rozporu dát přednost přesnému textu zadání a `README.md` datasetu, nejistotu explicitně označit.
 
 ## 1. Produktový účel a hranice odpovědnosti
 
@@ -48,6 +49,43 @@ Klíčové principy:
 
 > **Důležitý rozdíl:** Sestavení specialistů a jejich *odborností* ≠ autentizace uživatelů ≠ oprávnění vidět konkrétní pacienty ≠ pořadí a obsah sekcí v UI. Jde o různé problémy. V prototypu lze demonstrovat výběr pohledu bez plné nemocniční identity/access-control infrastruktury.
 
+## 2a. Reálný průběh konzilia podle třetí konzultace [KONZULTACE 3]
+
+Tato část doplňuje procesní model o **praktickou organizaci jednání**; popisuje zkušenost z klinické praxe, ne neměnná pravidla každé nemocnice.
+
+### Složení komise a účast pacienta
+
+- MDT je **multidisciplinární**. Podle konzultace bývají prakticky vždy zastoupeni **onkolog, chirurg a radiolog**, podle diagnózy se přidávají další specialisté: často patolog, internista a podle případu například gastroenterolog. Součástí procesu bývá **koordinátor**. Reálné složení závisí na diagnóze, nemocnici a konkrétním případu; poznámka „vždy“ je popis místní praxe, nikoli obecný standard.
+- Zasedání často probíhá **bez přítomnosti pacienta**, ale v některých případech **pacient přítomen je a může poslouchat diskusi**. Vhodné UX proto nemá předpokládat ani povinnou, ani vyloučenou účast pacienta.
+- Všichni členové komise jsou odborníci ve svých oblastech. Patolog zpracovávající histologii nemusí být stálým nebo předem určeným „vlastním“ patologem případu; v poznámkách se objevuje formulace, že histologii zpravidla zpracuje „náhodný patolog“. **Neztotožňovat autora histologie se členem komise.**
+
+### Příprava a prezentace případu
+
+1. **Nominující/odesílající lékař formuluje konkrétní otázku**, často proto, že jde o nejasný nález, komplikaci, odborný problém nebo rozhodnutí, které nechce provádět sám.
+2. **Koordinátor shromáždí velké množství podkladů**, sestaví z nich přehledný handout/stručné shrnutí a připraví strukturované údaje pro lékaře. Odborníci by se měli s případem seznámit předem. Ideálně pacienta před konziliem osobně viděli, ale v praxi to není vždy možné.
+3. Během jednání případ **odreferuje jeden z lékařů** (nemusí mít stále stejnou odbornost), ideálně expert na daný problém. Společně se prohlížejí **zobrazovací nálezy/snímky**; v našem datasetu máme jen textové popisy, nikoli samotné snímky.
+4. Jednotliví odborníci pak **postupně sdělí své stanovisko**. Ostatní se mohou doptávat na aspekty mimo vlastní specializaci, pokud je potřebují pro svůj odborný úsudek. Diskuse je **interaktivní**, nikoli jen sled oddělených monologů.
+5. **Závěr se průběžně zapisuje již během diskuse**, často vyplňováním strukturované tabulky, zejména prostřednictvím koordinátora. Konečný zápis obsahuje otázku odesílajícího lékaře a klíčové informace o pacientovi a řešeném problému.
+
+### Rozhodování, potvrzení a délka zasedání
+
+- Podle této konzultace vzniká doporučení **konsenzem**: diskuse pokračuje, dokud se odborníci nedohodnou. Účastníci závěr **podepisují** a dle popisu s ním mají všichni souhlasit.
+- Diskuse se v komplikovaných případech může protáhnout až přibližně na **20 minut**, i když soutěžní zadání uvádí typických **3–5 minut** na případ. UX musí podporovat rychlý průchod i delší, průběžně editované projednání.
+- **[ROZPOR MEZI KONZULTACEMI]** Mentor 1 v poznámkách uvedl, že rozhoduje *vedoucí/předseda komise*. Konzultace 3 zdůrazňuje *konsenzus a podpisy všech*. Oficiální zadání předpokládá strukturovaný závěr, předsedu/potvrzení i možnost **odlišných stanovisek**. **Nepokládat jednu z těchto výpovědí automaticky za univerzální schvalovací pravidlo; model navrhnout tak, aby uměl více variant.**
+
+### Role pacienta, jeho preference a souhlas
+
+- Před rozhodnutím je třeba zjistit a zaznamenat **postoje a preference pacienta** včetně výslovného odmítnutí určité modality (např. chirurgického zákroku); tato informace má být už v **úvodních podkladech**.
+- Praktický příklad z konzultace: pacient volí, zda souhlasí s operací, nebo preferuje onkologickou/systémovou léčbu. MDT může odborně doporučovat operaci, **ačkoli ji pacient odmítá**; výstup pak musí rozlišit *odborně preferovaný postup*, *pacientovu preferenci či odmítnutí* a *proveditelný plán / alternativu*. Pacienta lze následně znovu pozvat a důvody doporučení mu vysvětlit.
+- **Souhlas/odmítnutí léčby není totéž co souhlas s účastí na MDT či se zpracováním dat.** Nemíchat tyto stavy do jediného booleanu.
+
+### Návaznost a lokální varianty
+
+- Stejný pacient může být na MDT **projednáván opakovaně** po operaci, po léčebném intervalu nebo při nové komplikaci. Nové projednání má navazovat na **předchozí záznamy a doporučení** pro téhož pacienta.
+- Klinický proces se liší **mezi nemocnicemi i uvnitř jedné nemocnice** (např. přítomnost pacienta, sestava členů, formulář a způsob vedení diskuse). Z toho plyne požadavek na konfigurovatelný workflow, ale komplexní engine nemocničních procesů by byl pro MVP zbytečný.
+
+**[NÁVRH pro MVP]** V UI zachovat `question → pre-MDT handout → expert discussion/notes → evolving draft resolution → consensus/review status → approved resolution → follow-up`. Statusy a podpisy simulovat **transparentně**; nepředstírat právně platný elektronický podpis nebo skutečné nemocniční schválení, není-li implementováno. V datovém modelu odlišit *předchozí MDT* od *aktuálního* a podporovat průběžný draft.
+
 ## 3. Přístupová oprávnění a role (nová konzultace)
 
 **[MENTOR 2]** V reálném prostředí by přístup k pacientům závisel na oprávněních lékaře, která spravuje administrátor; ideálně by lékař viděl data pouze pacientů, ke kterým má oprávněný přístup. Některé role mají širší pravomoci než jiné. Odbornosti a hierarchie jsou v reálné nemocnici složitější než několik statických kategorií.
@@ -65,11 +103,13 @@ Klíčové principy:
 - **Pathology view:** biopsie, histologie, grading, receptorový stav, biomarkery a chybějící vyšetření.
 - **Coordinator/admin view:** společné informace + přepínání konfigurace, případně přehled všech odborných sekcí a stavu závěru.
 
+**[KONZULTACE 3]** Lékař, který případ referuje, může být kterýkoli odborník přítomný na jednání, zatímco koordinátor připravuje handout a postupně vyplňuje záznam. Rozlišujte proto **odbornost**, **referujícího**, **koordinátora**, **předsedajícího** a **schvalujícího** jako možné různé atributy uživatelů, ne jediné pevné role.
+
 **[MENTOR 2]** Každý odborník by ideálně dostal vlastní pohled. Zmíněný kompromis: správce/koordinátor vidí celkový přehled, jednotliví specialisté společný souhrn a svůj odborný pohled. **Čím méně nerelevantních informací v prvním pohledu, tím lépe.**
 
 **[NÁVRH]** Pro MVP implementovat **role-based presentation** (filtrování a pořadí UI sekcí), nikoli deklarovat plnohodnotnou produkční **RBAC/ABAC autorizaci**. Skutečné omezení přístupu k pacientům by v produkci muselo být **vynuceno také na backendu**, nikoli pouhým skrytím komponent. Neprezentovat UI filtrování jako bezpečnostní opatření.
 
-**[OVĚŘIT]** Má být pro demo jediný společný přehled přepínatelný podle role, nebo více skutečně přihlášených uživatelů s oddělenými datovými přístupy?
+**[OVĚŘIT]** Má být pro demo jediný společný přehled přepínatelný podle role, nebo více skutečně přihlášených uživatelů s oddělenými datovými přístupy? Kdo může průběžně editovat závěr: koordinátor, referující lékař, předsedající, nebo všichni?
 
 ## 4. Dodaná data a jejich využití
 
@@ -159,11 +199,12 @@ Příklady mapování (ilustrativní, nikoli pevná klinická pravidla):
 - Navrhnout **2–3 věcné otázky k diskusi**.
 - Při zápisu závěru upozornit na nesoulad s guidelines a požádat o odůvodnění; **nesmí bez dalšího blokovat rozhodnutí komise**.
 
-### E. Zápis, potvrzení a export [ZADÁNÍ]
+### E. Zápis, potvrzení a export [ZADÁNÍ + KONZULTACE 3]
 
 - Editovatelný, **strukturovaný** zápis: složení MDT a odbornosti, uvažované varianty, vybraná varianta, zdůvodnění, případné odlišné názory, vztah ke guidelines/studii, plán re-evaluace.
-- Explicitní **schválení lékařem**; před ním se AI návrh nesmí vydávat za oficiální rozhodnutí.
+- Explicitní **schválení lékařem**; před ním se AI návrh nesmí vydávat za oficiální rozhodnutí. **[KONZULTACE 3]** Umožnit pracovní zápis už během diskuse a uchovat průběh potvrzování či konsenzu (v dané praxi podpis všech), aniž by bylo vyžadováno jediné univerzální schvalovací schéma.
 - Export finálního podkladu a závěru (např. **PDF / HL7 FHIR**).
+- **[KONZULTACE 3]** Závěr může být závislý na tom, zda pacient přijímá nebo odmítá chirurgickou či systémovou léčbu; v záznamu nezaměňovat klinické doporučení s pacientovou volbou. Při dalším MDT načíst dřívější závěry.
 - `BONUS`: AI přepisovatel diskuse, plnohodnotné sledování úkolů a termínů, audit/verzování, pacientské shrnutí, detailní FHIR/mCODE mapování.
 
 ## 7. Studie, zdroje a jejich důvěryhodnost
@@ -236,6 +277,15 @@ Doporučené hranice:
 
 **[NÁVRH]** Vývoj backendu a UI může běžet paralelně nad **dohodnutým JSON kontraktem**. FHIR/IRIS integraci lze přidat za normalizační vstup/výstup bez převázání celé UI architektury na konkrétní server.
 
+## 9a. Další technické a organizační poznámky z první konzultace [MENTOR 1]
+
+- V rozhovoru se zmiňuje nejasný onkologický kód **„43“** v datech; **[OVĚŘIT]** co přesně znamenal (nelze bez systému a kontextu považovat za validní diagnózu). V importu interpretovat diagnózy podle `system` + `code` + `display`, nikoli samotného čísla.
+- Mentor zmínil, že by šlo nahrát FHIR JSON a **lokálně přes API vyhledávat/číst záznamy**. Také padl obecný nápad použít AI k předběžnému *matchingu* či k nálezu symptomů podle diagnózy. Žádná z těchto možností není sama o sobě validované diagnostické pravidlo.
+- V rámci slovenského prostředí mentor popsal existenci databází **klinických studií, standardních postupů a pseudonymizovaných/anonymizovaných pacientských dat**; existenci, aktuálnost, přístupnost ani přesný rozsah těchto databází tato poznámka neověřuje. Zmíněné napojení na slovenské **eZdravie** a české nemocniční systémy je provozní kontext, nikoli hotová soutěžní integrace.
+- Jako kontaktní kontext z konzultace zaznělo, že **Lubo** pracuje se systémem na Slovensku a může znát jeho implementační detaily. Jiný starší účastník byl charakterizován jako spíše byznysově zaměřený mentor/porotce. **[OVĚŘIT]** identity a kompetence před technickými rozhodnutími; tyto osobní charakteristiky nejsou autoritativní.
+- Padl provozní požadavek pro **skutečné** zdravotní údaje: zajistit, aby neunikly, nevstupovaly do trénování, a po použití je smazat. **[DATA]** Současný dataset je však výslovně *syntetický*. U reálných dat by nestačilo jen vypnutí trénování: právní titul, zabezpečení, přenosy, retence a mazání musí být smluvně i technicky podloženy.
+- V závěrečné představě integrace mají být zapsány rozhodnutí, plán, úkoly, termíny, jejich kontrola i případný přepis diskuse. Výstup lze exportovat do **PDF / HL7 FHIR**, případně uložit přes IRIS FHIR server tak, aby jej v reálném nasazení mohl převzít **NIS**. Záznam či přepis diskuse je dle zadání bonus, nepovinný pro MVP.
+
 ## 10. Kvalita, validace, evaluace
 
 **[ZADÁNÍ]** U každého AI tvrzení umožnit ověření zdrojového záznamu; nevymýšlet chybějící údaje. Zápis rozhodnutí zůstává pod kontrolou lékaře.
@@ -279,6 +329,10 @@ Doporučené hranice:
 8. Stačí PDF/FHIR export, nebo lze v demu i reálně **zapsat FHIR resource**?
 9. Je dostupná kontrolní sada **ground truth**, nebo má tým vytvořit vlastní testy?
 10. Jaké části rozhodovacího a schvalovacího procesu se mají modelovat (předseda, podpis, nesouhlas, datum, odpovědnost)?
+11. **Konsenzus vs. pravomoc předsedy:** má se schvalovat všemi členy, jediným předsedajícím, nebo podle konfigurovatelného pravidla? Je přípustný nesouhlas/dissent?
+12. Je pacient přímo přítomen u jednání, je jen předem konzultován, nebo nepřítomen? Jak bude zajištěno, že jeho preference či odmítnutí léčby uvidí všichni?
+13. Jak zachytit živé dotazy odborníků napříč obory a průběžný zápis koordinátora bez implementace komplexního diskusního systému?
+14. Mají být zřetelně oddělena opakovaná MDT téhož pacienta a návaznost jejich závěrů na následnou léčbu?
 
 ## 13. Instrukce pro coding agenty
 
@@ -290,8 +344,9 @@ Doporučené hranice:
 6. Při práci se studiemi **nepředstírejte existenci fiktivních RKT studií**. Zdrojová kritéria jsou závazným testovacím vstupem, nikoli medicínsky ověřeným protokolem.
 7. Preferujte deterministicky testovatelnou logiku pro numerické prahy, čas, konzistenci a některá studijní kritéria. LLM používejte tam, kde přináší prokazatelnou hodnotu.
 8. Pokud navrhnete multi-LLM workflow, jasně určete účel každého modelu, kontrolované invarianty, náklady a **nezávislý evaluační postup**. Vzájemný souhlas modelů není klinická verifikace.
-9. Oddělte **AI návrh** od **lékařsky potvrzeného rozhodnutí** i na úrovni datového modelu, UI a exportu.
-10. Upřednostněte **ověřitelný end-to-end průchod** před nehotovými bonusy. Nedávejte do repozitáře tajné klíče ani skutečná zdravotní data; zvažte důvěrnost dokumentů Asseco.
+9. Oddělte **AI návrh** od **lékařsky potvrzeného rozhodnutí** i na úrovni datového modelu, UI a exportu. Podporujte **průběžně upravovaný koncept zápisu** a neslučujte „předsedající schválil“, „všichni souhlasí“ a „pacient souhlasí s léčbou“ do jediného stavu.
+10. Udržujte **historii projednání stejného pacienta** a zahrňte jeho preference a explicitní odmítnutí léčby do společného kontextu. Netvrďte, že odborná role implikuje přístup k pacientovi.
+11. Upřednostněte **ověřitelný end-to-end průchod** před nehotovými bonusy. Nedávejte do repozitáře tajné klíče ani skutečná zdravotní data; zvažte důvěrnost dokumentů Asseco.
 
 ## 14. Primární zdroje tohoto dokumentu
 
@@ -299,5 +354,56 @@ Doporučené hranice:
 2. Dataset: `README.md`, `Pxx_bundle.json`, `Pxx_pacient.md`, `bundles.ndjson`, dokumentace dotazníku, guidelines a studií.
 3. Poznámky z **první konzultace**: `konzultace s mentorem k řešení výzvy(1).txt`.
 4. Poznámky z **druhé konzultace**: `další koo,s  tim druhym datovym men.txt`.
+5. Poznámky ze **třetí konzultace s medičkou**: `koo 3 (s medickou).txt`.
 
 *Tento soubor je interpretační a koordinační kontext; primární zdroje mají přednost. Otevřené otázky nejsou rozhodnutími o implementaci.*
+
+## 15. Kontrolní inventář neformálních poznámek (bez vynechání témat)
+
+Tento inventář usnadňuje agentům kontrolu, že se neztratil detail, který nemá přímou implementační prioritu. Konkrétní interpretace jsou rozvedeny ve výše uvedených sekcích. Původní textové poznámky zůstávají primárními zdroji.
+
+### Konzultace 1: InterSystems, FHIR a klinický kontext
+
+- Nejasný kód „43“ a obecné dotazy na načítání JSON/FHIR lokálním API (**9a**).
+- Nejisté tvrzení o původu dat v reálných pacientech, ochrana před únikem/trénováním a mazání; **převáží oficiální deklarace syntetických dat** (**4, 9a**).
+- Úvaha o AI pomoci s matchingem a rozpoznáváním symptomů (**6–9a**).
+- Práce s FHIR jako strukturovanou reprezentací, příp. převod/import dokumentace do FHIR, jednoduchý loop podle části 5 tutorialu (**9**).
+- Další FHIR instance v IRIS, hotový setup skript, nutnost **změnit název a base URL**, alternativa konfigurace v UI (**9**).
+- Data částečně v InterSystems IRIS, vybrané výstupy ve FHIR; export přes FHIR server do NIS (**9, 9a**).
+- Česká/slovenská dokumentace, slovenské eZdravie, poznámka „dastra“ [zřejmě DASTA], případný převod do FHIR (**9, 9a**).
+- Známé, záměrně vložené chyby, syntetická data, kombinace příznaků, postupy, relevantní studie a hodnocení zdrojů dle publikace/důvěryhodnosti (**4, 6, 7**).
+- Ošetřující lékař přichází s návrhem/otázkou, MDT se dynamicky sestavuje, všichni dostávají společný souhrn i vlastní specializované podklady (**1–3**).
+- Všichni se vyjadřují; dle prvního mentora rozhoduje vedoucí/předseda. Často onkolog, případně koordinátor onkologické léčby; mechanismus jeho určení nebyl vysvětlen (**2, 2a**).
+- Slovenský systém a mentor **Lubo**; jiný účastník více byznysově orientovaný a v porotě; nezabředávat do detailů (**1, 9a**).
+- Inovace v začlenění **PROMs, subjektivních pocitů a názorů pacienta** (**1, 5, 6**).
+- Zmínka o slovenských databázích studií, postupů a anonymizovaných dat (**9a**).
+- Šest pacientů a příslušná data; konceptuální základ před komplikovanými integracemi (**1, 4, 9**).
+- Závěr, léčebný plán, úkoly, termíny, kontrola, případný přepis diskuse, PDF/FHIR export a návaznost NIS (**2, 6, 9a**).
+
+### Konzultace 2: datové pohledy, role, LLM
+
+- Komise pokaždé jiná; hierarchie rolí, administrátorem přidělená oprávnění, ideálně přístup pouze k vlastním/oprávněným pacientům (**2, 3**).
+- Složitost odborností, pracovní zjednodušení na čtyři odbornosti; **výběr a přiřazení konkrétních lékařů** neřešit (**3**).
+- Úlohou produktu je vyhodnocovat podklady a vytvářet návrhy/doporučení, nikoli sám autoritativně rozhodovat o léčbě (**1, 6**).
+- Studie musejí mít spolehlivý/ověřený původ, při externích studiích hodnotit evidenci (**7**).
+- Každý odborník vlastní pohled; administrátor vidí shrnutí a širší data, odborník obecné overview a vlastní sekci; **čím méně rušivých informací, tím lépe** (**3**).
+- Riziko nekontrolovaného LLM výběru informací a příliš vysoké spotřeby tokenů (**8**).
+- Specializovaní agenti po medicínských doménách (zmíněno i srdce/kardiologie), vzájemná či centrální kontrola; pokus s **multi-LLM workflow** (**8**).
+- Nejistá poznámka o tom, že odborníci mohou sami doplňovat otázky dotazníku, přestože dotazníky jsou již dodány (**5**).
+- Mnohonásobné směrování odpovědí **PROMs podle odbornosti**, možnost modelu, který přiřazení navrhne, a dalšího, který jej zkontroluje nebo s ním diskutuje (**5, 8**).
+
+### Konzultace 3: průběh klinického MDT
+
+- MDT zpravidla bez pacienta, ale někdy pacient **osobně přítomen a poslouchá diskusi** (**2a**).
+- Základní onkolog, chirurg, radiolog; další dle diagnózy, často patolog/internista/gastroenterolog a koordinátor (**2a**).
+- Koordinátor z množství dokumentace připraví **handout** a materiály pro lékaře. Specialisté by měli případ prostudovat a ideálně pacienta vidět předem, ale často to není splněno (**2a**).
+- Případ prezentuje referující lékař z kterékoliv odbornosti, pokud možno expert v dané oblasti; prohlížejí se snímky (**2a**).
+- Histologický nález nemusí zpracovávat předem určený „vlastní“ patolog; postupná vyjádření všech specialistů (**2a**).
+- Lékaři se vzájemně doptávají i na témata mimo svou odbornost, živá diskuse se může protáhnout na ~20 minut (**2a**).
+- Dle této konzultace závěr vzniká **konsenzuálně, ne z autority**, a všichni se pod něj podepisují; rozpor s prvním mentorem výslovně zachován (**2a**).
+- Předem zaznamenat pacientův souhlas/odmítnutí operace nebo systémové léčby. Komise může preferovat zákrok, který pacient odmítá, a nabídnout alternativu; někdy si pacienta znovu pozve a doporučení mu vysvětlí (**2a, 6**).
+- Konsenzuální závěr se **zapisuje už během jednání**; koordinátor postupně doplňuje tabulku, výsledný dokument zachycuje otázku odesílajícího lékaře a klíčové údaje (**2a**).
+- Tentýž pacient může být projednán opakovaně (po zákrocích, intervalech léčby aj.), vždy s odkazem na **předchozí závěry MDT** (**2a**).
+- Významné rozdíly i **uvnitř jedné nemocnice**, částečně podobné principy napříč nemocnicemi (**2a**).
+
+**Pravidlo pro agenty:** Inventář neznamená, že každý bod se musí implementovat. Obsah poznámek byl zachován, ale jejich závaznost se řídí označením zdroje a aktuálním rozhodnutím týmu.
