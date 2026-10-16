@@ -5,8 +5,6 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 
 ## Open questions (anyone)
 
-- LLM provider/model and where it runs (EU / on-prem requirement in the brief)?
-- Organiser mock data: format and how we load it into the FHIR server.
 - FHIR server: stay on HAPI or switch to the sponsor's InterSystems IRIS for Health
   (https://github.com/intersystems-community/FHIR-AI-Hackathon-Kit/tree/V2)? Backend works with
   either via `.env`.
@@ -24,7 +22,11 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 
 ## Contributor 2
 
--
+- IRIS for Health running from `FHIR-AI-Kit/docker-iris-fhir` with the full dataset loaded
+  (`uv run mdt-load-fhir`, decision 12). `uv run mdt-patient P01` pretty-prints one patient's
+  complete record from the server. The app itself still reads bundles from disk (`bundles.py`).
+- `uv run mdt-zaver P01`: MDT conclusion (form.md) as PDF, two gpt-6-luna calls (decision 13).
+  CLI only — not wired into the API/UI yet; ~40 s per patient.
 
 ## Contributor 3
 

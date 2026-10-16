@@ -93,3 +93,25 @@ Decision: The organisers' dataset v1.1 lives in `Dataset/` at the repo root (git
 `Task.restriction.period.start`.
 Why: One dataset location for everyone; citation ids are the ones the dataset tells us to cite; the
 fictional cases would mix made-up guidelines/trials with the real ones.
+
+## 12. Loading the dataset into a FHIR server (IRIS) — 2026-10-16
+Status: accepted
+Decision: `mdt-load-fhir` sends each `collection` bundle as a `transaction` of PUTs (keeps the
+dataset IDs, reload is idempotent). Three R4 violations that IRIS rejects are repaired on load:
+IDs with `_` get `-` instead (26 Observations, e.g. `P01-lab01-hb_f` → `P01-lab01-hb-f`, with
+references rewritten); `Observation.derivedFrom` → `DiagnosticReport` (44×, type not allowed) moves
+to extension `https://rakathon.example.org/fhir/StructureDefinition/derived-from-report` with the same
+`valueReference`; one empty `valueString` answer (P03-prom02 `bolest-misto`) is dropped.
+Why: Strict servers refuse the raw bundles; these repairs are lossless, so source links still work.
+Code that reads from the server must use the repaired IDs and the extension, not the raw ones.
+
+## 13. LLM: Azure OpenAI gpt-6-luna (EU data zone) with strict structured output — 2026-10-16
+Status: accepted
+Decision: LLM calls go to `gpt-6-luna-dz-eu` behind the hackathon Azure APIM
+(`https://apim-rakathon-q7146n.azure-api.net/openai/v1`, OpenAI-compatible, key in the `api-key`
+header, `AZURE_API_KEY` in `.env`), through `llm.chat_json` only, always with a strict JSON schema.
+Plain httpx, no SDK. Model output that cites FHIR resources is checked against the record; unknown
+IDs are dropped. PDFs are rendered with pypdf + an embedded subset TrueType font (pypdf's built-in
+fonts can't encode Czech).
+Why: EU data zone answers the brief's data-residency question; schema-constrained output gives
+parseable, field-by-field answers with sources (ground rule 3).

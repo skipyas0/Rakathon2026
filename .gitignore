@@ -13,3 +13,5 @@ dist/
 data/records/
 # Organisers' dataset (synthetic, redistribution terms unknown)
 Dataset
+# Generated MDT conclusions (AI drafts)
+data/zavery/

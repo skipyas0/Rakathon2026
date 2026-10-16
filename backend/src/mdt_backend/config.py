@@ -12,6 +12,13 @@ class Settings(BaseSettings):
     fhir_password: str | None = None
     # The organisers' dataset (git-ignored): pacienti/<ID>_bundle.json, guidelines/, studie/
     dataset_dir: Path = Path(__file__).parents[3] / "Dataset"
+    # OpenAI-compatible chat endpoint (Azure APIM, EU data zone); key sent as `api-key` header
+    azure_api_key: str | None = None
+    llm_base_url: str = "https://apim-rakathon-q7146n.azure-api.net/openai/v1"
+    llm_model: str = "gpt-6-luna-dz-eu"
+    # TrueType fonts embedded in PDFs (need Czech glyphs); None = first found in pdf.FONT_CANDIDATES
+    pdf_font: Path | None = None
+    pdf_font_bold: Path | None = None
 
 
 settings = Settings()

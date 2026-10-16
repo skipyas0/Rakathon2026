@@ -8,13 +8,18 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.143.3",
+    "fonttools>=4.67.0",
     "httpx>=0.28.1",
     "pydantic-settings>=2.16.0",
+    "pypdf>=6.21.0",
     "uvicorn[standard]>=0.54.0",
 ]
 
 [project.scripts]
 mdt-backend = "mdt_backend:main"
+mdt-load-fhir = "mdt_backend.load_fhir:main"
+mdt-patient = "mdt_backend.fhir:main"
+mdt-zaver = "mdt_backend.zaver:main"
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]

@@ -5,7 +5,7 @@ Current state of the system. Describe what **is**, not what's planned (plans go 
 ```
 browser ──► frontend (Vite dev server :5173) ──/api──► backend (FastAPI :8000) ──► HAPI FHIR (:8080)
                                                             │
-                                                            └──► LLM provider (not chosen yet)
+                                                            └──► LLM: Azure OpenAI gpt-6-luna-dz-eu (EU data zone, via APIM)
 ```
 
 ## Workflow (what the UI is built around)
@@ -30,7 +30,11 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 |-----------------|-------------------------------------------------------------------------|
 | `app.py`        | FastAPI app, route registration                                         |
 | `config.py`     | Settings from env / `.env`                                              |
-| `fhir.py`       | `get(path, **params)` → raw FHIR JSON from the FHIR server              |
+| `fhir.py`       | `get(path, **params)` → raw FHIR JSON; `get_patient_record(id)` → every resource of one patient (`Patient/$everything` + `Task?patient=`, which `$everything` misses); `print_patient_record(id)` / CLI `uv run mdt-patient P01` pretty-prints it |
+| `llm.py`        | `chat_json(system, user, schema)`: one chat completion with strict JSON-schema output (`LLM_BASE_URL`, `LLM_MODEL`, `AZURE_API_KEY`) |
+| `pdf.py`        | `PdfDoc`: flowing-text A4 PDF on pypdf (wrapping, pagination, bold/colour runs, blue AI bar); embeds a subset TrueType font for Czech (`PDF_FONT`/`PDF_FONT_BOLD`, default Arial/DejaVu) |
+| `zaver.py`      | CLI `uv run mdt-zaver P01`: fills `docs/template_zaver_zasedani/form.md` → `data/zavery/<id>_zaver.{md,pdf}`. HEADER = dummy data (no LLM); BODY = LLM call 1 over the full FHIR record from the server (one field per template line + its source resources; unknown references dropped, unsourced fields flagged); RESPONSE = LLM call 2 over the filled BODY only, as the MDT. All LLM output marked as unconfirmed AI |
+| `load_fhir.py`  | CLI `uv run mdt-load-fhir`: loads `Dataset/fhir/bundles.ndjson` into the FHIR server as PUT transactions, repairing what strict R4 servers (IRIS) reject — see decision 12 |
 | `provenance.py` | `Statement`, `Source`: AI-vs-human labelling, sources, confirmation     |
 | `briefing.py`   | `Case`: the MDT briefing (summary, timeline, red flags, sections, decision support, trends) |
 | `bundles.py`    | Reads FHIR bundles from `settings.dataset_dir / "pacienti"` (default `Dataset/`), resource accessors, full text of a record |
@@ -91,6 +95,12 @@ backend. Export = browser print-to-PDF (`@media print` in `index.css`).
 - `data/stubs/*.json`: hand-made `Case` briefings, validated by `backend/tests/test_stubs.py`. Empty
   now — the fictional demo stubs were removed once the dataset was integrated.
 - `data/records/*.json`: records written by the running app (git-ignored).
+- `data/zavery/`: generated MDT conclusions (`mdt-zaver`, AI drafts, git-ignored).
 - FHIR R4 on HAPI (H2 DB inside the container: survives restarts, wiped by `docker compose down`).
-  The dataset is not loaded into it (the app reads the bundles from disk). The backend works with any FHIR R4
+  The app itself still reads the bundles from disk. The backend works with any FHIR R4
   server: set `FHIR_BASE_URL` (+ `FHIR_USER`/`FHIR_PASSWORD` for IRIS, see `.env.example`).
+- InterSystems IRIS for Health (alternative FHIR server), from the sponsor kit in `FHIR-AI-Kit/`
+  (container `iris-fhir`, FHIR at `http://localhost:52773/fhir/r4`, `SuperUser`/`SYS`, data in a
+  Docker volume). Holds only our dataset (all 6 patients, via `mdt-load-fhir`), not the kit's
+  Synthea samples. Known gap: `Practitioner/LEK-P05-09` is only named in `Procedure.note` text, never
+  referenced, so `get_patient_record("P05")` can't reach it.
