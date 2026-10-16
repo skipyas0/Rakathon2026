@@ -21,28 +21,15 @@ https://mdt-copilot-rakathon.fly.dev (`fly.toml`, region `fra`, volume `records`
 
 ## Workflow (what the UI is built around)
 
-Being replaced by the role-based workflow in [workflow-plan.md](workflow-plan.md) (decision #16).
-Today: one user at the screen (the board chair or preparing clinician); no per-specialty views. Each case
-goes through three phases, and any phase can be reopened at any time:
+One linear journey for the coordinator (decision #18, [workflow-plan.md](workflow-plan.md)), one
+screen per step and one **Další** each: Nahrání (`#/new`) → Komise → Pacient → Klíčové informace →
+Vývoj → Léčebný záměr → Závěr → Potvrzení (`#/case/<id>/<step>`), plus Přehled (`#/`). Soulad s
+doporučenými postupy is derived on the last screen (chosen léčebný záměr = recommended); on a
+difference, Potvrdit first asks for důvod odchylky. Potvrdit is the board's consensus and locks
+the conclusion; then Stáhnout PDF (print).
 
-1. **Před zasedáním** (`prep`) — consolidated sources, problems (red flags + missing data), MDT
-   question, discussion questions, confirming AI statements → "Připraveno k projednání".
-2. **Zasedání** (`meeting`) — the board's dashboard, projected: question (with who asked it), ECOG
-   doctor vs patient in the header, key facts, only urgent warnings (high severity or routed *na
-   zasedání*; the rest behind "+ N dalších", dismissed ones left out), trend charts, timeline,
-   decision support (greyed out "Připravujeme" until the AI pipeline fills it), patient's voice;
-   specialist tiles expand for detail and the specialist's view (stored as a note) and flag
-   unresolved findings assigned to them.
-3. **Po zasedání** (`followup`) — the minutes: attendees (prefilled from the board) with a consent
-   tick each, treatment intent + structured decision, action plan tasks, PDF export (print); full
-   briefing alongside. The board decides by consensus: the coordinator ticks every attendee's
-   consent, then locks (decision #16; the backend refuses a lock without everyone's consent). Once
-   locked, four states are kept apart: MDT recommendation (locked) · patient's stance (signed) ·
-   agreed plan · care delivered (done tasks). The AI
-   guideline-compliance check and FHIR export are greyed out until they exist.
-
-Visual language: unconfirmed AI output is blue with a robot icon; everything else (record data,
-clinician input, confirmed AI) is plain text. Treatment intent has its own colour + icon.
+Visual language: unconfirmed AI output is blue with a robot icon; examples standing in for AI
+output are labelled "ukázka"; everything else (record data, clinician input) is plain text.
 
 ## Backend — `backend/src/mdt_backend/`
 
@@ -88,28 +75,22 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 
 | File                | Role                                                          |
 |---------------------|---------------------------------------------------------------|
-| `App.tsx`           | Shell: top bar (Program / Nový případ nav, user name, role switcher), hash routing `#/`, `#/new` (coordinator only), `#/case/<id>/<phase>` |
-| `Intake.tsx`        | Nový případ: a FHIR file (drag & drop; the PDF option is shown greyed out until extraction exists), upload as base64, then opens the case's preparation |
-| `Home.tsx`          | Agenda: patient cards with phase steps (each phase links directly) |
-| `CasePage.tsx`      | Loads case + record, phase stepper, saving (optimistic, rolls back on error) |
-| `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |
-| `PrepPhase.tsx`     | Coordinator's workspace in tabs: Podklady (question, summary, discussion questions, sources), Nálezy (`Findings.tsx`: triage of each red flag / missing datum: na zasedání, předem → specialty, zamítnout + důvod), Komise (`Board.tsx`: members, specialty, chair; adopt the previous MDT's board, roles mapped by `specialtyOf`), Struktura (`Structure.tsx`: section order by drag & drop or ↑↓, hidden sections, detail level → `CaseRecord.layout`), Viditelnost (`Visibility.tsx`: specialty × section table → `CaseRecord.visibility`, default own section + patient via `visibleSections`), Odborníci (`Specialists.tsx`: per member AI claims confirmed in their section, assigned findings resolved, opinion written); readiness checklist (≥ 3 specialties to mark the case prepared). No confirm buttons here: clinicians confirm |
-| `SpecialistView.tsx` | Phase 1 for a specialist role ("Můj pohled"): shared header, sections per `visibleSections`, Potvrdit only in their own section, assigned findings with a resolution field, their opinion (`notes[specialty]`). Not on the board = no access |
-| `History.tsx`       | `#/case/<id>/history`: meetings recorded in the app (locked conclusion, consent, who recorded it), previous MDTs from the record (expandable, source on click), audit trail of this meeting built from the record's signatures |
-| `DecisionForm.tsx`  | Attendees + consent ticks, intent cards, structured decision; lock needs everyone's consent; locked read-only view |
-| `CaseView.tsx`      | Shared blocks: flags, missing data, trials, `Soon` (greyed-out "Připravujeme" for features waiting on the AI pipeline), `SectionItems` (items or running text per the detail level), full `CaseDetail` |
-| `Charts.tsx`        | `TrendChart` (SVG line + reference band), `TimelineStrip`     |
+| `App.tsx`           | Shell: top bar (Přehled / Nový případ, user name), hash routing `#/`, `#/new`, `#/case/<id>/<step>` |
+| `Overview.tsx`      | Přehled: cases, confirmed or in progress; opens where the work continues |
+| `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
+| `Journey.tsx`       | Steps 2–8 for one case: board bubbles, patient, key facts (urgent red flags first), up to 3 trends, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska per role, důvod odchylky, Potvrdit, PDF) |
+| `Steps.tsx`         | Progress through the journey; finished steps link back        |
+| `Charts.tsx`        | `TrendChart` (SVG line + reference band; every point opens its source) |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
 | `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records; `useSources()` opens it |
-| `render.tsx`        | `renderer`, `confirmer`, `isPending`, `missing`, `findingKeys`, `visibleSections` helpers |
-| `layout.ts`         | Labels (sections, tumours, intents, phases), board template, localStorage |
+| `render.tsx`        | `renderer`, `now` helpers                                     |
+| `layout.ts`         | Labels (specialties, tumours, intents), journey `STEPS`, formatting, localStorage |
 | `icons.tsx`         | Inline SVG icons (robot, intents, …)                          |
 | `api.ts`            | Backend calls + TS mirror of records types                    |
 | `provenance.ts` / `briefing.ts` | TS mirrors of backend models                      |
 
-Per-browser settings (user name, role) live in localStorage; the section layout is per case. Confirmations, notes and
-the decision are signed `name (role)`; roles = Koordinátor + `SPECIALTIES` in `layout.ts`. Shared state lives in the
-backend. Export = browser print-to-PDF (`@media print` in `index.css`).
+The user name lives in localStorage and signs the confirmation. Shared state lives in the backend.
+Export = browser print-to-PDF (`@media print` in `index.css`).
 
 ## Data
 

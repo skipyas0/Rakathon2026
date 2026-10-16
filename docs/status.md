@@ -15,7 +15,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
   yes-and's personal account).
 - Branch `yes-and/meeting-records` (pushed, not merged): the full role-based workflow (#16).
-- Branch `yes-and/simple-journey`: the simple coordinator journey (#18, docs/workflow-plan.md).
+- Branch `yes-and/simple-journey`: the simple coordinator journey (#18, docs/workflow-plan.md),
+  built; old screens removed (still on `yes-and/meeting-records`).
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
   `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.

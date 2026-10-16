@@ -1,11 +1,8 @@
-// Labels, roles and section ordering. The section layout is per case (CaseRecord.layout, set by the
-// coordinator). ponytail: per-tumour-board default layouts (brief BONUS) can come later.
-import type { Intent, Status } from './api'
-import type { Case, Section, TimelineEvent } from './briefing'
+// Labels, the journey's steps, formatting and per-browser settings.
+import type { Intent } from './api'
 
 /** Specialties that can sit on the board (the dataset's board members plus the brief's extra
- * roles). Each one is a role in the switcher and a section id in the briefing; the converter fills
- * only the first four so far. */
+ * roles); the id is also the briefing's section id (the converter fills only the first four). */
 export const SPECIALTIES: Record<string, string> = {
   surgery: 'Chirurgie',
   oncology: 'Klinická onkologie',
@@ -23,30 +20,8 @@ export const SPECIALTIES: Record<string, string> = {
   geriatric: 'Geriatrie',
 }
 
-export const SECTIONS: Record<string, string> = { ...SPECIALTIES, patient: 'Pacient', coordinator: 'Koordinátor' }
-
 export const MIN_SPECIALTIES = 3 // brief: at least 3 specialist roles (the backend enforces it too)
 
-/** Role text as recorded ("hepatobiliární chirurg", "radiační onkolog") → specialty id; '' if unknown.
- * Order matters: "radiační onkolog" before "onkolog". */
-const ROLE_WORDS: [string, string][] = [
-  ['radiační', 'radiotherapy'],
-  ['nukleární', 'nuclear'],
-  ['onkolog', 'oncology'],
-  ['chirurg', 'surgery'],
-  ['radiolog', 'radiology'],
-  ['patolog', 'pathology'],
-  ['pneumolog', 'pneumology'],
-  ['gastroenterolog', 'gastroenterology'],
-  ['urolog', 'urology'],
-  ['kardiolog', 'cardiology'],
-  ['genetik', 'genetics'],
-  ['farmaceut', 'pharmacy'],
-]
-export const specialtyOf = (role: string) => ROLE_WORDS.find(([w]) => role.toLowerCase().includes(w))?.[1] ?? ''
-
-/** Who is at the screen (role switcher; no login, decision #16). */
-export const ROLES: Record<string, string> = { coordinator: 'Koordinátor', ...SPECIALTIES }
 
 export const TUMOURS: Record<string, string> = {
   colorectal: 'Kolorektální karcinom',
@@ -64,20 +39,6 @@ export const INTENTS: Record<Intent, { label: string; desc: string }> = {
   deferred: { label: 'Odloženo', desc: 'Rozhodnutí po doplnění vyšetření' },
 }
 
-export const KIND: Record<TimelineEvent['kind'], string> = {
-  diagnosis: 'Diagnóza',
-  staging: 'Staging',
-  pathology: 'Patologie',
-  surgery: 'Operace',
-  systemic: 'Systémová léčba',
-  radiotherapy: 'Radioterapie',
-  imaging: 'Zobrazení',
-  progression: 'Progrese',
-  mdt: 'MDT',
-}
-
-export const SEVERITY_RANK = { high: 0, medium: 1, low: 2 } as const
-
 /** The coordinator's journey (docs/workflow-plan.md); `upload` lives at #/new, the rest at #/case/<id>/<id>. */
 export const STEPS = [
   { id: 'upload', label: 'Nahrání' },
@@ -90,31 +51,6 @@ export const STEPS = [
   { id: 'confirm', label: 'Potvrzení' },
 ] as const
 export type Step = (typeof STEPS)[number]['id']
-
-export const PHASES = [
-  { id: 'prep', label: 'Před zasedáním', hint: 'Podklady a otázky' },
-  { id: 'meeting', label: 'Zasedání', hint: 'Přehled pro komisi' },
-  { id: 'followup', label: 'Po zasedání', hint: 'Závěr a úkoly' },
-] as const
-export type Phase = (typeof PHASES)[number]['id']
-export type View = Phase | 'history' // what a case URL can show
-
-/** Index of the phase a case is in; `closed` = all three done. */
-export const STATUS_STEP: Record<Status, number> = { prep: 0, meeting: 1, followup: 2, closed: 3 }
-export const STATUS_LABEL: Record<Status, string> = {
-  prep: 'V přípravě',
-  meeting: 'Připraveno k projednání',
-  followup: 'Realizace závěru',
-  closed: 'Uzavřeno',
-}
-
-export type Template = { order: string[]; hidden: string[] }
-
-/** The case's sections in template order; sections the template doesn't know go last. */
-export function orderedSections(c: Case, t: Template): Section[] {
-  const rank = (id: string) => (t.order.includes(id) ? t.order.indexOf(id) : t.order.length)
-  return c.sections.filter((s) => !t.hidden.includes(s.id)).sort((a, b) => rank(a.id) - rank(b.id))
-}
 
 export const fmtDate = (d: string) => new Date(d).toLocaleDateString('cs-CZ')
 export const fmtDateTime = (d: string) => new Date(d).toLocaleString('cs-CZ', { dateStyle: 'short', timeStyle: 'short' })
