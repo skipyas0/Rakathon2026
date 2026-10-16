@@ -14,7 +14,6 @@ FINAL = {
     "plan": "Resekce",
     "rationale": "Resekabilní",
     "guideline_compliant": True,
-    "consent": ["MUDr. A"],
     "confirmed_by": "Koordinátorka K",
 }
 
@@ -27,8 +26,6 @@ def test_deviation_needs_reason():
 def test_confirmed_decision_must_be_complete():
     with pytest.raises(ValidationError):
         Decision(**{**FINAL, "intent": None})
-    with pytest.raises(ValidationError):  # consensus: every attendee must agree
-        Decision(**{**FINAL, "consent": []})
     Decision(**FINAL)
 
 

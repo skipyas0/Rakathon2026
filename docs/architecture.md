@@ -66,11 +66,12 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 | `features/intake.py` | `POST /api/intake` (one FHIR Bundle, base64 in JSON) → `data/intake/<patient>/bundle.json`, replacing that patient's dataset bundle; returns the case id. `kind: "pdf"` answers 501 until AI extraction exists |
 | `features/records.py` | `CaseRecord` (confirmations, prep, specialist notes, decision, tasks; coordinator's board, finding triage, section layout + detail level, visibility per specialty; after the meeting: patient's stance, agreed plan), phase status, agenda |
 | `features/history.py` | `GET /api/cases/{id}/history`: the patient's previous MDT records and treatment decisions from the health record (`Composition`, sections as text) and every meeting of the patient recorded in the app (status, decision). Read-only |
+| `features/recommendation.py` | `GET /api/cases/{id}/recommendation`: the recommended postup to compare the conclusion with: `{intent, statement}` or null. ponytail: hand-written examples per dataset patient (`model: "ukázka"`) citing real guideline passages via `knowledge.py`, until the AI pipeline recommends |
 
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =
 `prep`/`meeting`/`followup`/`closed`, board `specialties`; specialists see only their cases), `GET /api/cases/{id}` (`Case`),
-`GET /api/cases/{id}/history` (patient's MDT history), `GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
+`GET /api/cases/{id}/history` (patient's MDT history), `GET /api/cases/{id}/recommendation`, `GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
 case prepared without an MDT question or with fewer than 3 specialties on the board), `GET /api/sources/{type}/{id}` (title, date, author, full
 text of one record — for the source drawer; searches intake bundles too), `POST /api/intake` (upload a
 case).

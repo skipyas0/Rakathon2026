@@ -85,3 +85,12 @@ def test_history_has_previous_mdt_records():
     h = TestClient(app).get("/api/cases/p03-2026-10-21/history").json()
     assert [d["title"] for d in h["documents"]][-1] == "Rozhodnutí o léčbě"
     assert h["documents"][0]["sections"][0]["title"] == "Projednaná otázka"
+
+
+def test_recommendation_examples_cite_real_passages():
+    from mdt_backend.features.cases import meetings
+
+    client = TestClient(app)
+    for case_id in meetings():
+        r = client.get(f"/api/cases/{case_id}/recommendation").json()
+        assert r["statement"]["model"] == "ukázka" and r["statement"]["sources"], case_id
