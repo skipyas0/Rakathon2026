@@ -3,10 +3,14 @@
 Current state of the system. Describe what **is**, not what's planned (plans go in `status.md`).
 
 ```
-browser ──► frontend (Vite dev server :5173) ──/api──► backend (FastAPI :8000) ──► HAPI FHIR (:8080)
+browser ──► frontend (Vite dev server :5173) ──/api──► backend (FastAPI :8000) ──► Dataset/ (bundles on disk)
                                                             │
+                                                            ├──► FHIR server: HAPI :8080 or IRIS (/api/patients, CLI tools)
                                                             └──► LLM: Azure OpenAI gpt-6-luna-dz-eu (EU data zone, via APIM)
 ```
+
+Domain context (how a real MDT runs, what the final record must hold) is in
+[MDT_ZASEDANI_PROCES.md](MDT_ZASEDANI_PROCES.md); the full doc list is in [AGENTS.md](../AGENTS.md).
 
 Deployed (`Dockerfile`): one container on :8000 — FastAPI serves `/api` and the built frontend
 (`frontend/dist`, mounted in `app.py` when present). `Dataset/` is baked into the image (keep it in a
@@ -25,8 +29,9 @@ goes through three phases, and any phase can be reopened at any time:
 2. **Zasedání** (`meeting`) — one low-clutter "slide" for the board: question, key facts, trend
    charts, timeline, options/trials, patient's voice; specialist sections expand for detail and
    the specialist's view (stored as a note).
-3. **Po zasedání** (`followup`) — treatment intent + structured decision (chair locks it), action
-   plan tasks, PDF export; full briefing alongside.
+3. **Po zasedání** (`followup`) — treatment intent + structured decision, action plan tasks, PDF
+   export; full briefing alongside. The board decides by consensus; the chair records the decision
+   and locks it on the board's behalf (decisions #15).
 
 Visual language: unconfirmed AI output is blue with a robot icon; everything else (record data,
 clinician input, confirmed AI) is plain text. Treatment intent has its own colour + icon.
@@ -64,7 +69,7 @@ needs confirmation). Guideline options and trial screening are empty until an LL
 cite via `knowledge.py` (the frontend shows `guideline:`/`trial:` sources by their excerpt).
 
 Confirmations are keyed by the statement's path in the briefing (`summary.0`,
-`sections.surgery.2`, `trials.0.1`, …), so they stay valid only while the stub's order is unchanged.
+`sections.surgery.2`, `trials.0.1`, …), so they stay valid only while the briefing's order is unchanged.
 
 ## Frontend — `frontend/src/`
 
@@ -99,8 +104,9 @@ backend. Export = browser print-to-PDF (`@media print` in `index.css`).
   MedicationAdministrations only cover recent doses); previous MDTs = `Composition` (`mdt-zaznam`); planned MDT date = `Task.restriction.period.start`
   (not `ServiceRequest.occurrenceDateTime`, which differs); Condition `category` text is
   `onkologická diagnóza` / `komorbidita` / `nežádoucí účinek léčby`.
-- `data/stubs/*.json`: hand-made `Case` briefings, validated by `backend/tests/test_stubs.py`. Empty
-  now — the fictional demo stubs were removed once the dataset was integrated.
+- `data/stubs/*.json`: hand-made `Case` briefings, validated by `backend/tests/test_stubs.py`. None
+  now, so the folder doesn't exist (`cases.py` and the test treat it as empty). The fictional demo
+  stubs were removed once the dataset was integrated.
 - `data/records/*.json`: records written by the running app (git-ignored).
 - `data/zavery/`: generated MDT conclusions (`mdt-zaver`, AI drafts, git-ignored).
 - FHIR R4 on HAPI (H2 DB inside the container: survives restarts, wiped by `docker compose down`).

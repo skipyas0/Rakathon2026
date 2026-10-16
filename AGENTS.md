@@ -11,6 +11,19 @@ the agents never drift apart.
 the multidisciplinary tumour board (MDT), and records the board's final, human-made decision.
 Full brief (Czech): [docs/brief.md](docs/brief.md). Read it before working on a feature.
 
+Domain docs (Czech). When they conflict, the brief and the dataset's `README.md` win:
+
+| Doc | What it is |
+|-----|------------|
+| [docs/brief.md](docs/brief.md) | Official brief (original [brief.docx](docs/brief.docx)), the authority |
+| [docs/problem_statement.md](docs/problem_statement.md) | The same brief restructured as a checklist (mandatory vs BONUS) |
+| [docs/MDT_ZASEDANI_PROCES.md](docs/MDT_ZASEDANI_PROCES.md) | How a real MDT runs: roles, nomination, meeting, consensus, follow-up, repeat MDTs |
+| [docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md](docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md) | Mentor consultation notes: priorities and hints, not verified requirements |
+| [docs/template_zaver_zasedani/](docs/template_zaver_zasedani/) | Template for the board's final record, to be filled in live in the app |
+
+The board reaches its final conclusion by **consensus of all members**; in the app the **chair
+records it during the meeting** and confirms it on the board's behalf (decision #15).
+
 ## Ground rules (non-negotiable)
 
 1. **AI proposes, clinicians decide.** No AI output becomes part of the official record until a
@@ -38,10 +51,13 @@ inconsistency (red flag / missing data) with both sources.
 ```
 backend/    Python 3.13, FastAPI, uv. Package: src/mdt_backend/
 frontend/   TypeScript, React, Vite
-data/stubs/ hand-made MDT briefings (one JSON per case) served by /api/cases — see docs/stubs.md
+data/records/ the app's saved records, one JSON per case (git-ignored)
+data/stubs/ optional hand-made briefings served by /api/cases — none now, so the folder is absent;
+            create it with the first stub (see docs/stubs.md)
 Dataset/    organisers' dataset v1.1 (git-ignored, see its README): pacienti/ → from_fhir.py,
             guidelines/ + studie/ → knowledge.py
-docs/       brief, architecture, decisions, status, stubs (keep current — see below)
+docs/       brief + domain docs (listed above), architecture, decisions, status, stubs
+            (keep current — see below)
 docker-compose.yml   HAPI FHIR R4 server on :8080
 ```
 

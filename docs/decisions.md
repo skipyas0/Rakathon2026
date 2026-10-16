@@ -116,7 +116,7 @@ fonts can't encode Czech).
 Why: EU data zone answers the brief's data-residency question; schema-constrained output gives
 parseable, field-by-field answers with sources (ground rule 3).
 
-## 12. Deploy on Fly.io behind one shared password — 2026-10-16, yes-and
+## 14. Deploy on Fly.io behind one shared password — 2026-10-16, yes-and
 Status: accepted
 Decision: The `Dockerfile` image (frontend + API, `Dataset/` baked in) runs on Fly.io as
 `mdt-copilot-rakathon` in `fra`, one machine with a `records` volume. `APP_PASSWORD` (Fly secret)
@@ -124,3 +124,14 @@ enables HTTP basic auth for everything but `/api/health`.
 Why: A public URL for the team and the jury without exposing the organisers' dataset (redistribution
 terms unknown) or letting anyone lock decisions. Per-user login only when decisions must be
 attributed to authenticated clinicians.
+
+## 15. Consensus of the board, recorded by the chair — 2026-10-16, yes-and
+Status: accepted (clarifies #6 and #8)
+Decision: The final conclusion needs consensus of all board members
+([MDT_ZASEDANI_PROCES.md](MDT_ZASEDANI_PROCES.md) §4.3). The chair keeps the record in the app during
+the meeting and confirms (locks) it on the board's behalf once the board agrees; the record lists
+the members present (`Decision.attendees`). Differing views from the discussion go in `dissent`.
+Per-member sign-off is not built. In real practice the coordinator often keeps the record; in our
+prototype that is the chair.
+Why: Matches the confirmed process (the chair can't decide alone) while keeping one person at the
+screen (#8). "Chair's confirmation" in #6 means "the chair records the board's agreement".
