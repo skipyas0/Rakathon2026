@@ -320,6 +320,9 @@ legend {
 .topbar .user input {
   width: 14rem;
 }
+.topbar .role {
+  width: auto;
+}
 .page {
   max-width: 1360px;
   margin: 0 auto;

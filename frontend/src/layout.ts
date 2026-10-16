@@ -4,29 +4,30 @@
 import type { Intent, Status } from './api'
 import type { Case, Section, TimelineEvent } from './briefing'
 
-export const SECTIONS: Record<string, string> = {
+/** Specialties that can sit on the board (the dataset's board members plus the brief's extra
+ * roles). Each one is a role in the switcher and a section id in the briefing; the converter fills
+ * only the first four so far. */
+export const SPECIALTIES: Record<string, string> = {
   surgery: 'Chirurgie',
   oncology: 'Klinická onkologie',
   radiology: 'Radiologie',
   pathology: 'Patologie',
-  patient: 'Pacient',
+  radiotherapy: 'Radiační onkologie',
   nuclear: 'Nukleární medicína',
+  pneumology: 'Pneumologie',
+  gastroenterology: 'Gastroenterologie',
+  urology: 'Urologie',
+  cardiology: 'Kardiologie',
+  genetics: 'Klinická genetika',
+  pharmacy: 'Klinická farmacie',
   palliative: 'Paliativní péče',
   geriatric: 'Geriatrie',
-  genetics: 'Klinická genetika',
-  coordinator: 'Koordinátor',
 }
 
-export const SPECIALTIES = [
-  'Předseda komise',
-  'Klinický onkolog',
-  'Chirurg',
-  'Radiační onkolog',
-  'Radiolog',
-  'Patolog',
-  'Koordinátor / sestra',
-  'Jiná odbornost',
-]
+export const SECTIONS: Record<string, string> = { ...SPECIALTIES, patient: 'Pacient', coordinator: 'Koordinátor' }
+
+/** Who is at the screen (role switcher; no login, decision #16). */
+export const ROLES: Record<string, string> = { coordinator: 'Koordinátor', ...SPECIALTIES }
 
 export const TUMOURS: Record<string, string> = {
   colorectal: 'Kolorektální karcinom',

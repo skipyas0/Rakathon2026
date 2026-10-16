@@ -77,7 +77,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 
 | File                | Role                                                          |
 |---------------------|---------------------------------------------------------------|
-| `App.tsx`           | Shell: top bar (user name, board template dialog), hash routing `#/`, `#/case/<id>/<phase>` |
+| `App.tsx`           | Shell: top bar (user name, role switcher, board template dialog), hash routing `#/`, `#/case/<id>/<phase>` |
 | `Home.tsx`          | Agenda: patient cards with phase steps (each phase links directly) |
 | `CasePage.tsx`      | Loads case + record, phase stepper, saving (optimistic, rolls back on error) |
 | `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |
@@ -92,7 +92,8 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `api.ts`            | Backend calls + TS mirror of records types                    |
 | `provenance.ts` / `briefing.ts` | TS mirrors of backend models                      |
 
-Per-browser settings (user name, board template) live in localStorage. Shared state lives in the
+Per-browser settings (user name, role, board template) live in localStorage. Confirmations, notes and
+the decision are signed `name (role)`; roles = Koordinátor + `SPECIALTIES` in `layout.ts`. Shared state lives in the
 backend. Export = browser print-to-PDF (`@media print` in `index.css`).
 
 ## Data

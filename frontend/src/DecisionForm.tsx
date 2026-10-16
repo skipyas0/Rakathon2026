@@ -84,7 +84,7 @@ export function DecisionForm({ saved, user, onSave }: Props) {
           <div key={i} className="row">
             <input aria-label="Jméno" value={a.name} onChange={(e) => setAttendee(i, { name: e.target.value })} />
             <select aria-label="Odbornost" value={a.specialty} onChange={(e) => setAttendee(i, { specialty: e.target.value })}>
-              {SPECIALTIES.map((s) => (
+              {Object.values(SPECIALTIES).map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>
@@ -93,7 +93,7 @@ export function DecisionForm({ saved, user, onSave }: Props) {
             </button>
           </div>
         ))}
-        <button type="button" onClick={() => set('attendees', [...d.attendees, { name: '', specialty: SPECIALTIES[1] }])}>
+        <button type="button" onClick={() => set('attendees', [...d.attendees, { name: '', specialty: SPECIALTIES.surgery }])}>
           + Přidat člena
         </button>
       </fieldset>

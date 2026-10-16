@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CasePage } from './CasePage'
 import { Home } from './Home'
 import { Settings, User } from './icons'
-import { DEFAULT_TEMPLATE, load, type Phase, PHASES, save, SECTIONS, type Template } from './layout'
+import { DEFAULT_TEMPLATE, load, type Phase, PHASES, ROLES, save, SECTIONS, type Template } from './layout'
 import { SourceDrawer } from './SourceDrawer'
 
 /** #/ = agenda, #/case/<id>/<phase> = a case in one of its three phases. */
@@ -14,11 +14,15 @@ function parse(hash: string): { id: string; phase: Phase } | null {
 
 export default function App() {
   const [route, setRoute] = useState(() => parse(location.hash))
-  const [user, setUser] = useState(() => load('mdt.user', ''))
+  const [name, setName] = useState(() => load('mdt.user', ''))
+  const [role, setRole] = useState(() => load('mdt.role', 'coordinator'))
   const [template, setTemplate] = useState<Template>(() => load('mdt.template', DEFAULT_TEMPLATE))
   const settings = useRef<HTMLDialogElement>(null)
+  // signature on confirmations, notes and the decision, e.g. "LEK-P03-04 (Radiologie)"
+  const user = name.trim() && `${name.trim()} (${ROLES[role] ?? role})`
 
-  useEffect(() => save('mdt.user', user), [user])
+  useEffect(() => save('mdt.user', name), [name])
+  useEffect(() => save('mdt.role', role), [role])
   useEffect(() => save('mdt.template', template), [template])
   useEffect(() => {
     const onHash = () => {
@@ -51,8 +55,15 @@ export default function App() {
         <span className="spacer" />
         <label className="user">
           <User />
-          <input value={user} placeholder="Vaše jméno (předseda)" onChange={(e) => setUser(e.target.value)} aria-label="Vaše jméno" />
+          <input value={name} placeholder="Vaše jméno" onChange={(e) => setName(e.target.value)} aria-label="Vaše jméno" />
         </label>
+        <select className="role" value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role">
+          {Object.entries(ROLES).map(([id, label]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
         <button className="icon-btn" onClick={() => settings.current?.showModal()} aria-label="Šablona komise" title="Šablona komise">
           <Settings />
         </button>
