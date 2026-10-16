@@ -28,6 +28,9 @@ export function CasePage({ id, phase, user, role }: Props) {
   if (error) return <div className="banner bad page">{error}</div>
   if (!shown) return <p className="muted page">Načítám…</p>
   const { c, record } = shown
+  // governance: a specialist sees only cases whose board includes their specialty (coordinator: all)
+  if (role !== 'coordinator' && !record.board.some((m) => m.specialty === role))
+    return <p className="banner page">Nejste v komisi tohoto případu. Komisi sestavuje koordinátor v přípravě.</p>
 
   // ponytail: last write wins; fine with one chair at the screen, needs per-field merge for concurrent editors
   const save = async (next: CaseRecord) => {

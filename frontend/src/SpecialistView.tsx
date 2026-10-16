@@ -10,11 +10,8 @@ type Props = { c: Case; record: CaseRecord; save: (r: CaseRecord) => void; user:
 
 /** Phase 1 for a specialist: the shared header, the sections the coordinator lets them see, the
  * findings assigned to them, and their opinion for the board. They confirm AI claims only in their
- * own section. */
+ * own section. CasePage only shows it to specialties on the board. */
 export function SpecialistView({ c, record, save, user, role }: Props) {
-  if (!record.board.some((m) => m.specialty === role))
-    return <p className="banner">Nejste v komisi tohoto případu. Komisi sestavuje koordinátor v přípravě.</p>
-
   const S = renderer(record)
   const own = renderer(record, confirmer(record, save, user))
   const seen = visibleSections(record, role)
