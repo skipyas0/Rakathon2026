@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from mdt_backend.app import app
 from mdt_backend.briefing import Case, DecisionSupport
 from mdt_backend.features import cases, records
-from mdt_backend.features.records import Decision
+from mdt_backend.features.records import Decision, Triage
 from mdt_backend.provenance import Statement
 
 FINAL = {
@@ -48,6 +48,12 @@ def client(tmp_path, monkeypatch):
     return TestClient(app)
 
 
+BOARD = [
+    {"name": n, "specialty": s}
+    for n, s in (("A", "surgery"), ("B", "oncology"), ("C", "radiology"))
+]
+
+
 def status_of(client, case_id):
     return next(c["status"] for c in client.get("/api/cases").json() if c["id"] == case_id)
 
@@ -55,11 +61,15 @@ def status_of(client, case_id):
 def test_phases_and_lock(client):
     assert status_of(client, "example") == "prep"
     prep = {"prepared_by": "MUDr. P", "question": ""}  # nomination question exists in the stub
-    assert client.put("/api/cases/example/record", json={"prep": prep}).status_code == 200
+    assert client.put("/api/cases/example/record", json={"prep": prep}).status_code == 422  # board
+    assert (
+        client.put("/api/cases/example/record", json={"prep": prep, "board": BOARD}).status_code
+        == 200
+    )
     assert status_of(client, "example") == "meeting"
 
     task = {"what": "Informovat pacienta", "done": False}
-    body = {"prep": prep, "decision": FINAL, "tasks": [task]}
+    body = {"prep": prep, "board": BOARD, "decision": FINAL, "tasks": [task]}
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     assert status_of(client, "example") == "followup"
 
@@ -72,10 +82,19 @@ def test_phases_and_lock(client):
 
 
 def test_cannot_prepare_without_question(client):
-    body = {"prep": {"prepared_by": "MUDr. P"}}
+    body = {"prep": {"prepared_by": "MUDr. P"}, "board": BOARD}
     assert client.put("/api/cases/lung-incomplete/record", json=body).status_code == 422
     body["prep"]["question"] = "Indikace k biopsii?"
     assert client.put("/api/cases/lung-incomplete/record", json=body).status_code == 200
+
+
+def test_triage_needs_assignee_or_reason():
+    by = {"by": "K", "at": "2026-10-17T10:00:00Z"}
+    with pytest.raises(ValidationError):
+        Triage(action="before", **by)
+    with pytest.raises(ValidationError):
+        Triage(action="dismissed", **by)
+    Triage(action="before", assignee="pathology", **by)
 
 
 def test_unknown_case_is_404(client):

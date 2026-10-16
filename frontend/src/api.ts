@@ -34,12 +34,26 @@ export type Decision = {
   confirmed_at: string | null
 }
 export type Task = { what: string; who: string; due: string | null; done: boolean }
+export type Member = { name: string; specialty: string; chair: boolean } // specialty = section id
+export type Triage = {
+  action: 'meeting' | 'before' | 'dismissed'
+  assignee: string | null // specialty resolving it before the meeting
+  reason: string // why dismissed
+  resolution: string
+  by: string
+  at: string
+}
+export type Layout = { order: string[]; hidden: string[]; detail: 'bullets' | 'narrative' }
 export type CaseRecord = {
   confirmations: Record<string, Confirmation>
   prep: Prep
   notes: Record<string, Note>
   decision: Decision
   tasks: Task[]
+  board: Member[]
+  triage: Record<string, Triage> // key = statement path of the finding, e.g. "red_flags.0"
+  layout: Layout
+  visibility: Record<string, string[]> // specialty → section ids; absent = own + patient
 }
 
 export type IntakeKind = 'fhir' | 'pdf'
