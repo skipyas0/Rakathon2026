@@ -1,30 +1,24 @@
 import { useEffect, useState } from 'react'
-import { CasePage } from './CasePage'
-import { Home } from './Home'
 import { Intake } from './Intake'
+import { Journey } from './Journey'
 import { User } from './icons'
-import { load, PHASES, ROLES, save, type View } from './layout'
+import { load, save, type Step, STEPS } from './layout'
+import { Overview } from './Overview'
 import { SourceDrawer } from './SourceDrawer'
 
-/** #/ = agenda, #/new = intake (coordinator), #/case/<id>/<phase> = a case in one of its phases,
- * #/case/<id>/history = the patient's MDT history. */
-function parse(hash: string): { id: string; phase: View } | null {
-  const [, kind, id, phase] = hash.split('/')
+/** #/ = Přehled, #/new = upload (step 1), #/case/<id>/<step> = the journey through one case. */
+function parse(hash: string): { id: string; step: Step } | null {
+  const [, kind, id, step] = hash.split('/')
   if (kind !== 'case' || !id) return null
-  const known = phase === 'history' || PHASES.some((p) => p.id === phase)
-  return { id: decodeURIComponent(id), phase: known ? (phase as View) : 'prep' }
+  return { id: decodeURIComponent(id), step: STEPS.some((s) => s.id === step) ? (step as Step) : 'patient' }
 }
 
 export default function App() {
   const [hash, setHash] = useState(location.hash)
   const route = parse(hash)
   const [name, setName] = useState(() => load('mdt.user', ''))
-  const [role, setRole] = useState(() => load('mdt.role', 'coordinator'))
-  // signature on confirmations, notes and the decision, e.g. "LEK-P03-04 (Radiologie)"
-  const user = name.trim() && `${name.trim()} (${ROLES[role] ?? role})`
 
   useEffect(() => save('mdt.user', name), [name])
-  useEffect(() => save('mdt.role', role), [role])
   useEffect(() => {
     const onHash = () => {
       setHash(location.hash)
@@ -42,38 +36,28 @@ export default function App() {
         </a>
         <nav className="topnav">
           <a href="#/" className={hash === '#/new' || route ? '' : 'on'}>
-            Program
+            Přehled
           </a>
-          {role === 'coordinator' && (
-            <a href="#/new" className={hash === '#/new' ? 'on' : ''}>
-              + Nový případ
-            </a>
-          )}
+          <a href="#/new" className={hash === '#/new' ? 'on' : ''}>
+            + Nový případ
+          </a>
         </nav>
         <span className="spacer" />
         <label className="user">
           <User />
           <input value={name} placeholder="Vaše jméno" onChange={(e) => setName(e.target.value)} aria-label="Vaše jméno" />
         </label>
-        <select className="role" value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role">
-          {Object.entries(ROLES).map(([id, label]) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
       </header>
 
       <main>
         {route ? (
-          <CasePage key={route.id} id={route.id} phase={route.phase} user={user} role={role} />
-        ) : hash === '#/new' && role === 'coordinator' ? (
+          <Journey key={route.id} id={route.id} step={route.step} user={name.trim()} />
+        ) : hash === '#/new' ? (
           <Intake />
         ) : (
-          <Home role={role} />
+          <Overview />
         )}
       </main>
-
     </SourceDrawer>
   )
 }

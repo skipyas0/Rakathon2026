@@ -78,6 +78,19 @@ export const KIND: Record<TimelineEvent['kind'], string> = {
 
 export const SEVERITY_RANK = { high: 0, medium: 1, low: 2 } as const
 
+/** The coordinator's journey (docs/workflow-plan.md); `upload` lives at #/new, the rest at #/case/<id>/<id>. */
+export const STEPS = [
+  { id: 'upload', label: 'Nahrání' },
+  { id: 'board', label: 'Komise' },
+  { id: 'patient', label: 'Pacient' },
+  { id: 'facts', label: 'Klíčové informace' },
+  { id: 'trends', label: 'Vývoj' },
+  { id: 'intent', label: 'Léčebný záměr' },
+  { id: 'plan', label: 'Závěr' },
+  { id: 'confirm', label: 'Potvrzení' },
+] as const
+export type Step = (typeof STEPS)[number]['id']
+
 export const PHASES = [
   { id: 'prep', label: 'Před zasedáním', hint: 'Podklady a otázky' },
   { id: 'meeting', label: 'Zasedání', hint: 'Přehled pro komisi' },

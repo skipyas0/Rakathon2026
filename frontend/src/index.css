@@ -1667,3 +1667,201 @@ code {
   color: var(--muted);
   margin-right: 0.4rem;
 }
+
+/* The journey (decision #18): big, calm, one action per screen */
+.journey {
+  max-width: 920px;
+}
+.journey h1 {
+  font-size: 1.8rem;
+  margin: 0.5rem 0 1.25rem;
+}
+.journey .huge {
+  font-size: 2.2rem;
+  line-height: 1.25;
+  margin: 0 0 0.75rem;
+}
+.journey .big {
+  font-size: 1.35rem;
+  line-height: 1.4;
+}
+.journey .question {
+  font-weight: 600;
+}
+.journey .missing-q {
+  color: var(--crit);
+}
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.steps li.done a {
+  color: var(--ok);
+}
+.steps li.now {
+  color: var(--ink);
+  font-weight: 700;
+}
+.bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.bubble {
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  padding: 0.7rem 1.3rem;
+  font-size: 1.05rem;
+  background: var(--surface);
+}
+.bubble.on {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ink);
+}
+.small-bubbles .bubble {
+  font-size: 0.95rem;
+  padding: 0.45rem 1rem;
+}
+.upload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.big-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  cursor: pointer;
+  position: relative;
+}
+.big-bubble:hover:not(.soon) {
+  border-color: var(--ok);
+}
+.big-bubble input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.big-bubble.soon {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+button.next {
+  display: flex;
+  margin: 1.5rem 0 0 auto;
+  font-size: 1.1rem;
+  padding: 0.7rem 2rem;
+}
+.key-facts {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.45;
+}
+.key-facts li {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.key-facts li.flag .icon {
+  color: var(--crit);
+}
+.journey-trends {
+  display: grid;
+  gap: 1.5rem;
+}
+.big-field {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.big-field textarea {
+  display: block;
+  width: 100%;
+  min-height: 7rem;
+  margin-top: 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+.compare {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.compare section {
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.intent-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.verdict.ok {
+  color: var(--ok);
+}
+.verdict.warn {
+  color: var(--warn);
+}
+.opinion p {
+  margin-top: 0;
+}
+.case-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.case-list a {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+.case-list a:hover strong {
+  color: var(--teal);
+}
+.case-list .state {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--muted);
+}
+.case-list .state.ok {
+  color: var(--ok);
+}
+@media print {
+  .steps,
+  .bubbles,
+  button.next {
+    display: none !important;
+  }
+}

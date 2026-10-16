@@ -1,5 +1,6 @@
 // Backend calls + the record types (mirror of backend/src/mdt_backend/features/records.py).
 import type { Case } from './briefing'
+import type { Statement } from './provenance'
 
 export type Status = 'prep' | 'meeting' | 'followup' | 'closed'
 export type Intent = 'curative' | 'palliative' | 'supportive' | 'surveillance' | 'deferred'
@@ -63,6 +64,8 @@ export type CaseRecord = {
 
 export type IntakeKind = 'fhir' | 'pdf'
 
+export type Recommendation = { intent: Intent; statement: Statement } | null
+
 export type History = {
   documents: { reference: string; title: string; date: string | null; author: string | null; sections: { title: string; text: string }[] }[]
   meetings: { id: string; mdt_date: string | null; status: Status; decision: Decision }[]
@@ -91,6 +94,7 @@ export const api = {
       body: JSON.stringify(record),
     }),
   history: (id: string) => call<History>(`${caseUrl(id)}/history`),
+  recommendation: (id: string) => call<Recommendation>(`${caseUrl(id)}/recommendation`),
   intake: (kind: IntakeKind, files: { name: string; data: string }[]) =>
     call<{ case_id: string }>('/api/intake', {
       method: 'POST',
