@@ -1013,7 +1013,17 @@ button.next {
 }
 .journey-trends {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 1.5rem;
+}
+.journey-trends svg {
+  width: 100%;
+  height: auto;
+  max-height: 38vh;
+}
+.page-count {
+  font-size: 1rem;
+  font-weight: 400;
 }
 .big-field {
   display: block;

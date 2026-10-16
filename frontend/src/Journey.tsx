@@ -189,17 +189,23 @@ function FactsStep({ c, record, next }: StepProps) {
   )
 }
 
+const PER_PAGE = 2 // charts per screen, so nothing scrolls
+
 function TrendsStep({ c, next }: StepProps) {
+  const [page, setPage] = useState(0)
+  const pages = Math.ceil(c.trends.length / PER_PAGE)
   return (
     <>
-      <h1>Vývoj</h1>
+      <h1>
+        Vývoj {pages > 1 && <span className="muted page-count">{page + 1} / {pages}</span>}
+      </h1>
       <div className="journey-trends">
-        {c.trends.slice(0, 3).map((t) => (
+        {c.trends.slice(page * PER_PAGE, (page + 1) * PER_PAGE).map((t) => (
           <TrendChart key={t.id} trend={t} />
         ))}
         {!c.trends.length && <p className="muted">Bez měřených hodnot.</p>}
       </div>
-      <Next onClick={next} />
+      <Next onClick={() => (page + 1 < pages ? setPage(page + 1) : next())} />
     </>
   )
 }
