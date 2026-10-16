@@ -19,7 +19,9 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   keyed `p03` are dropped), role switcher with 14 specialties. Step 2: intake (`#/new`, FHIR
   upload; PDF greyed out until AI extraction exists). Step 3: coordinator's
   prep tabs (Podklady, Nálezy triage, Komise, Struktura, Viditelnost, Odborníci). Step 4: meeting dashboard
-  (urgent-only warnings, greyed-out decision support). Step 5 (minutes, consent) next.
+  (urgent-only warnings, greyed-out decision support). Step 5: minutes with
+  per-member consent and lock, AI compliance check + FHIR export greyed out. Step 6 (specialist
+  view) next.
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
   `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.

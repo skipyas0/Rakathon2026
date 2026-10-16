@@ -93,7 +93,8 @@ class Decision(BaseModel):
     dissent: str = ""
     trial: str = ""
     reevaluation: dt.date | None = None
-    confirmed_by: str | None = None  # chair; set = final and locked
+    consent: list[str] = []  # attendees who agreed, ticked by the coordinator (consensus of all)
+    confirmed_by: str | None = None  # who recorded it (coordinator); set = final and locked
     confirmed_at: dt.datetime | None = None
 
     @model_validator(mode="after")
@@ -107,6 +108,8 @@ class Decision(BaseModel):
                     "Potvrzený závěr musí obsahovat přítomné, cíl léčby, postup, zdůvodnění "
                     "a soulad s postupy"
                 )
+            if {a.name for a in self.attendees} - set(self.consent):
+                raise ValueError("Závěr vyžaduje souhlas všech přítomných členů komise")
         return self
 
 

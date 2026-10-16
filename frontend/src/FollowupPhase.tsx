@@ -34,7 +34,7 @@ export function FollowupPhase({ c, record, save, user }: Props) {
       <div className="phase-main">
         <section className="card">
           <h3>Závěr komise</h3>
-          <DecisionForm key={record.decision.confirmed_at ?? 'draft'} saved={record.decision} user={user} onSave={(decision) => save({ ...record, decision })} />
+          <DecisionForm key={record.decision.confirmed_at ?? 'draft'} saved={record.decision} board={record.board} user={user} onSave={(decision) => save({ ...record, decision })} />
         </section>
 
         <section className="card">
@@ -46,6 +46,9 @@ export function FollowupPhase({ c, record, save, user }: Props) {
             )}
             <button className="primary" onClick={exportPdf}>
               <Doc /> Exportovat zápis (PDF)
+            </button>
+            <button disabled title="Připravujeme">
+              <Doc /> Export do FHIR (připravujeme)
             </button>
           </div>
         </section>

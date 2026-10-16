@@ -30,7 +30,8 @@ export type Decision = {
   dissent: string
   trial: string
   reevaluation: string | null
-  confirmed_by: string | null
+  consent: string[] // attendees who agreed, ticked by the coordinator
+  confirmed_by: string | null // who recorded it
   confirmed_at: string | null
 }
 export type Task = { what: string; who: string; due: string | null; done: boolean }

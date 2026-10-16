@@ -107,3 +107,12 @@ export function CaseDetail({ c, record, S }: { c: Case; record: CaseRecord; S: R
     </div>
   )
 }
+
+/** A feature that waits for the AI pipeline: shown greyed out, never simulated. */
+export function Soon({ children }: { children: ReactNode }) {
+  return (
+    <p className="soon">
+      <span className="chip muted-chip">Připravujeme</span> {children}
+    </p>
+  )
+}

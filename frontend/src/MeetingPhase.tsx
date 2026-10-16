@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { CaseRecord } from './api'
 import type { Case } from './briefing'
-import { SectionItems, TrialList } from './CaseView'
+import { SectionItems, Soon, TrialList } from './CaseView'
 import { confirmer, findingKeys, isPending, missing, now, renderer } from './render'
 import { TimelineStrip, TrendChart } from './Charts'
 import { Alert, Arrow, Back, Check, IntentChip, Missing as MissingIcon, Quote, Robot } from './icons'
@@ -234,14 +234,5 @@ function SpecialistPanel({
         </form>
       </div>
     </section>
-  )
-}
-
-/** A feature that waits for the AI pipeline: shown greyed out, never simulated. */
-function Soon({ children }: { children: string }) {
-  return (
-    <p className="soon">
-      <span className="chip muted-chip">Připravujeme</span> {children}
-    </p>
   )
 }

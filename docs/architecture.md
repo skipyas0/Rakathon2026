@@ -33,9 +33,11 @@ goes through three phases, and any phase can be reopened at any time:
    decision support (greyed out "Připravujeme" until the AI pipeline fills it), patient's voice;
    specialist tiles expand for detail and the specialist's view (stored as a note) and flag
    unresolved findings assigned to them.
-3. **Po zasedání** (`followup`) — treatment intent + structured decision, action plan tasks, PDF
-   export; full briefing alongside. The board decides by consensus; the chair records the decision
-   and locks it on the board's behalf (decisions #15).
+3. **Po zasedání** (`followup`) — the minutes: attendees (prefilled from the board) with a consent
+   tick each, treatment intent + structured decision, action plan tasks, PDF export (print); full
+   briefing alongside. The board decides by consensus: the coordinator ticks every attendee's
+   consent, then locks (decision #16; the backend refuses a lock without everyone's consent). The AI
+   guideline-compliance check and FHIR export are greyed out until they exist.
 
 Visual language: unconfirmed AI output is blue with a robot icon; everything else (record data,
 clinician input, confirmed AI) is plain text. Treatment intent has its own colour + icon.
@@ -88,8 +90,8 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `CasePage.tsx`      | Loads case + record, phase stepper, saving (optimistic, rolls back on error) |
 | `PrepPhase.tsx` / `MeetingPhase.tsx` / `FollowupPhase.tsx` | The three phases |
 | `PrepPhase.tsx`     | Coordinator's workspace in tabs: Podklady (question, summary, discussion questions, sources), Nálezy (`Findings.tsx`: triage of each red flag / missing datum: na zasedání, předem → specialty, zamítnout + důvod), Komise (`Board.tsx`: members, specialty, chair; adopt the previous MDT's board, roles mapped by `specialtyOf`), Struktura (`Structure.tsx`: section order by drag & drop or ↑↓, hidden sections, detail level → `CaseRecord.layout`), Viditelnost (`Visibility.tsx`: specialty × section table → `CaseRecord.visibility`, default own section + patient via `visibleSections`), Odborníci (`Specialists.tsx`: per member AI claims confirmed in their section, assigned findings resolved, opinion written); readiness checklist (≥ 3 specialties to mark the case prepared). No confirm buttons here: clinicians confirm |
-| `DecisionForm.tsx`  | Intent cards + structured decision; locked read-only view     |
-| `CaseView.tsx`      | Shared blocks: flags, missing data, trials, `SectionItems` (items or running text per the detail level), full `CaseDetail` |
+| `DecisionForm.tsx`  | Attendees + consent ticks, intent cards, structured decision; lock needs everyone's consent; locked read-only view |
+| `CaseView.tsx`      | Shared blocks: flags, missing data, trials, `Soon` (greyed-out "Připravujeme" for features waiting on the AI pipeline), `SectionItems` (items or running text per the detail level), full `CaseDetail` |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band), `TimelineStrip`     |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
 | `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records; `useSources()` opens it |

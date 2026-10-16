@@ -1,19 +1,26 @@
 import { useState } from 'react'
-import type { Decision, Intent } from './api'
+import type { Decision, Intent, Member } from './api'
+import { Soon } from './CaseView'
 import { Check, IntentIcon } from './icons'
 import { fmtDate, fmtDateTime, INTENTS, SPECIALTIES } from './layout'
 import { now } from './render'
 
 type Props = {
   saved: Decision
+  board: Member[] // prefills the attendees
   user: string
   onSave: (d: Decision) => Promise<void>
 }
 
-// Structured MDT resolution (brief, section C). Written by humans only; the chair's confirmation
-// locks it (the backend refuses later changes).
-export function DecisionForm({ saved, user, onSave }: Props) {
-  const [d, setD] = useState<Decision>(saved)
+// Structured MDT resolution (brief, section C; template docs/template_zaver_zasedani). Written by
+// humans only. The board decides by consensus: the coordinator ticks each attendee's consent and
+// then locks it (decision #16); the backend refuses later changes.
+export function DecisionForm({ saved, board, user, onSave }: Props) {
+  const [d, setD] = useState<Decision>(() =>
+    saved.attendees.length ? saved : { ...saved, attendees: board.map((m) => ({ name: m.name, specialty: SPECIALTIES[m.specialty] ?? m.specialty })) },
+  )
+  const missingConsent = d.attendees.filter((a) => !d.consent.includes(a.name)).length
+  const lockable = d.attendees.length > 0 && d.attendees.every((a) => a.name.trim()) && !missingConsent
   const [status, setStatus] = useState('')
   const set = <K extends keyof Decision>(k: K, v: Decision[K]) => setD({ ...d, [k]: v })
   const setAttendee = (i: number, patch: Partial<Decision['attendees'][number]>) =>
@@ -33,6 +40,35 @@ export function DecisionForm({ saved, user, onSave }: Props) {
 
   return (
     <form className="decision" onSubmit={(e) => e.preventDefault()}>
+      <fieldset>
+        <legend>Přítomní členové komise a jejich souhlas *</legend>
+        {d.attendees.map((a, i) => (
+          <div key={i} className="row">
+            <input aria-label="Jméno" value={a.name} onChange={(e) => setAttendee(i, { name: e.target.value })} />
+            <select aria-label="Odbornost" value={a.specialty} onChange={(e) => setAttendee(i, { specialty: e.target.value })}>
+              {Object.values(SPECIALTIES).map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+            <label className="inline consent">
+              <input
+                type="checkbox"
+                checked={d.consent.includes(a.name)}
+                disabled={!a.name.trim()}
+                onChange={(e) => set('consent', e.target.checked ? [...d.consent, a.name] : d.consent.filter((n) => n !== a.name))}
+              />{' '}
+              Souhlasí se závěrem
+            </label>
+            <button type="button" className="link" onClick={() => set('attendees', d.attendees.filter((_, j) => j !== i))}>
+              Odebrat
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={() => set('attendees', [...d.attendees, { name: '', specialty: SPECIALTIES.surgery }])}>
+          + Přidat člena
+        </button>
+      </fieldset>
+
       <fieldset className="intents">
         <legend>Cíl léčby *</legend>
         {(Object.keys(INTENTS) as Intent[]).map((k) => (
@@ -62,6 +98,7 @@ export function DecisionForm({ saved, user, onSave }: Props) {
 
       <fieldset>
         <legend>Soulad s doporučenými postupy *</legend>
+        <Soon>AI kontrola souladu závěru s doporučenými postupy.</Soon>
         <div className="segmented">
           <label className={d.guideline_compliant === true ? 'on' : ''}>
             <input type="radio" name="gl" checked={d.guideline_compliant === true} onChange={() => set('guideline_compliant', true)} /> Ano
@@ -78,25 +115,6 @@ export function DecisionForm({ saved, user, onSave }: Props) {
         )}
       </fieldset>
 
-      <fieldset>
-        <legend>Přítomní členové komise *</legend>
-        {d.attendees.map((a, i) => (
-          <div key={i} className="row">
-            <input aria-label="Jméno" value={a.name} onChange={(e) => setAttendee(i, { name: e.target.value })} />
-            <select aria-label="Odbornost" value={a.specialty} onChange={(e) => setAttendee(i, { specialty: e.target.value })}>
-              {Object.values(SPECIALTIES).map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-            <button type="button" className="link" onClick={() => set('attendees', d.attendees.filter((_, j) => j !== i))}>
-              Odebrat
-            </button>
-          </div>
-        ))}
-        <button type="button" onClick={() => set('attendees', [...d.attendees, { name: '', specialty: SPECIALTIES.surgery }])}>
-          + Přidat člena
-        </button>
-      </fieldset>
 
       <label>
         Odlišná stanoviska členů
@@ -120,11 +138,11 @@ export function DecisionForm({ saved, user, onSave }: Props) {
         <button
           type="button"
           className="primary"
-          disabled={!user}
-          title={user ? '' : 'Zadejte své jméno vpravo nahoře'}
+          disabled={!user || !lockable}
+          title={!user ? 'Zadejte své jméno vpravo nahoře' : !lockable ? 'Chybí souhlas všech přítomných členů' : ''}
           onClick={() => submit(true)}
         >
-          <Check /> Potvrdit a uzamknout závěr
+          <Check /> Uzamknout závěr (souhlas všech)
         </button>
         <span className="muted" role="status">
           {status}
@@ -143,7 +161,7 @@ function LockedDecision({ d }: { d: Decision }) {
     ['Odlišná stanoviska', d.dissent],
     ['Klinická studie', d.trial],
     ['Re-evaluace', d.reevaluation ? fmtDate(d.reevaluation) : ''],
-    ['Přítomní', d.attendees.map((a) => `${a.name} (${a.specialty})`).join(', ')],
+    ['Přítomní a souhlasili', d.attendees.map((a) => `${a.name} (${a.specialty})`).join(', ')],
   ]
   return (
     <div className="locked">
@@ -167,7 +185,7 @@ function LockedDecision({ d }: { d: Decision }) {
           ))}
       </dl>
       <p className="done-line">
-        <Check /> Potvrdil {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)} · záznam uzamčen
+        <Check /> Konsenzus všech přítomných · zapsal {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)} · záznam uzamčen
       </p>
     </div>
   )
