@@ -52,6 +52,15 @@ class DecisionSupport(BaseModel):
     questions: list[Statement]  # 2–3 questions for the board to resolve
 
 
+class BoardMember(BaseModel):
+    """A member of the patient's previous MDT (the record's CareTeam), offered to the coordinator
+    as the starting composition of the board."""
+
+    name: str  # practitioner id, "" when the record names only the role
+    role: str  # as recorded, e.g. "hepatobiliární chirurg"
+    chair: bool = False
+
+
 class TrendPoint(BaseModel):
     date: dt.date
     value: float
@@ -84,3 +93,4 @@ class Case(BaseModel):
     sections: list[Section]
     decision_support: DecisionSupport
     trends: list[Trend] = []  # lab markers and PROMs over time, for the meeting charts
+    previous_board: list[BoardMember] = []  # who sat on the patient's last MDT

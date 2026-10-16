@@ -189,3 +189,13 @@ Why: The user asked for the app to show the pipeline without touching the fronte
 patient data to come from IRIS. Text-then-extract keeps the narrative the model reasons in, while
 the app gets small, individually cited statements. A full run is ~2.5 min per patient alone (~9
 min each with all 6 in parallel under the APIM rate limit), too slow to run on page load.
+
+## 19. Previous MDT's board in the briefing — 2026-10-17, yes-and
+Status: accepted
+Decision: `Case.previous_board` (backend `briefing.py`, frontend `briefing.ts`) lists the members of
+the patient's latest previous MDT from the record's `CareTeam`: practitioner id (`""` when only the
+role is recorded), role text as recorded, `chair` = the practitioner's qualification says
+"předseda". The coordinator can adopt it as the board for the new meeting; it is never applied
+silently.
+Why: The board for a repeat MDT is usually the same team; the dataset already has it, so the
+coordinator starts from facts instead of typing five names.

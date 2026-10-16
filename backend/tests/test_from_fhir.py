@@ -69,3 +69,11 @@ def test_case_ids_are_meetings():
     ids = list(meetings())
     assert len(ids) == len(BUNDLES)  # one open meeting per patient in the dataset
     assert all(i[:3] in BUNDLES and dt.date.fromisoformat(i[4:]) for i in ids), ids
+
+
+def test_previous_board_from_care_team():
+    if "p03" not in BUNDLES:
+        pytest.skip("P03 not in dataset")
+    board = build_case("p03", load(BUNDLES["p03"])).previous_board
+    assert [m.name for m in board if m.chair] == ["LEK-P03-06"]  # "předseda GIT komise"
+    assert any(m.role == "patolog" and m.name == "" for m in board)  # role without a member

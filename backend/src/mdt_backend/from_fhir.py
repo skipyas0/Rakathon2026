@@ -8,6 +8,7 @@ import datetime as dt
 import re
 
 from mdt_backend.briefing import (
+    BoardMember,
     Case,
     DecisionSupport,
     RedFlag,
@@ -56,6 +57,23 @@ TUMOURS = {
 
 def rec(text: str, *sources: Source) -> Statement:
     return Statement(text=text, origin="record", sources=list(sources))
+
+
+def previous_board(b: Bundle) -> list[BoardMember]:
+    """Members of the latest previous MDT (CareTeam); the chair is the practitioner whose
+    qualification says "předseda"."""
+    teams = sorted(b.all("CareTeam"), key=lambda t: t["id"])
+    members = []
+    for p in teams[-1]["participant"] if teams else []:
+        ref = p.get("member", {}).get("reference")
+        members.append(
+            BoardMember(
+                name=ref.split("/")[-1] if ref else "",
+                role=p["role"][0]["text"],
+                chair="předseda" in (b.name(ref) or ""),
+            )
+        )
+    return members
 
 
 def planned_date(b: Bundle) -> dt.date | None:
@@ -133,6 +151,7 @@ def build_case(case_id: str, b: Bundle) -> Case:
         sections=build_sections(b, conditions, observations, proms, pathology, imaging, note),
         decision_support=DecisionSupport(options=[], trials=[], questions=[]),
         trends=trends,
+        previous_board=previous_board(b),
     )
 
 

@@ -34,7 +34,11 @@ export type Case = {
   sections: Section[]
   decision_support: DecisionSupport
   trends: Trend[]
+  previous_board: BoardMember[] // who sat on the patient's last MDT (record's CareTeam)
 }
+
+/** name = practitioner id, '' when the record names only the role. */
+export type BoardMember = { name: string; role: string; chair: boolean }
 
 export type TrendPoint = { date: string; value: number; source: Source }
 export type Trend = {
