@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     fhir_password: str | None = None
     # The organisers' dataset (git-ignored): pacienti/<ID>_bundle.json, guidelines/, studie/
     dataset_dir: Path = Path(__file__).parents[3] / "Dataset"
+    # Shared password (HTTP basic auth, any username) for the deployed app; unset = no login
+    app_password: str | None = None
 
 
 settings = Settings()

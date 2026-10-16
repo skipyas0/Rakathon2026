@@ -1,0 +1,26 @@
+# Fly.io deploy of the Dockerfile: `fly deploy` (needs Dataset/ locally, it's baked into the image).
+# Password: `fly secrets set APP_PASSWORD=…`. Records live on the `records` volume.
+app = "mdt-copilot-rakathon"
+primary_region = "fra"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop" # ponytail: sleeps when idle, ~2 s cold start; min_machines_running = 1 for a live demo
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/api/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+
+[mounts]
+  source = "records"
+  destination = "/app/data/records"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
