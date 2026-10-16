@@ -3,8 +3,10 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from mdt_backend.app import app
-from mdt_backend.features import records
+from mdt_backend.briefing import Case, DecisionSupport
+from mdt_backend.features import cases, records
 from mdt_backend.features.records import Decision
+from mdt_backend.provenance import Statement
 
 FINAL = {
     "attendees": [{"name": "MUDr. A", "specialty": "Chirurg"}],
@@ -27,9 +29,22 @@ def test_confirmed_decision_must_be_complete():
     Decision(**FINAL)
 
 
+def case(case_id: str, question: str | None) -> Case:
+    q = question and Statement(text=question, origin="human", confirmed_by="MUDr. Odesílající")
+    empty = DecisionSupport(options=[], trials=[], questions=[])
+    return Case(id=case_id, patient="Patient/t", label="Test", tumour="breast", question=q,
+                summary=[], timeline=[], red_flags=[], sections=[], decision_support=empty)  # fmt: skip
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    monkeypatch.setattr(records, "RECORDS", tmp_path)
+    # own test cases as stubs: the dataset isn't in git, so CI has no FHIR cases
+    stubs = tmp_path / "stubs"
+    stubs.mkdir()
+    for c in (case("example", "Resekabilita?"), case("lung-incomplete", None)):
+        (stubs / f"{c.id}.json").write_text(c.model_dump_json(), "utf-8")
+    monkeypatch.setattr(cases, "STUBS", stubs)
+    monkeypatch.setattr(records, "RECORDS", tmp_path / "records")
     return TestClient(app)
 
 

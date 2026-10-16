@@ -72,3 +72,24 @@ Unconfirmed AI output is blue with a robot icon; record data, clinician input an
 render as plain text. Treatment intent (curative/palliative/supportive/surveillance) is part of
 the decision and has its own colour + icon everywhere.
 Why: Quick orientation on one screen; the brief requires AI output to be visually distinct.
+
+## 10. Briefings built from FHIR bundles without an LLM — 2026-10-16, yes-and
+Status: accepted
+Decision: `from_fhir.py` builds `Case` deterministically from the organisers' bundles; red flags
+come from fixed rules (`rules.py`, shown as AI proposals). New contract fields driven by the data:
+`Statement.origin = "record"`, `Source.title`, timeline kind `pathology`, `Case.board`,
+`Case.mdt_date`, decision intent `deferred` (the dataset's `odlozeno`).
+Why: Most of the briefing is structured in the data already; deterministic extraction is exact,
+fast and cites its sources. The LLM can later add what rules can't (guideline options, trials,
+questions, narrative summary) into the same `Case`.
+
+## 11. Dataset in `Dataset/`, fictional stubs removed — 2026-10-16, yes-and
+Status: accepted (supersedes the `data_trial/` location from #10)
+Decision: The organisers' dataset v1.1 lives in `Dataset/` at the repo root (git-ignored, as on
+`main`); `settings.dataset_dir` / `DATASET_DIR` points at it. Guideline and trial citations use
+`guideline:<passage-id>` (e.g. `guideline:KRC-2.3`) and `trial:<trial-id>#<criterion-id>` (e.g.
+`trial:RKT-01#Z2`), built by `knowledge.py` with verbatim text. The fictional stubs (`example`,
+`lung-incomplete`) are deleted; tests create their own cases. The planned MDT date is
+`Task.restriction.period.start`.
+Why: One dataset location for everyone; citation ids are the ones the dataset tells us to cite; the
+fictional cases would mix made-up guidelines/trials with the real ones.

@@ -92,22 +92,22 @@ export function TrendChart({ trend }: { trend: Trend }) {
 }
 
 
-/** Disease course on one line; events on the same day share a dot. Labels alternate above/below. */
+/** Disease course on one line. Events of the same month share a dot; dots are evenly spaced (order
+ * matters more than scale when years of follow-up end in a busy last few months). */
 export function TimelineStrip({ events }: { events: TimelineEvent[] }) {
   const show = useSources()
   if (!events.length) return null
-  const groups = [...Map.groupBy(events, (e: TimelineEvent) => e.date)].sort(([a], [b]) => t(a) - t(b))
-  const x0 = t(groups[0][0]), x1 = t(groups[groups.length - 1][0])
-  const pos = (d: string) => (x1 === x0 ? 50 : 4 + ((t(d) - x0) / (x1 - x0)) * 92)
+  const groups = [...Map.groupBy(events, (e: TimelineEvent) => e.date.slice(0, 7))].sort(([a], [b]) => a.localeCompare(b))
+  const pos = (i: number) => (groups.length === 1 ? 50 : 3 + (i / (groups.length - 1)) * 94)
   return (
     <div className="strip" role="list" aria-label="Časová osa onemocnění">
       <div className="strip-line" />
-      {groups.map(([date, evs], i) => (
+      {groups.map(([month, evs], i) => (
         <button
-          key={date}
+          key={month}
           role="listitem"
           className={`strip-ev ${i % 2 ? 'below' : 'above'} ${evs.some((e) => e.kind === 'progression') ? 'bad' : ''}`}
-          style={{ left: `${pos(date)}%` }}
+          style={{ left: `${pos(i)}%` }}
           onClick={() =>
             show({
               title: evs.map((e) => e.statement.text).join(' '),
@@ -118,8 +118,8 @@ export function TimelineStrip({ events }: { events: TimelineEvent[] }) {
         >
           <span className="strip-dot" />
           <span className="strip-text">
-            <strong>{evs.map((e) => KIND[e.kind]).join(' · ')}</strong>
-            <small>{fmtDate(date)}</small>
+            <strong>{[...new Set(evs.map((e) => KIND[e.kind]))].join(' · ')}</strong>
+            <small>{`${+month.slice(5)}/${month.slice(0, 4)}`}</small>
           </span>
         </button>
       ))}

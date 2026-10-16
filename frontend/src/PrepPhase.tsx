@@ -4,7 +4,7 @@ import { type Case, statements } from './briefing'
 import { FlagItem, MissingItem } from './CaseView'
 import { confirmer, isPending, missing, now, renderer } from './render'
 import { Alert as AlertIcon, Arrow, Check, Doc, Missing as MissingIcon, Robot } from './icons'
-import { fmtDate, fmtDateTime, type Phase } from './layout'
+import { fmtDate, fmtDateTime, type Phase, SEVERITY_RANK } from './layout'
 import type { Source } from './provenance'
 import { sourceType, useSources } from './sources'
 import { StatementView } from './StatementView'
@@ -70,9 +70,11 @@ export function PrepPhase({ c, record, save, user, go }: Props) {
         <section className="card">
           <h3>K vyřešení před zasedáním</h3>
           <p className="muted small">Rozpory mezi zdroji a chybějící údaje. Ověřte a potvrďte, nebo nechte doplnit.</p>
-          {c.red_flags.map((f, i) => (
-            <FlagItem key={i} f={f} i={i} S={S} />
-          ))}
+          {[...c.red_flags.entries()]
+            .sort(([, a], [, b]) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
+            .map(([i, f]) => (
+              <FlagItem key={i} f={f} i={i} S={S} />
+            ))}
           {gaps.map(([k, s]) => (
             <MissingItem key={k} k={k} s={s} S={S} />
           ))}

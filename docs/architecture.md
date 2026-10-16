@@ -33,14 +33,24 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 | `fhir.py`       | `get(path, **params)` → raw FHIR JSON from the FHIR server              |
 | `provenance.py` | `Statement`, `Source`: AI-vs-human labelling, sources, confirmation     |
 | `briefing.py`   | `Case`: the MDT briefing (summary, timeline, red flags, sections, decision support, trends) |
-| `features/cases.py` | Serves `Case` JSON from `data/stubs/` (to be replaced by the AI pipeline) |
+| `bundles.py`    | Reads FHIR bundles from `settings.dataset_dir / "pacienti"` (default `Dataset/`), resource accessors, full text of a record |
+| `knowledge.py`  | Guideline passages (`Dataset/guidelines/*.md`) and trial criteria (`Dataset/studie/studie.json`) as verbatim `Source`s: `guideline:KRC-2.3`, `trial:RKT-01#Z2` |
+| `from_fhir.py`  | Builds a `Case` from a bundle deterministically (no LLM): question, summary, timeline, sections, trends |
+| `rules.py`      | Rule-based red flags (`origin: "ai"`, model `pravidla-v1`): ECOG doctor vs patient, anaemia + fatigue, rising marker, worsening PROMs, new symptom, stale imaging |
+| `features/cases.py` | `GET /api/cases/{id}`: FHIR bundle → `from_fhir`, else stub JSON from `data/stubs/`; `GET /api/sources/{type}/{id}`: full text of a record |
 | `features/records.py` | `CaseRecord` (confirmations, prep, specialist notes, decision, tasks), phase status, agenda |
 
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =
 `prep`/`meeting`/`followup`/`closed`), `GET /api/cases/{id}` (`Case`),
 `GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
-case prepared without an MDT question).
+case prepared without an MDT question), `GET /api/sources/{type}/{id}` (title, date, author, full
+text of one record — for the source drawer).
+
+Statement origins: `record` = taken from the health record (ground truth, plain text in the UI),
+`human` = written by a clinician (nomination question, notes), `ai` = machine proposal (blue,
+needs confirmation). Guideline options and trial screening are empty until an LLM step fills them; it must
+cite via `knowledge.py` (the frontend shows `guideline:`/`trial:` sources by their excerpt).
 
 Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 `sections.surgery.2`, `trials.0.1`, …), so they stay valid only while the stub's order is unchanged.
@@ -69,8 +79,18 @@ backend. Export = browser print-to-PDF (`@media print` in `index.css`).
 
 ## Data
 
-- `data/stubs/*.json`: hand-made `Case` briefings, validated by `backend/tests/test_stubs.py`.
+- `Dataset/` (git-ignored): the organisers' dataset v1.1 — `pacienti/P0x_bundle.json` (6 synthetic
+  FHIR R4 bundles), `guidelines/`, `studie/`, `dotaznik/` (Questionnaire `MDT-PROMS-1`),
+  `fhir/bundles.ndjson` (same bundles, for bulk import). Its README is the reference; it mentions a
+  `ground_truth/` folder that isn't delivered (yet). Override the location with `DATASET_DIR`. `P0x_pacient.md` is a readable rendering of the same records. Mapping notes: question =
+  `ServiceRequest.reasonCode.text`; patient ECOG = PROMs item `samostatnost` (code 0–4); treatment
+  history with real start dates = the nomination note "Předchozí onkologická léčba" (the bundle's
+  MedicationAdministrations only cover recent doses); previous MDTs = `Composition` (`mdt-zaznam`); planned MDT date = `Task.restriction.period.start`
+  (not `ServiceRequest.occurrenceDateTime`, which differs); Condition `category` text is
+  `onkologická diagnóza` / `komorbidita` / `nežádoucí účinek léčby`.
+- `data/stubs/*.json`: hand-made `Case` briefings, validated by `backend/tests/test_stubs.py`. Empty
+  now — the fictional demo stubs were removed once the dataset was integrated.
 - `data/records/*.json`: records written by the running app (git-ignored).
 - FHIR R4 on HAPI (H2 DB inside the container: survives restarts, wiped by `docker compose down`).
-  Mock data from the organisers is not loaded yet. The backend works with any FHIR R4
+  The dataset is not loaded into it (the app reads the bundles from disk). The backend works with any FHIR R4
   server: set `FHIR_BASE_URL` (+ `FHIR_USER`/`FHIR_PASSWORD` for IRIS, see `.env.example`).

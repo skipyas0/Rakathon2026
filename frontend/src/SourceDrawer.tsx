@@ -3,6 +3,24 @@ import { Doc, Robot } from './icons'
 import { fmtDate } from './layout'
 import { type Shown, SourcesContext, sourceType } from './sources'
 
+/** Loads the whole source record on demand (the excerpt above is only the cited passage). */
+function FullText({ reference }: { reference: string }) {
+  const [text, setText] = useState<string | null>(null)
+  const ref = reference.split('#')[0]
+  if (!/^[A-Z][A-Za-z]+\/[\w.-]+$/.test(ref)) return null // guideline:/trial: refs have no record
+  const load = () =>
+    fetch(`/api/sources/${ref}`)
+      .then((r) => (r.ok ? r.json() : { text: 'Celý záznam není v dostupných datech.' }))
+      .then((d) => setText(d.text))
+  return text === null ? (
+    <button className="link" onClick={load}>
+      Zobrazit celý záznam
+    </button>
+  ) : (
+    <div className="full-text">{text}</div>
+  )
+}
+
 export function SourceDrawer({ children }: { children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const [shown, setShown] = useState<Shown | null>(null)
@@ -40,12 +58,14 @@ export function SourceDrawer({ children }: { children: ReactNode }) {
                     <Doc /> <strong>{sourceType(s.reference)}</strong>
                     <span className="muted">{[s.date && fmtDate(s.date), s.author].filter(Boolean).join(' · ')}</span>
                   </div>
+                  {s.title && <p className="source-title">{s.title}</p>}
                   {s.excerpt && (
                     <blockquote>
                       <mark>{s.excerpt}</mark>
                     </blockquote>
                   )}
                   <code>{s.reference}</code>
+                  <FullText key={s.reference} reference={s.reference} />
                 </li>
               ))}
             </ul>

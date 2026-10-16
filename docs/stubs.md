@@ -1,7 +1,11 @@
 # Preparing case stubs for the frontend demo
 
-**Audience:** coding agents (and people) turning the organisers' FHIR patient records into
-hand-made MDT briefings, so the frontend can be built and demoed before the AI pipeline exists.
+**Audience:** coding agents (and people) writing MDT briefings by hand.
+
+> **Update:** the organisers' FHIR bundles (`Dataset/pacienti/`) are now converted
+> automatically by `backend/src/mdt_backend/from_fhir.py`. Hand-made stubs are only needed for
+> content the converter can't produce yet (guideline options, trial screening, AI questions) or for
+> extra demo scenarios. Prefer improving the converter over writing stubs.
 
 A stub is the exact JSON the backend's AI pipeline will produce later. Get the shape right and the
 frontend works unchanged when the real pipeline replaces the stubs.
@@ -12,7 +16,7 @@ frontend works unchanged when the real pipeline replaces the stubs.
   `crc-progression.json`). The `id` field must equal the filename without `.json`.
 - Shape: `Case` in [backend/src/mdt_backend/briefing.py](../backend/src/mdt_backend/briefing.py),
   built from `Statement` in [provenance.py](../backend/src/mdt_backend/provenance.py).
-  Copy [data/stubs/example.json](../data/stubs/example.json) as your template.
+  As a template, save a generated case: `curl localhost:8000/api/cases/p03 > data/stubs/<id>.json`.
 - Validate before committing: `cd backend && uv run pytest tests/test_stubs.py`.
 - The stub is served at `GET /api/cases/<case-id>` (start the backend with `uv run mdt-backend`).
 
@@ -25,7 +29,10 @@ If you need a field the contract doesn't have, **don't add it to your JSON only*
 Every sentence a clinician will read is a `Statement`. These rules come from the brief and are
 checked by the validator:
 
-| Field          | AI-prepared content (almost everything)       | Human content (the MDT question) |
+Use `origin: "record"` for facts copied from the health record (with a source, no model), `"ai"`
+for anything interpreted or summarised by a machine, `"human"` for clinician-written text.
+
+| Field          | AI-prepared content                            | Human content (the MDT question) |
 |----------------|-----------------------------------------------|----------------------------------|
 | `origin`       | `"ai"`                                         | `"human"`                        |
 | `model`        | `"stub"` (marks it as hand-made)              | omit                             |
@@ -34,8 +41,9 @@ checked by the validator:
 
 - **Sources point to real records in the dataset.** `reference` is `ResourceType/id` using the id
   from the organisers' FHIR data (e.g. `Observation/abc-123`). For a single questionnaire answer
-  use `QuestionnaireResponse/<id>#<linkId>`. For guidelines use `guideline:<doc>#<passage-number>`
-  and for trials use `trial:<trial-id>#<criterion>`. Use the ids from the organisers' documents.
+  use `QuestionnaireResponse/<id>#<linkId>`. For guidelines use `guideline:<passage-id>`
+  (e.g. `guideline:KRC-2.3`) and for trials `trial:<trial-id>#<criterion-id>` (e.g. `trial:RKT-01#Z2`,
+  Z = inclusion, V = exclusion). `knowledge.py` builds these sources with the verbatim text.
 - **`excerpt` is the verbatim passage** from that record (the UI highlights it when clicked). Copy
   it; don't paraphrase. Add `date` and `author` when the record has them.
 - **Missing data:** if something isn't in the records, name it and end with the exact wording,
@@ -81,6 +89,5 @@ sure each stub surfaces the ones for its patient. Those are what the judges will
 ## Hygiene
 
 - Synthetic data only. Never put real patient data in the repo.
-- Raw FHIR bundles you work from go in `data/fhir/` (only if the organisers allow redistribution;
-  otherwise keep them local).
+- The dataset lives in `Dataset/` (git-ignored; not in git until we know the organisers allow redistribution).
 - Add your stub work to your section of [status.md](status.md) (which patients, what's done).

@@ -15,6 +15,7 @@ class TimelineEvent(BaseModel):
     kind: Literal[
         "diagnosis",
         "staging",
+        "pathology",
         "surgery",
         "systemic",
         "radiotherapy",
@@ -74,6 +75,8 @@ class Case(BaseModel):
     patient: str  # FHIR reference, e.g. "Patient/123"
     label: str  # display name as in the mock data (synthetic only)
     tumour: str  # e.g. "colorectal", "breast", "lung"
+    board: str | None = None  # which tumour board, e.g. "Mamární komise – karcinom prsu"
+    mdt_date: dt.date | None = None  # planned meeting date
     question: Statement | None  # from the nomination (origin "human"); None = incomplete case
     summary: list[Statement]  # executive summary, readable in 30 s
     timeline: list[TimelineEvent]

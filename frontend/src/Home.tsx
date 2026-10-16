@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { type AgendaItem, api } from './api'
 import { Alert, Check, IntentChip } from './icons'
-import { PHASES, STATUS_LABEL, STATUS_STEP, TUMOURS } from './layout'
+import { fmtDate, PHASES, STATUS_LABEL, STATUS_STEP, TUMOURS } from './layout'
 
 const TODAY = new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -10,7 +10,10 @@ export function Home() {
   const [items, setItems] = useState<AgendaItem[] | null>(null)
   const [error, setError] = useState('')
   useEffect(() => {
-    api.agenda().then(setItems, (e) => setError(e.message))
+    api.agenda().then(
+      (items) => setItems(items.sort((a, b) => (a.mdt_date ?? '9').localeCompare(b.mdt_date ?? '9'))),
+      (e) => setError(e.message),
+    )
   }, [])
 
   return (
@@ -32,6 +35,11 @@ export function Home() {
                   <h2>{it.label}</h2>
                   <span className="chip">{TUMOURS[it.tumour] ?? it.tumour}</span>
                 </div>
+                {(it.board || it.mdt_date) && (
+                  <p className="card-board">
+                    {[it.board, it.mdt_date && `MDT ${fmtDate(it.mdt_date)}`].filter(Boolean).join(' · ')}
+                  </p>
+                )}
                 <p className={it.question ? 'card-q' : 'card-q missing'}>{it.question || 'Chybí otázka pro komisi'}</p>
                 <div className="card-chips">
                   <IntentChip intent={it.intent} />

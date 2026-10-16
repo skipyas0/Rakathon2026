@@ -5,7 +5,7 @@ import { TrialList } from './CaseView'
 import { confirmer, isPending, now, renderer } from './render'
 import { TimelineStrip, TrendChart } from './Charts'
 import { Alert, Arrow, Back, Check, IntentChip, Quote, Robot } from './icons'
-import { fmtDateTime, orderedSections, type Phase, SECTIONS, type Template, TUMOURS } from './layout'
+import { fmtDateTime, orderedSections, type Phase, SECTIONS, SEVERITY_RANK, type Template, TUMOURS } from './layout'
 
 type Props = {
   c: Case
@@ -25,8 +25,7 @@ export function MeetingPhase({ c, record, save, user, template, go }: Props) {
   const question = record.prep.question || c.question?.text
   const sections = orderedSections(c, template)
   const patient = c.sections.find((s) => s.id === 'patient')
-  const rank = { high: 0, medium: 1, low: 2 }
-  const flags = [...c.red_flags.entries()].sort(([, a], [, b]) => rank[a.severity] - rank[b.severity])
+  const flags = [...c.red_flags.entries()].sort(([, a], [, b]) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
 
   return (
     <div className="meeting">
@@ -84,11 +83,15 @@ export function MeetingPhase({ c, record, save, user, template, go }: Props) {
 
           <section>
             <h3>Možnosti dle doporučených postupů</h3>
-            <ol className="options">
-              {c.decision_support.options.map((s, i) => (
-                <li key={i}>{S(`options.${i}`, s, 'inline')}</li>
-              ))}
-            </ol>
+            {c.decision_support.options.length ? (
+              <ol className="options">
+                {c.decision_support.options.map((s, i) => (
+                  <li key={i}>{S(`options.${i}`, s, 'inline')}</li>
+                ))}
+              </ol>
+            ) : (
+              <p className="muted small">Doporučené postupy zatím nejsou k dispozici – AI analýza nebyla spuštěna.</p>
+            )}
             {c.decision_support.trials.length > 0 && (
               <>
                 <h3>Klinické studie</h3>
@@ -102,7 +105,7 @@ export function MeetingPhase({ c, record, save, user, template, go }: Props) {
                 <span className="eyebrow">
                   <Quote /> Pacient
                 </span>
-                {patient.items.map((s, i) => (
+                {patient.items.slice(0, 2).map((s, i) => ( // the rest is in the Pacient panel
                   <p key={i}>{S(`sections.patient.${i}`, s, 'inline')}</p>
                 ))}
               </div>

@@ -95,6 +95,7 @@ const INTENT_ICON: Record<Intent, ReactNode> = {
   ),
   palliative: <path d="M8 13.5S2 10 2 5.8A3 3 0 0 1 8 4.5a3 3 0 0 1 6 1.3C14 10 8 13.5 8 13.5z" />,
   supportive: <path d="M8 2.5v11M2.5 8h11" />,
+  deferred: <path d="M4.5 2h7M4.5 14h7M5 2c0 3.5 6 4 6 6s-6 2.5-6 6M11 2c0 3.5-6 4-6 6s6 2.5 6 6" />,
   surveillance: (
     <>
       <path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8z" />

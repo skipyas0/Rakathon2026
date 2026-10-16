@@ -14,6 +14,8 @@ const TYPE: Record<string, string> = {
   MedicationAdministration: 'Podaná léčba',
   MedicationStatement: 'Medikace',
   Procedure: 'Výkon',
+  DocumentReference: 'Ambulantní zpráva',
+  Composition: 'Záznam MDT',
   Condition: 'Diagnóza',
   ServiceRequest: 'Nominace na MDT',
   guideline: 'Doporučený postup',

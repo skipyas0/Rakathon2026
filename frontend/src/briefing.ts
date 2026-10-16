@@ -4,7 +4,7 @@ import type { Source, Statement } from './provenance'
 
 export type TimelineEvent = {
   date: string
-  kind: 'diagnosis' | 'staging' | 'surgery' | 'systemic' | 'radiotherapy' | 'imaging' | 'progression' | 'mdt'
+  kind: 'diagnosis' | 'staging' | 'pathology' | 'surgery' | 'systemic' | 'radiotherapy' | 'imaging' | 'progression' | 'mdt'
   statement: Statement
 }
 
@@ -25,6 +25,8 @@ export type Case = {
   patient: string
   label: string
   tumour: string
+  board?: string | null
+  mdt_date?: string | null
   question: Statement | null
   summary: Statement[]
   timeline: TimelineEvent[]

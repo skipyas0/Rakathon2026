@@ -29,13 +29,18 @@ These are enforced in code — use them, don't work around them:
 
 Only synthetic/mock data in the repo. Never commit real patient data or API keys.
 
+The dataset contains **deliberate mistakes and gaps** — finding them is part of the task. Never
+"fix" files in `Dataset/` and don't make the code silently pick the convenient value: surface the
+inconsistency (red flag / missing data) with both sources.
+
 ## Layout
 
 ```
 backend/    Python 3.13, FastAPI, uv. Package: src/mdt_backend/
 frontend/   TypeScript, React, Vite
 data/stubs/ hand-made MDT briefings (one JSON per case) served by /api/cases — see docs/stubs.md
-data/fhir/  raw FHIR bundles from the organisers (synthetic only)
+Dataset/    organisers' dataset v1.1 (git-ignored, see its README): pacienti/ → from_fhir.py,
+            guidelines/ + studie/ → knowledge.py
 docs/       brief, architecture, decisions, status, stubs (keep current — see below)
 docker-compose.yml   HAPI FHIR R4 server on :8080
 ```

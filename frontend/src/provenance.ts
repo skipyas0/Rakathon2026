@@ -2,6 +2,7 @@
 
 export type Source = {
   reference: string
+  title?: string | null
   excerpt?: string | null
   date?: string | null
   author?: string | null
@@ -9,7 +10,7 @@ export type Source = {
 
 export type Statement = {
   text: string
-  origin: 'ai' | 'human'
+  origin: 'ai' | 'human' | 'record' // record = from the health record as-is (ground truth)
   sources: Source[]
   model?: string | null
   confirmed_by?: string | null

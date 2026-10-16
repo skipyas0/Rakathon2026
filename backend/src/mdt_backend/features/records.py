@@ -10,7 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, model_validator
 
-from mdt_backend.features.cases import get_case, stub_paths
+from mdt_backend.features.cases import case_ids, get_case
 
 RECORDS = Path(__file__).parents[4] / "data" / "records"
 
@@ -44,7 +44,9 @@ class Attendee(BaseModel):
 
 class Decision(BaseModel):
     attendees: list[Attendee] = []
-    intent: Literal["curative", "palliative", "supportive", "surveillance"] | None = None
+    intent: Literal["curative", "palliative", "supportive", "surveillance", "deferred"] | None = (
+        None
+    )
     options_considered: str = ""
     plan: str = ""
     rationale: str = ""
@@ -95,7 +97,7 @@ def status(record: CaseRecord) -> Status:
 
 
 def _path(case_id: str) -> Path:
-    if case_id not in stub_paths():  # whitelist: case_id never reaches the filesystem unchecked
+    if case_id not in case_ids():  # whitelist: case_id never reaches the filesystem unchecked
         raise HTTPException(404, f"No case {case_id!r}")
     return RECORDS / f"{case_id}.json"
 
@@ -111,7 +113,7 @@ def _load(case_id: str) -> CaseRecord:
 def agenda() -> list[dict]:
     """The meeting agenda: every case with its phase, for the home page."""
     out = []
-    for case_id in stub_paths():
+    for case_id in case_ids():
         c, r = get_case(case_id), _load(case_id)
         out.append(
             {
@@ -119,6 +121,8 @@ def agenda() -> list[dict]:
                 "label": c.label,
                 "tumour": c.tumour,
                 "question": r.prep.question or (c.question.text if c.question else ""),
+                "board": c.board,
+                "mdt_date": c.mdt_date,
                 "flags": sum(f.severity == "high" for f in c.red_flags),
                 "intent": r.decision.intent,
                 "status": status(r),

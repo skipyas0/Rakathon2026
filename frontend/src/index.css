@@ -29,6 +29,7 @@
   --palliative: #7650c8;
   --supportive: #c2457a;
   --surveillance: #4f6f80;
+  --deferred: #8a6d3b;
   --radius: 12px;
   --shadow: 0 1px 2px rgb(18 48 58 / 6%), 0 4px 16px rgb(18 48 58 / 5%);
 }
@@ -254,6 +255,9 @@ legend {
 .intent-surveillance {
   --c: var(--surveillance);
 }
+.intent-deferred {
+  --c: var(--deferred);
+}
 .chip[class*='intent-'] {
   color: var(--c);
   border-color: color-mix(in srgb, var(--c) 35%, transparent);
@@ -394,6 +398,14 @@ legend {
   justify-content: space-between;
   gap: 0.5rem;
   align-items: start;
+}
+.card-board {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0.4rem 0 0;
+}
+.case-board {
+  margin: -0.6rem 0 1rem;
 }
 .card-q {
   color: var(--ink-2);
@@ -1066,16 +1078,11 @@ button.confirm {
 /* Decision */
 .intents {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.6rem;
 }
 .intents legend {
   grid-column: 1 / -1;
-}
-@media (max-width: 1100px) {
-  .intents {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 .intent-card {
   position: relative;
@@ -1334,4 +1341,19 @@ code {
     box-shadow: none;
     break-inside: avoid;
   }
+}
+
+.full-text {
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  max-height: 50vh;
+  overflow: auto;
+}
+.source-title {
+  margin: 0.2rem 0;
+  font-weight: 500;
 }

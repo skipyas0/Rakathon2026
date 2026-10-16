@@ -3,7 +3,7 @@ import { api, type CaseRecord } from './api'
 import type { Case } from './briefing'
 import { FollowupPhase } from './FollowupPhase'
 import { Back, Check, IntentChip } from './icons'
-import { type Phase, PHASES, type Template, TUMOURS } from './layout'
+import { fmtDate, type Phase, PHASES, type Template, TUMOURS } from './layout'
 import { MeetingPhase } from './MeetingPhase'
 import { PrepPhase } from './PrepPhase'
 
@@ -53,6 +53,9 @@ export function CasePage({ id, phase, user, template }: Props) {
           <span className="chip">{TUMOURS[c.tumour] ?? c.tumour}</span>
           <IntentChip intent={record.decision.intent} />
         </div>
+        {(c.board || c.mdt_date) && (
+          <p className="muted case-board">{[c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
+        )}
         <ol className="stepper">
           {PHASES.map((p, i) => (
             <li key={p.id}>

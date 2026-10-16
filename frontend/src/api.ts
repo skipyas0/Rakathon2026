@@ -2,11 +2,13 @@
 import type { Case } from './briefing'
 
 export type Status = 'prep' | 'meeting' | 'followup' | 'closed'
-export type Intent = 'curative' | 'palliative' | 'supportive' | 'surveillance'
+export type Intent = 'curative' | 'palliative' | 'supportive' | 'surveillance' | 'deferred'
 export type AgendaItem = {
   id: string
   label: string
   tumour: string
+  board: string | null
+  mdt_date: string | null
   question: string
   flags: number
   intent: Intent | null

@@ -41,11 +41,13 @@ export const INTENTS: Record<Intent, { label: string; desc: string }> = {
   palliative: { label: 'Paliativní', desc: 'Kontrola nemoci, délka a kvalita života' },
   supportive: { label: 'Podpůrná péče', desc: 'Úleva od obtíží bez protinádorové léčby' },
   surveillance: { label: 'Sledování', desc: 'Aktivní sledování, léčba zatím ne' },
+  deferred: { label: 'Odloženo', desc: 'Rozhodnutí po doplnění vyšetření' },
 }
 
 export const KIND: Record<TimelineEvent['kind'], string> = {
   diagnosis: 'Diagnóza',
   staging: 'Staging',
+  pathology: 'Patologie',
   surgery: 'Operace',
   systemic: 'Systémová léčba',
   radiotherapy: 'Radioterapie',
@@ -53,6 +55,8 @@ export const KIND: Record<TimelineEvent['kind'], string> = {
   progression: 'Progrese',
   mdt: 'MDT',
 }
+
+export const SEVERITY_RANK = { high: 0, medium: 1, low: 2 } as const
 
 export const PHASES = [
   { id: 'prep', label: 'Před zasedáním', hint: 'Podklady a otázky' },
