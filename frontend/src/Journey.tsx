@@ -86,8 +86,24 @@ function BoardStep({ record, save, next }: StepProps) {
   )
 }
 
+const RECENT = 4 // latest events shown; the whole course is one click away (no page scrolling)
+
 function PatientStep({ c, record, next }: StepProps) {
   const S = renderer(record)
+  const course = (from: number) => (
+    <ol className="course">
+      {c.timeline.slice(Math.max(0, from)).map((e, i, all) => {
+        const k = c.timeline.length - all.length + i
+        return (
+          <li key={k}>
+            <time>{fmtDate(e.date)}</time>
+            <span className="kind">{KIND[e.kind]}</span>
+            {S(`timeline.${k}`, e.statement, 'inline')}
+          </li>
+        )
+      })}
+    </ol>
+  )
   const question = record.prep.question || c.question?.text
   const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
   return (
@@ -113,15 +129,15 @@ function PatientStep({ c, record, next }: StepProps) {
         </section>
         <section>
           <h2>Průběh onemocnění</h2>
-          <ol className="course">
-            {c.timeline.map((e, i) => (
-              <li key={i}>
-                <time>{fmtDate(e.date)}</time>
-                <span className="kind">{KIND[e.kind]}</span>
-                {S(`timeline.${i}`, e.statement, 'inline')}
-              </li>
-            ))}
-          </ol>
+          {course(c.timeline.length - RECENT)}
+          {c.timeline.length > RECENT && (
+            <details className="more">
+              <summary>
+                Celý průběh <span className="muted">({c.timeline.length})</span>
+              </summary>
+              <div className="scroll-box">{course(0)}</div>
+            </details>
+          )}
         </section>
       </div>
       <Next onClick={next} />
