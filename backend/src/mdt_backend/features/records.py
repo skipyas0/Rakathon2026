@@ -120,6 +120,15 @@ class Task(BaseModel):
     done: bool = False
 
 
+class PatientStance(BaseModel):
+    """The patient's own decision on the MDT recommendation; it never changes the recommendation."""
+
+    stance: Literal["accepts", "refuses", "discuss"]
+    note: str = ""
+    by: str
+    at: dt.datetime
+
+
 class CaseRecord(BaseModel):
     confirmations: dict[str, Confirmation] = {}  # key = statement path, e.g. "summary.0"
     prep: Prep = Prep()
@@ -131,6 +140,9 @@ class CaseRecord(BaseModel):
     layout: Layout = Layout()
     # specialty → section ids it sees; absent = its own section + the patient's
     visibility: dict[str, list[str]] = {}
+    # after the meeting: recommendation (decision) ≠ patient's stance ≠ agreed plan ≠ care (tasks)
+    patient_stance: PatientStance | None = None
+    agreed_plan: str = ""
 
 
 Status = Literal["prep", "meeting", "followup", "closed"]

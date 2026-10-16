@@ -1599,3 +1599,21 @@ code {
 .flags-inline .sev-missing {
   color: var(--ink-2);
 }
+
+/* After the meeting: four separate states */
+.after-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.after-grid > * {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.after-grid button {
+  align-self: flex-start;
+}

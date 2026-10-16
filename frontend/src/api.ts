@@ -45,6 +45,7 @@ export type Triage = {
   by: string
   at: string
 }
+export type PatientStance = { stance: 'accepts' | 'refuses' | 'discuss'; note: string; by: string; at: string }
 export type Layout = { order: string[]; hidden: string[]; detail: 'bullets' | 'narrative' }
 export type CaseRecord = {
   confirmations: Record<string, Confirmation>
@@ -56,6 +57,8 @@ export type CaseRecord = {
   triage: Record<string, Triage> // key = statement path of the finding, e.g. "red_flags.0"
   layout: Layout
   visibility: Record<string, string[]> // specialty → section ids; absent = own + patient
+  patient_stance: PatientStance | null // the patient's decision; never changes the recommendation
+  agreed_plan: string
 }
 
 export type IntakeKind = 'fhir' | 'pdf'

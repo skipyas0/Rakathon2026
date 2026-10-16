@@ -36,7 +36,9 @@ goes through three phases, and any phase can be reopened at any time:
 3. **Po zasedání** (`followup`) — the minutes: attendees (prefilled from the board) with a consent
    tick each, treatment intent + structured decision, action plan tasks, PDF export (print); full
    briefing alongside. The board decides by consensus: the coordinator ticks every attendee's
-   consent, then locks (decision #16; the backend refuses a lock without everyone's consent). The AI
+   consent, then locks (decision #16; the backend refuses a lock without everyone's consent). Once
+   locked, four states are kept apart: MDT recommendation (locked) · patient's stance (signed) ·
+   agreed plan · care delivered (done tasks). The AI
    guideline-compliance check and FHIR export are greyed out until they exist.
 
 Visual language: unconfirmed AI output is blue with a robot icon; everything else (record data,
@@ -62,7 +64,7 @@ clinician input, confirmed AI) is plain text. Treatment intent has its own colou
 | `rules.py`      | Rule-based red flags (`origin: "ai"`, model `pravidla-v1`): ECOG doctor vs patient, anaemia + fatigue, rising marker, worsening PROMs, new symptom, stale imaging |
 | `features/cases.py` | Case list = patients on the FHIR server (IRIS). A case is one meeting: id = patient + planned MDT date (`p03-2026-10-21`, from `Task.restriction`), records are keyed by it; `GET /api/cases/{id}`: `data/ai_cases/<patient>.json` if the agent ran (id set to the meeting), else the IRIS record → `from_fhir`, else stub JSON from `data/stubs/`; `GET /api/sources/{type}/{id}`: full text of a record, read from IRIS by dataset id. Bundles on disk only while the server is unreachable (decision 18) |
 | `features/intake.py` | `POST /api/intake` (one FHIR Bundle, base64 in JSON) → `data/intake/<patient>/bundle.json`, replacing that patient's dataset bundle; returns the case id. `kind: "pdf"` answers 501 until AI extraction exists |
-| `features/records.py` | `CaseRecord` (confirmations, prep, specialist notes, decision, tasks; coordinator's board, finding triage, section layout + detail level, visibility per specialty), phase status, agenda |
+| `features/records.py` | `CaseRecord` (confirmations, prep, specialist notes, decision, tasks; coordinator's board, finding triage, section layout + detail level, visibility per specialty; after the meeting: patient's stance, agreed plan), phase status, agenda |
 
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =

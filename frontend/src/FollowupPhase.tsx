@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import type { CaseRecord, Decision, Task } from './api'
+import type { CaseRecord, Decision, PatientStance, Task } from './api'
 import type { Case } from './briefing'
 import { CaseDetail } from './CaseView'
-import { confirmer, renderer } from './render'
+import { confirmer, now, renderer } from './render'
 import { DecisionForm } from './DecisionForm'
-import { Doc } from './icons'
+import { Check, Doc } from './icons'
+import { fmtDateTime, INTENTS } from './layout'
 
 type Props = {
   c: Case
@@ -36,6 +37,8 @@ export function FollowupPhase({ c, record, save, user }: Props) {
           <h3>Závěr komise</h3>
           <DecisionForm key={record.decision.confirmed_at ?? 'draft'} saved={record.decision} board={record.board} user={user} onSave={(decision) => save({ ...record, decision })} />
         </section>
+
+        <AfterMeeting record={record} save={(r) => save(r).catch(() => {})} user={user} />
 
         <section className="card">
           <h3>Akční plán a komunikace</h3>
@@ -95,5 +98,76 @@ function TaskList({ tasks, onChange }: { tasks: Task[]; onChange: (t: Task[]) =>
         <button type="submit">Přidat</button>
       </form>
     </>
+  )
+}
+
+const STANCES: Record<PatientStance['stance'], string> = {
+  accepts: 'Souhlasí s doporučením',
+  refuses: 'Odmítá doporučený postup',
+  discuss: 'Chce dále prodiskutovat',
+}
+
+/** The four states after the meeting, kept apart (MDT_ZASEDANI_PROCES.md §6): what the board
+ * recommended (locked), what the patient decided, the plan agreed with them, the care delivered. */
+function AfterMeeting({ record, save, user }: { record: CaseRecord; save: (r: CaseRecord) => void; user: string }) {
+  const d = record.decision
+  const st = record.patient_stance
+  const [stance, setStance] = useState<PatientStance['stance'] | undefined>(st?.stance)
+  const [note, setNote] = useState(st?.note ?? '')
+  const [plan, setPlan] = useState(record.agreed_plan)
+  const done = record.tasks.filter((t) => t.done).length
+  if (!d.confirmed_by) return null
+
+  return (
+    <section className="card after">
+      <h3>Po zasedání</h3>
+      <div className="after-grid">
+        <div>
+          <span className="eyebrow">1 · Doporučení MDT (uzamčeno)</span>
+          <p>
+            {d.intent && <strong>{INTENTS[d.intent].label}: </strong>}
+            {d.plan}
+          </p>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (stance) save({ ...record, patient_stance: { stance, note: note.trim(), by: user, at: now() } })
+          }}
+        >
+          <span className="eyebrow">2 · Stanovisko pacienta</span>
+          {(Object.keys(STANCES) as PatientStance['stance'][]).map((k) => (
+            <label key={k} className="inline">
+              <input type="radio" name="stance" checked={stance === k} onChange={() => setStance(k)} /> {STANCES[k]}
+            </label>
+          ))}
+          <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Poznámka (např. co odmítá a proč)" aria-label="Poznámka" />
+          <button type="submit" disabled={!stance || !user}>
+            Zaznamenat
+          </button>
+          {st && (
+            <small className="muted">
+              <Check /> {st.by}, {fmtDateTime(st.at)}
+            </small>
+          )}
+        </form>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            save({ ...record, agreed_plan: plan.trim() })
+          }}
+        >
+          <span className="eyebrow">3 · Dohodnutý léčebný plán</span>
+          <textarea value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="Postup po zohlednění doporučení a přání pacienta" />
+          <button type="submit" disabled={plan.trim() === record.agreed_plan}>
+            Uložit plán
+          </button>
+        </form>
+        <div>
+          <span className="eyebrow">4 · Realizovaná péče</span>
+          <p>{record.tasks.length ? `Splněno ${done} z ${record.tasks.length} úkolů akčního plánu` : 'Akční plán zatím nemá úkoly.'}</p>
+        </div>
+      </div>
+    </section>
   )
 }
