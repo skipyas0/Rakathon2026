@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api, type CaseRecord, type Decision, type Intent, type Recommendation } from './api'
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
@@ -52,6 +52,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
       {step === 'intent' && <IntentStep {...props} />}
       {step === 'plan' && <PlanStep {...props} />}
       {step === 'confirm' && <ConfirmStep {...props} />}
+      {step === 'export' && <ExportStep {...props} />}
     </div>
   )
 }
@@ -282,7 +283,7 @@ function PlanStep({ record, save, next }: StepProps) {
   )
 }
 
-function ConfirmStep({ c, record, rec, save, user }: StepProps) {
+function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
   const S = renderer(record)
   const d = record.decision
   const locked = !!d.confirmed_by
@@ -291,10 +292,11 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
   const compliant = rec ? d.intent === rec.intent : manual
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
-  const [role, setRole] = useState<string | null>(null)
   const [signer, setSigner] = useState(user) // the top-bar name, or typed here when it's empty
+  const [role, setRole] = useState<string | null>(null)
+  const dialog = useRef<HTMLDialogElement>(null)
 
-  const confirm = () => {
+  const confirm = async () => {
     if (compliant === false && !reason.trim()) return setAsking(true)
     const decision: Decision = {
       ...d,
@@ -304,7 +306,7 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
       confirmed_by: signer.trim(),
       confirmed_at: now(),
     }
-    void save({ ...record, decision })
+    if (await save({ ...record, decision })) next()
   }
 
   return (
@@ -315,16 +317,15 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
           <p className="eyebrow">Zvolený postup</p>
           {d.intent && <IntentLabel intent={d.intent} />}
           <p className="big">{d.plan}</p>
-          <p>{d.rationale}</p>
         </section>
-        <section className="recommended">
+        <section>
           <p className="eyebrow">
             Doporučený postup <span className="chip muted-chip">ukázka</span>
           </p>
           {rec ? (
             <>
               <IntentLabel intent={rec.intent} />
-              {S('recommendation', rec.statement)}
+              <p className="big">{S('recommendation', rec.statement, 'inline')}</p>
             </>
           ) : (
             <p className="muted">Doporučení k porovnání není k dispozici.</p>
@@ -346,33 +347,51 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
         </div>
       )}
 
-      <p className="eyebrow">Stanoviska</p>
-      <div className="bubbles small-bubbles">
+      <div className="bubbles small-bubbles stanoviska">
+        <span className="muted">Stanoviska:</span>
         {record.board.map((m) => (
-          <button key={m.specialty} className={`bubble ${role === m.specialty ? 'on' : ''}`} onClick={() => setRole(role === m.specialty ? null : m.specialty)}>
+          <button
+            key={m.specialty}
+            className="bubble"
+            onClick={() => {
+              setRole(m.specialty)
+              dialog.current?.showModal()
+            }}
+          >
             {SPECIALTIES[m.specialty] ?? m.specialty}
           </button>
         ))}
       </div>
-      {role && (
-        <section className="card opinion">
-          <p>
-            <span className="chip muted-chip">ukázka</span> Z pohledu odbornosti {SPECIALTIES[role] ?? role} bez námitek k navrženému
-            postupu.
-          </p>
-          {c.sections.find((s) => s.id === role)?.items.map((s, i) => S(`sections.${role}.${i}`, s, 'inline'))}
-        </section>
-      )}
+      <dialog ref={dialog} className="dialog" onClick={(e) => e.target === dialog.current && dialog.current.close()}>
+        {role && (
+          <div className="dialog-body">
+            <header>
+              <h3>Stanovisko · {SPECIALTIES[role] ?? role}</h3>
+              <button className="icon-btn" onClick={() => dialog.current?.close()} aria-label="Zavřít">
+                ×
+              </button>
+            </header>
+            <p>
+              <span className="chip muted-chip">ukázka</span> Z pohledu odbornosti {SPECIALTIES[role] ?? role} bez námitek k
+              navrženému postupu.
+            </p>
+            <ul className="plain">
+              {c.sections
+                .find((s) => s.id === role)
+                ?.items.map((s, i) => (
+                  <li key={i}>{S(`sections.${role}.${i}`, s, 'inline')}</li>
+                ))}
+            </ul>
+          </div>
+        )}
+      </dialog>
 
       {locked ? (
-        <div className="confirmed-line">
+        <div className="confirm-row">
           <p className="verdict ok">
             <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
-            {d.guideline_compliant === false && ` · důvod odchylky: ${d.deviation_reason}`}
           </p>
-          <button className="primary next" onClick={() => print()}>
-            <Doc /> Stáhnout PDF
-          </button>
+          <Next onClick={next} />
         </div>
       ) : (
         <>
@@ -393,6 +412,66 @@ function ConfirmStep({ c, record, rec, save, user }: StepProps) {
         </>
       )}
     </>
+  )
+}
+
+function ExportStep({ c, record }: StepProps) {
+  const d = record.decision
+  if (!d.confirmed_by)
+    return (
+      <p className="big">
+        Závěr zatím není potvrzen. <a href={`#/case/${encodeURIComponent(c.id)}/confirm`}>Zpět na potvrzení</a>
+      </p>
+    )
+  return (
+    <>
+      <h1>Export</h1>
+      <p className="verdict ok">
+        <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
+      </p>
+      <div className="upload">
+        <button className="upload-box" onClick={() => print()}>
+          <Doc />
+          <strong>PDF</strong>
+        </button>
+        <span className="or">nebo</span>
+        {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
+        <div className="upload-box soon" aria-disabled>
+          <Doc />
+          <strong>FHIR</strong>
+          <span className="chip muted-chip">Připravujeme</span>
+        </div>
+      </div>
+      <PrintRecord c={c} record={record} />
+    </>
+  )
+}
+
+/** The official record as printed (PDF): human decisions only, so nothing in it needs an AI label. */
+function PrintRecord({ c, record }: { c: Case; record: CaseRecord }) {
+  const d = record.decision
+  const rows: [string, string][] = [
+    ['Otázka pro komisi', record.prep.question || c.question?.text || 'Chybí'],
+    ['Komise', record.board.map((m) => SPECIALTIES[m.specialty] ?? m.specialty).join(', ')],
+    ['Léčebný záměr', d.intent ? INTENTS[d.intent].label : ''],
+    ['Zvolený postup', d.plan],
+    ['Zdůvodnění', d.rationale],
+    ['Soulad s doporučenými postupy', d.guideline_compliant ? 'Ano' : `Ne – ${d.deviation_reason}`],
+    ['Potvrdil(a)', `${d.confirmed_by}, ${d.confirmed_at && fmtDateTime(d.confirmed_at)} (konsenzus komise)`],
+  ]
+  return (
+    <article className="print-only">
+      <h1>Závěr zasedání MDT</h1>
+      <p>{[c.label, TUMOURS[c.tumour], c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
+      <dl>
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </article>
   )
 }
 

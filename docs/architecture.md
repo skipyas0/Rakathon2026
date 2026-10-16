@@ -26,7 +26,7 @@ screen per step and one **Další** each: Nahrání (`#/new`) → Komise → Pac
 Vývoj → Léčebný záměr → Závěr → Potvrzení (`#/case/<id>/<step>`), plus Přehled (`#/`). Soulad s
 doporučenými postupy is derived on the last screen (chosen léčebný záměr = recommended); on a
 difference, Potvrdit first asks for důvod odchylky. Potvrdit is the board's consensus and locks
-the conclusion; then Stáhnout PDF (print).
+the conclusion; then Export: PDF (prints the official record) or FHIR (not built yet).
 
 Visual language: unconfirmed AI output is blue with a robot icon; examples standing in for AI
 output are labelled "ukázka"; everything else (record data, clinician input) is plain text.
@@ -78,7 +78,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `App.tsx`           | Shell: top bar (Přehled / Nový případ, user name), hash routing `#/`, `#/new`, `#/case/<id>/<step>` |
 | `Overview.tsx`      | Přehled: cases, confirmed or in progress; opens where the work continues |
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
-| `Journey.tsx`       | Steps 2–8 for one case: board bubbles, patient, key facts (urgent red flags first), up to 3 trends, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska per role, důvod odchylky, Potvrdit, PDF) |
+| `Journey.tsx`       | Steps 2–8 for one case: board bubbles, patient, key facts (urgent red flags first), up to 3 trends, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (PDF = print of `PrintRecord`, FHIR greyed out) |
 | `Steps.tsx`         | Progress through the journey; finished steps link back        |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band; every point opens its source) |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |

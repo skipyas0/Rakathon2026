@@ -62,6 +62,7 @@ export const STEPS = [
   { id: 'intent', label: 'Léčebný záměr' },
   { id: 'plan', label: 'Závěr' },
   { id: 'confirm', label: 'Potvrzení' },
+  { id: 'export', label: 'Export' },
 ] as const
 export type Step = (typeof STEPS)[number]['id']
 

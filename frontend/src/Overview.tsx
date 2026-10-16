@@ -19,7 +19,7 @@ export function Overview() {
         {items?.map((it) => {
           const confirmed = it.status === 'followup' || it.status === 'closed'
           const state = confirmed ? 'done' : it.specialties.length ? 'progress' : 'new'
-          const step = confirmed ? 'confirm' : it.specialties.length ? 'patient' : 'board'
+          const step = confirmed ? 'export' : it.specialties.length ? 'patient' : 'board'
           return (
             <li key={it.id} className={`case-card ${state}`}>
               <a href={`#/case/${encodeURIComponent(it.id)}/${step}`}>
