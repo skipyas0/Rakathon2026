@@ -1163,26 +1163,64 @@ button.next {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-.case-list a {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.15rem 1rem;
-  padding: 1rem 0;
-  border-bottom: 1px solid var(--line);
+  gap: 0.75rem;
+}
+.case-card a {
+  display: grid;
+  grid-template-columns: minmax(12rem, 2fr) auto minmax(10rem, 2fr) auto 9.5rem;
+  align-items: center;
+  gap: 0.5rem 1.25rem;
+  padding: 1rem 1.25rem;
+  border-left: 5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
   color: var(--ink);
   text-decoration: none;
 }
-.case-list a:hover strong {
-  color: var(--teal);
+.case-card a:hover {
+  box-shadow: 0 0 0 2px var(--teal-soft), var(--shadow);
 }
-.case-list .state {
-  grid-row: span 2;
-  align-self: center;
-  color: var(--muted);
+.case-name {
+  font-weight: 700;
+  font-size: 1.05rem;
 }
-.case-list .state.ok {
+.case-meta {
+  color: var(--ink-2);
+}
+.pill {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.case-card.done a {
+  border-left-color: var(--ok);
+}
+.case-card.done .pill {
+  background: var(--ok-soft);
   color: var(--ok);
+}
+.case-card.progress a {
+  border-left-color: var(--warn);
+}
+.case-card.progress .pill {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.case-card.new .pill {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+@media (max-width: 760px) {
+  .case-card a {
+    grid-template-columns: 1fr auto;
+  }
 }
 @media print {
   .steps,
