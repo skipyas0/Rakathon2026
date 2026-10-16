@@ -1,9 +1,10 @@
 import { type ReactNode, useState } from 'react'
 import type { CaseRecord } from './api'
 import { type Case, statements } from './briefing'
+import { Board } from './Board'
 import { Findings } from './Findings'
 import { Alert as AlertIcon, Arrow, Check, Doc, Missing as MissingIcon, Robot } from './icons'
-import { fmtDate, fmtDateTime, type Phase } from './layout'
+import { fmtDate, fmtDateTime, MIN_SPECIALTIES, type Phase } from './layout'
 import type { Source } from './provenance'
 import { findingKeys, isPending, now, renderer } from './render'
 import { sourceType, useSources } from './sources'
@@ -17,8 +18,8 @@ type Props = {
   go: (p: Phase) => void
 }
 
-/** Phase 1, the coordinator's workspace: documents and question, triage of findings (more tabs
- * follow: board, structure, visibility, specialists). Clinicians confirm AI claims elsewhere. */
+/** Phase 1, the coordinator's workspace: documents and question, triage of findings, the board
+ * (more tabs follow: structure, visibility, specialists). Clinicians confirm AI claims elsewhere. */
 export function PrepPhase({ c, record, save, user, go }: Props) {
   const [tab, setTab] = useState('docs')
   const [question, setQuestion] = useState(record.prep.question || c.question?.text || '')
@@ -30,6 +31,8 @@ export function PrepPhase({ c, record, save, user, go }: Props) {
   const findings = findingKeys(c)
   const triaged = findings.filter((k) => record.triage[k]).length
   const hasQuestion = !!question.trim()
+  const specialties = new Set(record.board.map((m) => m.specialty)).size
+  const boardOk = specialties >= MIN_SPECIALTIES
 
   const tabs: { id: string; label: string; count?: string; body: ReactNode }[] = [
     {
@@ -43,6 +46,7 @@ export function PrepPhase({ c, record, save, user, go }: Props) {
       count: `${triaged}/${findings.length}`,
       body: <Findings c={c} record={record} save={save} user={user} />,
     },
+    { id: 'board', label: 'Komise', count: String(record.board.length), body: <Board c={c} record={record} save={save} /> },
   ]
 
   return (
@@ -66,6 +70,9 @@ export function PrepPhase({ c, record, save, user, go }: Props) {
             <li className={hasQuestion ? 'ok' : 'bad'}>
               {hasQuestion ? <Check /> : <MissingIcon />} Otázka pro komisi
             </li>
+            <li className={boardOk ? 'ok' : 'bad'}>
+              {boardOk ? <Check /> : <MissingIcon />} Komise: {specialties} odbornosti (min. {MIN_SPECIALTIES})
+            </li>
             <li className={triaged === findings.length ? 'ok' : 'warn'}>
               {triaged === findings.length ? <Check /> : <AlertIcon />} Roztříděno {triaged} z {findings.length} nálezů
             </li>
@@ -83,8 +90,10 @@ export function PrepPhase({ c, record, save, user, go }: Props) {
           ) : (
             <button
               className="primary wide"
-              disabled={!hasQuestion || !user}
-              title={!user ? 'Zadejte své jméno vpravo nahoře' : !hasQuestion ? 'Chybí otázka pro komisi' : ''}
+              disabled={!hasQuestion || !boardOk || !user}
+              title={
+                !user ? 'Zadejte své jméno vpravo nahoře' : !hasQuestion ? 'Chybí otázka pro komisi' : !boardOk ? 'Sestavte komisi' : ''
+              }
               onClick={() => {
                 setPrep({ question, prepared_by: user, prepared_at: now() })
                 go('meeting')

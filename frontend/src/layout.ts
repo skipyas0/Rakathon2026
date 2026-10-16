@@ -26,6 +26,26 @@ export const SPECIALTIES: Record<string, string> = {
 
 export const SECTIONS: Record<string, string> = { ...SPECIALTIES, patient: 'Pacient', coordinator: 'Koordinátor' }
 
+export const MIN_SPECIALTIES = 3 // brief: at least 3 specialist roles (the backend enforces it too)
+
+/** Role text as recorded ("hepatobiliární chirurg", "radiační onkolog") → specialty id; '' if unknown.
+ * Order matters: "radiační onkolog" before "onkolog". */
+const ROLE_WORDS: [string, string][] = [
+  ['radiační', 'radiotherapy'],
+  ['nukleární', 'nuclear'],
+  ['onkolog', 'oncology'],
+  ['chirurg', 'surgery'],
+  ['radiolog', 'radiology'],
+  ['patolog', 'pathology'],
+  ['pneumolog', 'pneumology'],
+  ['gastroenterolog', 'gastroenterology'],
+  ['urolog', 'urology'],
+  ['kardiolog', 'cardiology'],
+  ['genetik', 'genetics'],
+  ['farmaceut', 'pharmacy'],
+]
+export const specialtyOf = (role: string) => ROLE_WORDS.find(([w]) => role.toLowerCase().includes(w))?.[1] ?? ''
+
 /** Who is at the screen (role switcher; no login, decision #16). */
 export const ROLES: Record<string, string> = { coordinator: 'Koordinátor', ...SPECIALTIES }
 
