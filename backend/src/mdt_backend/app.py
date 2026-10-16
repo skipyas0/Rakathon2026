@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 
 from mdt_backend import fhir
-from mdt_backend.features import cases
+from mdt_backend.features import cases, records
 
 app = FastAPI(title="MDT Copilot")
 
 # Features live in mdt_backend/features/<name>.py, each exposing `router`.
 # Register them here; removing a feature = delete its file + its line below.
 app.include_router(cases.router)
+app.include_router(records.router)
 
 
 @app.get("/api/health")

@@ -13,14 +13,18 @@ class Source(BaseModel):
     """Pointer to the exact record a statement is based on."""
 
     reference: str  # FHIR reference, e.g. "DiagnosticReport/42" or "QuestionnaireResponse/7"
+    title: str | None = None  # the record's title, e.g. "CT hrudníku, břicha a pánve"
     excerpt: str | None = None  # quoted passage the UI highlights on click
     date: dt.date | None = None
     author: str | None = None
 
 
 class Statement(BaseModel):
+    """origin: "ai" = machine-generated proposal (needs confirmation); "human" = written by a clinician
+    in this app or the nomination; "record" = taken from the health record as-is (ground truth)."""
+
     text: str
-    origin: Literal["ai", "human"]
+    origin: Literal["ai", "human", "record"]
     sources: list[Source] = []
     model: str | None = None  # model + prompt version, required for AI output
     confirmed_by: str | None = None  # clinician who wrote or approved it
@@ -31,8 +35,10 @@ class Statement(BaseModel):
         if self.origin == "ai":
             if not self.model:
                 raise ValueError("AI statement must record which model produced it")
-            if not self.sources and self.text != NOT_FOUND:
-                raise ValueError(f"AI statement needs a source, or must say {NOT_FOUND!r}")
+            if not self.sources and not self.text.endswith(NOT_FOUND):
+                raise ValueError(f"AI statement needs a source, or must end with {NOT_FOUND!r}")
+        if self.origin == "record" and not self.sources:
+            raise ValueError("Record statement must cite the record it comes from")
         if self.origin == "human" and not self.confirmed_by:
             raise ValueError("Human statement must name the clinician (confirmed_by)")
         return self

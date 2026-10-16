@@ -1,4 +1,4 @@
-"""Every stub must match the contract. Run: cd backend && uv run pytest tests/test_stubs.py"""
+"""Every stub (if any) must match the contract. Run: cd backend && uv run pytest tests/test_stubs.py"""
 
 import pytest
 
@@ -6,10 +6,6 @@ from mdt_backend.briefing import Case
 from mdt_backend.features.cases import STUBS
 
 FILES = sorted(STUBS.glob("*.json"))
-
-
-def test_stubs_exist():
-    assert FILES, f"no stubs in {STUBS}"
 
 
 @pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)

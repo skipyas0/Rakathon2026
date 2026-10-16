@@ -11,9 +11,16 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   (https://github.com/intersystems-community/FHIR-AI-Hackathon-Kit/tree/V2)? Backend works with
   either via `.env`.
 
-## Contributor 1
+## yes-and (Claude Code)
 
--
+- Branch `yes-and/frontend-demo`: three-phase MDT app (prep → meeting slide → decision/follow-up),
+  clinical palette, AI in blue with robot icon, trend charts, source drawer, specialist notes,
+  intent + locked decision, action plan, print export.
+- Dataset v1.1 integrated from `Dataset/` (git-ignored): patients → `from_fhir.py` + `rules.py`,
+  guidelines + trials → `knowledge.py`. Fictional stubs removed; the agenda is P01–P06 only.
+- Next: decision support (guideline options, trial screening, questions) from `knowledge.py` —
+  needs the LLM decision. Ground truth (`ground_truth/` in the dataset README) is not delivered.
+- Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
 
 ## Contributor 2
 
