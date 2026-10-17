@@ -1,6 +1,7 @@
 """A board specialist's stanovisko and stance for one meeting (the specialist's journey). Only these
 endpoints write them; the coordinator's record save keeps what is stored (records.put_record).
-Vygenerovat runs the agent's specialist step on its own (agent.stanovisko, 3 LLM calls, ~30–60 s)."""
+Vygenerovat runs the agent's specialist step on its own (agent.stanovisko: 3 LLM calls at low
+reasoning effort, verdict only, ~20 s)."""
 
 import httpx
 from fastapi import APIRouter, HTTPException

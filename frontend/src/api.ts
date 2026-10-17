@@ -108,7 +108,7 @@ export const api = {
   ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),
   /** The AI's draft of the template's history fields: made on first call (~30 s), then cached. */
   zaverDraft: (id: string) => call<{ created: string }>(`${caseUrl(id)}/zaver/draft`, { method: 'POST' }),
-  /** The specialist's step of the agent (~45 s); the AI draft replaces their stored stanovisko. */
+  /** The specialist's step of the agent (~20 s); the AI draft replaces their stored stanovisko. */
   generateStanovisko: (id: string, specialty: string) =>
     call<CaseRecord>(`${caseUrl(id)}/stanovisko/${specialty}/generate`, { method: 'POST' }),
   /** Fields left out stay as they are. */

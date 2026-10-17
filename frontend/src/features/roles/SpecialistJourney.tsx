@@ -114,7 +114,7 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
         </button>
       </div>
       {busy ? (
-        <Working label="AI připravuje stanovisko" typical={45} />
+        <Working label="AI připravuje stanovisko" typical={20} />
       ) : text !== null ? (
         <label className="big-field">
           Stanovisko

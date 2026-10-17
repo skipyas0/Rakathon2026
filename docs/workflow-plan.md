@@ -33,7 +33,7 @@ screens:
 |---|--------|--------------|
 | 1 | Pacient | As the coordinator's, with the red flags for their area |
 | 2 | Klíčové informace | As the coordinator's, narrowed to their section, the patient's and their red flags |
-| 3 | Stanovisko | Navržený postup (when written); Podporuje / Nepodporuje; their stanovisko: empty, then Vygenerovat (AI, blue, ~45 s, Potvrdit signs it) or Napsat / Upravit (their own); both signed with the specialty (one person per specialty, decision #27); while the text is open, Zavřít is **Uložit a zavřít** |
+| 3 | Stanovisko | Navržený postup (when written); Podporuje / Nepodporuje; their stanovisko: empty, then Vygenerovat (AI, blue, ~20 s, Potvrdit signs it) or Napsat / Upravit (their own); both signed with the specialty (one person per specialty, decision #27); while the text is open, Zavřít is **Uložit a zavřít** |
 
 The coordinator's stanovisko bubbles show the specialist's stanovisko and stance (refreshed every
 10 s on Závěr and Potvrzení); empty until the specialist adds one; other specialties keep the

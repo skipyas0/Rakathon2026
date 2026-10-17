@@ -14,7 +14,7 @@ BAD_REF = {"ref": "Observation/NOPE", "excerpt": "x"}
 INVENTED = {"ref": "DiagnosticReport/P01-img06", "excerpt": "bez nálezu, vše v pořádku"}
 
 
-def fake_llm(system, user, schema, name):
+def fake_llm(system, user, schema, name, effort=None):
     if name == "cacc":
         return {
             "prerequisites": [
@@ -282,3 +282,19 @@ def test_preference_leads_patient_section(result):
     assert patient.items[0].text == "Pacientka si nepřeje chemoterapii."
     assert patient.items[0].sources[0].reference == "ServiceRequest/P01-zad01"
     assert case.preference == patient.items[: len(case.preference)]  # also on its own for Pacient
+
+
+def test_live_stanovisko_is_quick_and_cited(monkeypatch, fake_fhir):
+    """The app's Vygenerovat: low reasoning effort on every call, only the verdict extracted."""
+    seen = []
+
+    def llm(system, user, schema, name, effort=None):
+        seen.append((name, effort, sorted(schema["properties"])))
+        return fake_llm(system, user, schema, name)
+
+    monkeypatch.setattr(agent, "chat_json", llm)
+    s = agent.stanovisko(agent.Record("P01"), "surgery")
+    assert s.text == "Bez námitek." and [x.reference for x in s.sources] == ["guideline:PRS-2.2"]
+    assert [n for n, _, _ in seen] == ["context", "opinion", "verdict"]
+    assert {e for _, e, _ in seen} == {"low"}
+    assert seen[-1][2] == ["verdict"]
