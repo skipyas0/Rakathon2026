@@ -4,7 +4,7 @@ Klinika zobrazovacích metod:	?
 Onkologická klinika:		?
 III.chirurgická klinika:		?
 Ústav Patologie:			?
-Koordinátorka onkologické péče:	?
+Koordinátor/ka onkologické péče:	?
 
 
 Jméno, příjmení pacienta:
