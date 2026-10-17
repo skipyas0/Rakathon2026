@@ -107,7 +107,8 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `api.ts`            | Backend calls + TS mirror of records types                    |
 | `provenance.ts` / `briefing.ts` | TS mirrors of backend models                      |
 
-Who confirms is typed on Potvrzení (the last signer is remembered in localStorage and pre-filled).
+Potvrdit signs the conclusion as "Koordinátor/ka" (no name, decision #27); the export lists the
+coordinator as "přítomen/a", like a specialist without a name.
 Shared state lives in the backend.
 Export = the filled template: PDF preview, PDF / DOCX download.
 

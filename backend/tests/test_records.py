@@ -15,7 +15,7 @@ FINAL = {
     "plan": "Resekce",
     "rationale": "Resekabilní",
     "guideline_compliant": True,
-    "confirmed_by": "Koordinátorka K",
+    "confirmed_by": "Koordinátor/ka",
 }
 
 

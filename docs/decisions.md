@@ -227,8 +227,10 @@ alone, blue, to confirm) or writes it (signed); editing makes it theirs. Stances
 written only through `/stanovisko/{specialty}` (the coordinator's stance bubbles too); the record
 PUT keeps the stored ones. The agent's batch verdict per specialty is not shown. Board specialties
 outside the 4 keep the "ukázka" stanovisko, with a warning.
-A stanovisko is signed with the specialty's name (e.g. "Chirurgie") and the time: for now each
-specialty is one person, so the specialty answers "who" (ground rule 4). Once a specialty can have
-several people, ask for a name again (once per browser) and sign with it.
+A stanovisko is signed with the specialty's name (e.g. "Chirurgie") and the time, and the
+coordinator's Potvrdit with "Koordinátor/ka" (no name field; the export prints "Koordinátor/ka
+onkologické péče: přítomen/a"): for now each role is one person, so the role answers "who" (ground
+rule 4). Once a role can have several people, ask for a name again (once per browser) and sign
+with it.
 Why: The board members prepare their part before the meeting (process doc §3); one shared record
 written from two screens must not lose a specialist's input to the coordinator's stale copy.

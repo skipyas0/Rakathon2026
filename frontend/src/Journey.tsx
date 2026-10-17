@@ -4,7 +4,7 @@ import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
 import { Alert, Check, Download, IntentIcon, Lock, Robot } from './icons'
-import { fmtDate, fmtDateTime, INTENTS, KIND, load, MIN_SPECIALTIES, save as remember, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
+import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
@@ -493,8 +493,6 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
   const compliant = rec ? d.intent === rec.intent : manual
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
-  // who confirms, typed here; the last signer in this browser is pre-filled
-  const [signer, setSigner] = useState(() => load('mdt.signer', ''))
   const against = record.board.filter((m) => !m.supports) // consensus = everyone supports
   useUnsaved(!locked && (manual !== null || reason.trim() !== d.deviation_reason))
 
@@ -505,13 +503,12 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
       attendees: record.board.map((m) => ({ name: m.name, specialty: SPECIALTIES[m.specialty] ?? m.specialty })),
       guideline_compliant: compliant,
       deviation_reason: compliant === false ? reason.trim() : '',
-      confirmed_by: signer.trim(),
+      // ponytail: one coordinator, signed by the role, no name (decision #27); ask for a name once
+      // several people coordinate
+      confirmed_by: 'Koordinátor/ka',
       confirmed_at: now(),
     }
-    if (await save({ ...record, decision })) {
-      remember('mdt.signer', signer.trim())
-      next()
-    }
+    if (await save({ ...record, decision })) next()
   }
 
   return (
@@ -581,8 +578,7 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
                 Předchozí
               </button>
             )}
-            <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Kdo potvrzuje" aria-label="Kdo potvrzuje" />
-            <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || against.length > 0 || (asking && !reason.trim())}>
+            <button className="primary next" onClick={confirm} disabled={compliant === null || against.length > 0 || (asking && !reason.trim())}>
               {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
             </button>
           </div>

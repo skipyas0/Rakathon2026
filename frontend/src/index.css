@@ -1573,10 +1573,6 @@ button.close:hover {
 .confirm-row button {
   margin: 0;
 }
-.confirm-row input {
-  font-size: var(--fs-m);
-  padding: 0.6rem 0.8rem;
-}
 .case-list {
   list-style: none;
   padding: 0;
