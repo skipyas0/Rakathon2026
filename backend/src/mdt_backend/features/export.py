@@ -48,15 +48,12 @@ INTENTS = {
 # template department line → the board specialty's label (as the confirmed decision's attendees
 # carry it, frontend SPECIALTIES); the coordinator, unnamed (decision #27), is present once the
 # conclusion is confirmed.
-# ponytail: the template comes from a sarcoma board; other specialties go on one extra line.
 DEPARTMENTS = {
     "Klinika zobrazovacích metod": "Radiologie",
     "Onkologická klinika": "Klinická onkologie",
     "III.chirurgická klinika": "Chirurgie",
     "Ústav Patologie": "Patologie",
 }
-COORDINATOR = "Koordinátorka onkologické péče"  # as the template words it
-# printed gender-neutral: who coordinates (and who is present) isn't known to be a woman or a man
 COORDINATOR_LABEL = "Koordinátor/ka onkologické péče"
 PRESENT = "přítomen/a"
 
@@ -121,14 +118,9 @@ def fill_header(
             f.value = patient_values[f.label]
         elif f.label in DEPARTMENTS:
             a = present.get(DEPARTMENTS[f.label])
-            f.value = (a.name or PRESENT) if a else "–"
-        elif f.label == COORDINATOR:
-            f.label = COORDINATOR_LABEL
+            f.value = f"Jméno, {a.specialty}" if a else "–"
+        elif f.label == COORDINATOR_LABEL:
             f.value = PRESENT if d.confirmed_by else "–"
-    others = [s for s in present if s not in DEPARTMENTS.values()]
-    if others:
-        at = next(i for i, f in enumerate(lines) if f and f.label == COORDINATOR_LABEL)
-        lines.insert(at, Field("Další odbornosti", 0, ", ".join(others), False, "Další odbornosti"))
 
 
 # --- BODY: the patient's history, drafted by the LLM -----------------------------------------
@@ -314,7 +306,7 @@ def _unsourced(f: Field) -> bool:
 
 def to_pdf(title: str, sections: dict, draft: dict | None) -> bytes:
     doc = PdfDoc(f"Závěr zasedání MDT – {title}", footer=f"Závěr zasedání MDT · {title}")
-    doc.paragraph([Run("Závěr zasedání MDT", bold=True)], size=16)
+    doc.paragraph([Run("Závěr zasedání MDT", bold=True)], size=15)
     doc.paragraph([Run(title, color=GREY)], size=9)
     if note := _ai_note(draft):
         doc.space(4)
@@ -322,7 +314,7 @@ def to_pdf(title: str, sections: dict, draft: dict | None) -> bytes:
     for name, lines in sections.items():
         doc.rule()
         if TITLES.get(name):
-            doc.paragraph([Run(TITLES[name], bold=True)], size=12)
+            doc.paragraph([Run(TITLES[name], bold=True)], size=11.5)
             doc.space(2)
         for f in lines:
             if f is None:
