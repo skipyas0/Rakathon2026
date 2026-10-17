@@ -2,6 +2,7 @@ import base64
 import secrets
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -42,7 +43,13 @@ app.include_router(export.router)
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok"}
+    """The app is up (200, for Fly's check: restarting the app wouldn't fix IRIS); `fhir` says
+    whether IRIS answers an authenticated read."""
+    try:
+        fhir.get("Patient", _summary="count")
+        return {"status": "ok", "fhir": True}
+    except httpx.HTTPError:
+        return {"status": "ok", "fhir": False}
 
 
 @app.get("/api/patients")

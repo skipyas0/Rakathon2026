@@ -229,3 +229,30 @@ statements still lead `sections.patient`. Empty when the agent hasn't briefed th
 shows them in a card under the MDT question.
 Why: The process doc (§3.1, §4.1) puts the patient's view next to the question; picking the first
 items of the patient section by position would break as soon as the section changes.
+
+## 23. Holdout patient lives in `Dataset/holdout/`, not in git — 2026-10-17, yes-and
+Status: accepted
+Decision: `secret_bundles.ndjson` (P07) and `secret_ground_truth.md` moved from the repo root to
+`Dataset/holdout/` (one copy only; P07 isn't in `pacienti/` or `fhir/bundles.ndjson`). `Dataset/`
+is git-ignored and `.dockerignore` excludes `Dataset/holdout`, so neither file is committed or
+baked into the deployed image. Share them the way the dataset is shared. They remain in git
+history (commit 214594b); fictional data, so no rewrite.
+Why: The answer key must never reach the pipeline or a coding agent's context; at the repo root
+every agent and the Docker build picked it up. `holdout/` is outside every path the code reads.
+
+## 24. Core scope: IRIS only, FHIR only, template output — 2026-10-17, yes-and
+Status: accepted (supersedes the HAPI option of the status.md open question and the on-disk
+fallback of #18)
+Decision: `docs/problem_statement.md` is the scope: the core definition (coordinator workflow over
+the NIS; FHIR + PDF in; PDF following `template_zaver_zasedani` + FHIR out; LLM for PDF parsing,
+suggestions, inconsistencies and the verdict's guideline compliance) plus every item of the brief
+as a checklist. IRIS for Health is the only FHIR server; the app reads patient data only from it
+(no bundles from disk); the deployed app runs on a Fly machine big enough for IRIS alongside. One
+conclusion PDF, the template's. Running the app needs no test suite; checks stay light.
+Implementation: IRIS is built from `iris/` (pinned community image, endpoint created on first
+start; same namespace/endpoint as the sponsor kit, which is no longer needed); HAPI, the bundle
+fallback, the `data/stubs/` path, intake's disk copy and `mdt-agent --source file` are gone. An
+unreachable IRIS is a 503 (intake too, so an upload is never half-saved); `/api/health` stays 200
+and reports `fhir`. Tests use a fake FHIR server holding the dataset as the loader stores it.
+Why: Defined by yes-and to cut parallel paths (HAPI vs IRIS, server vs disk, two PDFs) and give
+every cleanup step one yardstick. IRIS earns the sponsor bonus.

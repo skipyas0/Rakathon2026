@@ -1,0 +1,12 @@
+zn "%SYS"
+set pw=$system.Util.GetEnviron("IRIS_PASSWORD") if pw="" set pw="SYS"
+set p("Password")=pw,p("ChangePassword")=0,p("PasswordNeverExpires")=1
+for user="SuperUser","_SYSTEM","Admin" { do ##class(Security.Users).Modify(user,.p) }
+if ##class(Config.Namespaces).Exists("FHIRSERVER") write !,"FHIR endpoint exists",! halt
+zn "HSLIB"
+do ##class(HS.Util.Installer.Foundation).Install("FHIRSERVER")
+zn "FHIRSERVER"
+do ##class(HS.FHIRServer.Installer).InstallNamespace()
+do ##class(HS.FHIRServer.Installer).InstallInstance("/fhir/r4","HS.FHIRServer.Storage.JsonAdvSQL.InteractionsStrategy",$lb("hl7.fhir.r4.core@4.0.1"))
+write !,"FHIR endpoint created",!
+halt

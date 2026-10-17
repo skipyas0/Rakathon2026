@@ -1,7 +1,11 @@
-# Fly.io deploy of the Dockerfile: `fly deploy` (needs Dataset/ locally, it's baked into the image).
-# Password: `fly secrets set APP_PASSWORD=…`. Records live on the `records` volume.
+# Fly.io deploy of the Dockerfile: `fly deploy` (needs Dataset/ + data/ai_cases/ locally, baked in).
+# Patient data: the private IRIS app (iris/fly.toml). Secrets: `fly secrets set APP_PASSWORD=…
+# FHIR_PASSWORD=<IRIS_PASSWORD of the IRIS app>`. Records live on the `records` volume.
 app = "mdt-copilot-rakathon"
 primary_region = "fra"
+
+[env]
+  FHIR_BASE_URL = "http://mdt-copilot-iris.internal:52773/fhir/r4"
 
 [http_service]
   internal_port = 8000

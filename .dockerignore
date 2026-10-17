@@ -6,3 +6,4 @@
 .env
 data/records
 data/ai_cases/*.trace.json
+Dataset/holdout

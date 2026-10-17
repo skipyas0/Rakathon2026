@@ -1,7 +1,8 @@
-"""Intake: the coordinator adds a case from one FHIR bundle. Stored as
-data/intake/<patient>/bundle.json, where it replaces that patient's record (cases.uploads), and
-loaded into the FHIR server too when it's reachable, so `mdt-agent` can brief the patient. PDFs (one per record, as an external doctor sends them) are part of
-the API but answer 501 until AI extraction exists."""
+"""Intake: the coordinator adds a case from one FHIR bundle, loaded into the FHIR server (the only
+store of patient data), so the case list, the briefing and `mdt-agent` see it. ponytail: resources
+of an earlier upload that the new bundle lacks stay on the server; delete the patient first once
+deletion exists. PDFs (one per record, as an external doctor sends them) are part of the API but
+answer 501 until AI extraction exists."""
 
 import base64
 import binascii
@@ -9,7 +10,6 @@ import json
 import re
 from typing import Literal
 
-import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -19,7 +19,7 @@ from mdt_backend.from_fhir import build_case
 
 router = APIRouter(prefix="/api/intake")
 
-PATIENT_KEY = re.compile(r"[a-z0-9-]{1,64}")  # becomes a folder name
+PATIENT_KEY = re.compile(r"[a-z0-9.-]{1,64}")  # a valid FHIR id, so the case id matches the server
 
 
 class File(BaseModel):
@@ -66,11 +66,10 @@ def upload(u: Upload) -> dict:
         build_case(key, b)  # a bundle the briefing can't be built from is no case
     except Exception as e:  # untrusted input: any gap in it surfaces here
         raise HTTPException(422, f"Z dat nelze sestavit podklad ({type(e).__name__}: {e})") from e
-    folder = cases.INTAKE / key
-    folder.mkdir(parents=True, exist_ok=True)
-    (folder / "bundle.json").write_text(json.dumps(data, ensure_ascii=False), "utf-8")
-    try:
-        load_fhir.put(load_fhir.to_transaction(data)).raise_for_status()
-    except httpx.HTTPError:
-        pass  # ponytail: no server (e.g. on Fly) = the disk copy alone; the agent can't brief it
+    with cases.fhir_server():
+        r = load_fhir.put(load_fhir.to_transaction(data))
+    if r.is_error:
+        raise HTTPException(
+            422, f"FHIR server případ odmítl (HTTP {r.status_code}): {r.text[:300]}"
+        )
     return {"case_id": cases.meeting_id(key, b)}

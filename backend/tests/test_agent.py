@@ -1,13 +1,13 @@
-"""MDT agent pipeline offline: the LLM is mocked, the record comes from the dataset bundle on disk.
-Skipped when the dataset folder isn't present (it's not in git)."""
+"""MDT agent pipeline offline: the LLM is mocked, the record comes from a fake FHIR server holding
+the dataset. Skipped when the dataset folder isn't present (it's not in git)."""
 
 import pytest
+from conftest import BUNDLES
 
 from mdt_backend import agent
-from mdt_backend.bundles import bundle_paths
 from mdt_backend.provenance import NOT_FOUND
 
-pytestmark = pytest.mark.skipif("p01" not in bundle_paths(), reason="no dataset")
+pytestmark = pytest.mark.skipif("p01" not in BUNDLES, reason="no dataset")
 
 HB = {"ref": "Observation/P01-lab06-hb_f", "excerpt": "104"}
 BAD_REF = {"ref": "Observation/NOPE", "excerpt": "x"}
@@ -173,9 +173,9 @@ def fake_llm(system, user, schema, name):
 
 
 @pytest.fixture
-def result(monkeypatch):
+def result(monkeypatch, fake_fhir):
     monkeypatch.setattr(agent, "chat_json", fake_llm)
-    return agent.run("P01", source="file")
+    return agent.run("P01")
 
 
 def test_output_is_a_valid_case_with_ai_statements(result):

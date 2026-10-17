@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from mdt_backend import agent
 from mdt_backend.app import app
 from mdt_backend.briefing import Case, DecisionSupport
 from mdt_backend.features import cases, records
@@ -38,12 +39,13 @@ def case(case_id: str, question: str | None) -> Case:
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    # own test cases as stubs: the dataset isn't in git, so CI has no FHIR cases
-    stubs = tmp_path / "stubs"
-    stubs.mkdir()
-    for c in (case("example", "Resekabilita?"), case("lung-incomplete", None)):
-        (stubs / f"{c.id}.json").write_text(c.model_dump_json(), "utf-8")
-    monkeypatch.setattr(cases, "STUBS", stubs)
+    # own test cases, served as finished agent briefings, so no FHIR server is needed
+    test_cases = (case("example", "Resekabilita?"), case("lung-incomplete", None))
+    for c in test_cases:
+        (tmp_path / f"{c.id}.json").write_text(c.model_dump_json(), "utf-8")
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(cases, "meetings", lambda: {c.id: c.id for c in test_cases})
+    monkeypatch.setattr(cases, "record", lambda patient: cases.Bundle({"entry": []}))
     monkeypatch.setattr(records, "RECORDS", tmp_path / "records")
     return TestClient(app)
 
@@ -107,7 +109,7 @@ def test_history_lists_the_patients_meetings(client):
     h = client.get("/api/cases/example/history").json()
     # both test cases belong to "Patient/t": one patient, two meetings
     assert {m["id"] for m in h["meetings"]} == {"example", "lung-incomplete"}
-    assert h["documents"] == []  # a stub has no health record behind it
+    assert h["documents"] == []  # no health record behind the test cases
     assert client.get("/api/cases/nope/history").status_code == 404
 
 

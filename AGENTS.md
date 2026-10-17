@@ -6,21 +6,22 @@ the agents never drift apart.
 
 ## What we're building
 
-**MDT Copilot** — Rakathon 2026 prototype. A web app that consolidates an oncology patient's data
-(FHIR records from eZdraví + PROMs questionnaires), uses AI to prepare a configurable briefing for
-the multidisciplinary tumour board (MDT), and records the board's final, human-made decision.
-Full brief (Czech): [docs/brief.md](docs/brief.md). Read it before working on a feature.
+**MDT Copilot** — Rakathon 2026 prototype. A workflow for the MDT coordinator over the hospital
+information system: it takes a patient's data (FHIR or PDF, on an IRIS FHIR server), gives the board
+a clear AI-prepared view of the patient's status with every claim sourced, records every decision
+that must be documented in the shape of `template_zaver_zasedani`, and exports it as PDF and FHIR.
+**Scope: [docs/problem_statement.md](docs/problem_statement.md)** (our core + the brief's full
+checklist). Read it before working on a feature.
 
 Domain docs (Czech). `MDT_ZASEDANI_PROCES.md` is confirmed with the challenge partners and wins over
 the brief, which is general and may not hold. The consultation notes are unverified hints and defer
 to the brief, as their header says. The dataset's `README.md` is the authority on the data.
-Scope = the POVINNÉ items in `problem_statement.md`.
 
 | Doc | What it is |
 |-----|------------|
 | [docs/workflow-plan.md](docs/workflow-plan.md) | **Agreed target workflow, roles and screens** (English) |
-| [docs/brief.md](docs/brief.md) | Official brief (original [brief.docx](docs/brief.docx)), general |
-| [docs/problem_statement.md](docs/problem_statement.md) | The same brief restructured as a checklist (POVINNÉ vs BONUS) |
+| [docs/brief.md](docs/brief.md) | Official brief, verbatim (incl. scoring and demo), general |
+| [docs/problem_statement.md](docs/problem_statement.md) | **Scope:** our core (inputs/outputs, IRIS, deploy) + every brief item as a checklist (POVINNÉ / BONUS / CORE) |
 | [docs/MDT_ZASEDANI_PROCES.md](docs/MDT_ZASEDANI_PROCES.md) | How a real MDT runs: roles, nomination, meeting, consensus, follow-up, repeat MDTs |
 | [docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md](docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md) | Mentor consultation notes: priorities and hints, not verified requirements |
 | [docs/template_zaver_zasedani/](docs/template_zaver_zasedani/) | Template for the board's final record, to be filled in live in the app |
@@ -55,18 +56,18 @@ inconsistency (red flag / missing data) with both sources.
 ```
 backend/    Python 3.13, FastAPI, uv. Package: src/mdt_backend/
 frontend/   TypeScript, React, Vite
+iris/       IRIS for Health image: FHIR R4 endpoint /fhir/r4 created on first start; fly.toml
 data/records/ the app's saved records, one JSON per case (git-ignored)
-data/stubs/ optional hand-made briefings served by /api/cases — none now, so the folder is absent;
-            create it with the first stub (see docs/stubs.md)
-Dataset/    organisers' dataset v1.1 (git-ignored, see its README): pacienti/ → from_fhir.py,
+data/ai_cases/ the agent's briefings, served by /api/cases (git-ignored)
+Dataset/    organisers' dataset v1.1 (git-ignored, see its README): fhir/ → mdt-load-fhir → IRIS,
             guidelines/ + studie/ → knowledge.py
-docs/       brief + domain docs (listed above), architecture, decisions, status, stubs
+docs/       scope + domain docs (listed above), architecture, decisions, status
             (keep current — see below)
-docker-compose.yml   HAPI FHIR R4 server on :8080
+docker-compose.yml   IRIS (:52773) + the whole app (:8000)
 ```
 
-**Preparing stubs from patient records?** Follow [docs/stubs.md](docs/stubs.md). The briefing shape
-(`Case` in `backend/src/mdt_backend/briefing.py`, mirrored in `frontend/src/briefing.ts`) is
+Patient data live only on the FHIR server (IRIS); the app never reads patient files from disk. The
+briefing shape (`Case` in `backend/src/mdt_backend/briefing.py`, mirrored in `frontend/src/briefing.ts`) is
 the contract between data work and the frontend. Change it only in both places at once.
 
 New features go in their own module so they can be removed in one move:
@@ -76,14 +77,11 @@ New features go in their own module so they can be removed in one move:
 ## Commands
 
 ```sh
-docker compose up -d fhir                              # FHIR server → http://localhost:8080/fhir
-# or IRIS for Health (FHIR → http://localhost:52773/fhir/r4); first run also needs fhir_server_setup_native.py
-# (FHIRServerSetup.create_fhir_server, without the kit's sample data — see docs/architecture.md)
-docker compose -f FHIR-AI-Kit/docker-iris-fhir/docker-compose.yml up -d
-cd backend && uv run mdt-load-fhir                     # load Dataset/fhir/bundles.ndjson into FHIR_BASE_URL
+docker compose up -d iris                              # IRIS FHIR → http://localhost:52773/fhir/r4 (first start ~2 min)
+cd backend && uv run mdt-load-fhir                     # load Dataset/fhir/bundles.ndjson into IRIS (once per fresh volume)
 cd backend && uv run mdt-patient P01                   # pretty-print one patient's full record from the server
 cd backend && uv run mdt-zaver P01                     # MDT conclusion PDF → data/zavery/ (needs FHIR server + AZURE_API_KEY)
-cd backend && uv run mdt-agent P01 --runs 2            # MDT agent → data/ai_cases/ (IRIS + AZURE_API_KEY; --source file = no server)
+cd backend && uv run mdt-agent P01 --runs 2            # MDT agent → data/ai_cases/ (IRIS + AZURE_API_KEY)
 cd backend && uv run mdt-agent --all                   # refresh the AI briefings of every nominated patient (what the app shows)
 cd backend && uv sync && uv run mdt-backend            # API → http://localhost:8000 (docs at /docs)
 cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check .
@@ -91,6 +89,7 @@ cd frontend && npm install && npm run dev              # UI → http://localhost
 cd frontend && npm run lint && npm run build
 docker compose up -d --build app                       # whole app in one container → http://localhost:8000
 fly deploy                                             # redeploy https://mdt-copilot-rakathon.fly.dev (needs Dataset/ + data/ai_cases/)
+cd iris && fly deploy                                  # redeploy the private IRIS app (first deploy: see iris/fly.toml)
 ```
 
 Run the relevant checks before every commit; CI runs the same ones on each PR.

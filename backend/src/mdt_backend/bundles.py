@@ -1,16 +1,10 @@
-"""Reads the hackathon's FHIR bundles from disk and gives simple access to their resources.
-ponytail: files instead of the FHIR server; load them into HAPI/IRIS and query via fhir.py once the
-server is the source of truth — from_fhir.py only needs `Bundle`'s small API."""
+"""A patient's FHIR resources as one in-memory `Bundle` (built from the server's answer in
+agent.Record), plus small accessors shared by from_fhir.py, the agent and the source endpoint."""
 
 import base64
 import datetime as dt
-import json
 import re
-from collections.abc import Iterable
-from functools import lru_cache
-from pathlib import Path
 
-from mdt_backend.config import settings
 from mdt_backend.provenance import Source
 
 LOINC_HB, LOINC_ECOG = "718-7", "89247-1"
@@ -35,34 +29,6 @@ class Bundle:
         name = r.get("name")
         text = name[0].get("text") if isinstance(name, list) else name
         return text.replace(" (fiktivní lékař)", "") if text else r["id"]
-
-
-def bundle_paths() -> dict[str, Path]:
-    """Case id (e.g. "p01") → bundle file."""
-    return {
-        p.name.split("_")[0].lower(): p
-        # flat (pacienti/P01_bundle.json) or per-patient folders (pacienti/P01/P01_bundle.json)
-        for p in sorted((settings.dataset_dir / "pacienti").rglob("*_bundle.json"))
-    }
-
-
-def load(path: Path) -> Bundle:
-    return _load(path, path.stat().st_mtime)  # mtime in the key: edited files are re-read
-
-
-@lru_cache(maxsize=32)
-def _load(path: Path, _mtime: float) -> Bundle:
-    return Bundle(json.loads(path.read_text("utf-8")))
-
-
-def find(ref: str, paths: Iterable[Path] | None = None) -> tuple[Bundle, dict] | None:
-    """Looks a reference up across bundles (default: the dataset's; its ids are globally
-    unique)."""
-    for path in paths or bundle_paths().values():
-        b = load(path)
-        if r := b.get(ref):
-            return b, r
-    return None
 
 
 # --- small accessors shared by from_fhir.py and the source endpoint ---------------------------

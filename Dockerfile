@@ -1,6 +1,7 @@
 # One image: builds the frontend, FastAPI serves it next to /api on :8000.
-# Bakes in Dataset/ and the agent's briefings data/ai_cases/ (both must exist locally; run
-# `uv run mdt-agent --all` first) — keep the image in a private registry.
+# Patient data come only from the FHIR server (FHIR_BASE_URL, IRIS). Bakes in the dataset's
+# guidelines/ + studie/ (knowledge.py) and the agent's briefings data/ai_cases/ (both must exist
+# locally; run `uv run mdt-agent --all` first) — keep the image in a private registry.
 # Mount a volume at /app/data/records (saved MDT records), or they're lost on restart.
 FROM node:24-slim AS web
 WORKDIR /app/frontend
@@ -17,8 +18,8 @@ COPY backend/pyproject.toml backend/uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 COPY backend/ ./
 RUN uv sync --frozen --no-dev
-COPY Dataset/ /app/Dataset/
-# no FHIR server where the image runs (Fly): the app reads the bundles, plus these AI briefings
+COPY Dataset/guidelines/ /app/Dataset/guidelines/
+COPY Dataset/studie/ /app/Dataset/studie/
 COPY data/ai_cases/ /app/data/ai_cases/
 COPY --from=web /app/frontend/dist /app/frontend/dist
 RUN mkdir -p /app/data/records
