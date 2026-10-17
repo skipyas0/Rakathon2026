@@ -422,7 +422,7 @@ function QuestionsStep({ c, record, next, prev }: StepProps) {
   )
 }
 
-function IntentStep({ record, save, next, prev }: StepProps) {
+function IntentStep({ record, rec, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [intents, setIntents] = useState(record.decision.intents)
   // several may apply at once; kept in the tiles' order so the record reads the same either way
@@ -444,6 +444,7 @@ function IntentStep({ record, save, next, prev }: StepProps) {
           </button>
         ))}
       </div>
+      {rec && <Recommended rec={rec} record={record} className="question-card recommended" />}
       <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intents.length} saves={!locked} />
     </>
   )
@@ -571,20 +572,7 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
           ))}
           <p className="big">{d.plan}</p>
         </section>
-        <section>
-          <p className="eyebrow">
-            Doporučený postup{' '}
-            {rec?.statement.model === 'ukázka' && <span className="chip muted-chip">ukázka</span>}
-          </p>
-          {rec ? (
-            <>
-              <IntentLabel intent={rec.intent} />
-              <p className="big">{S('recommendation', rec.statement, 'inline')}</p>
-            </>
-          ) : (
-            <p className="muted">Doporučení k porovnání není k dispozici.</p>
-          )}
-        </section>
+        <Recommended rec={rec} record={record} />
         {rec ? (
           <>
             {assessmentLoading && <p className="muted">AI porovnává zvolený postup s doporučením a citovanými pasážemi…</p>}
@@ -730,6 +718,27 @@ function ExportStep({ c, record, prev }: StepProps) {
       )}
       <Nav prev={prev} close={() => (location.hash = '#/')} />
     </>
+  )
+}
+
+/** The recommended postup (the agent's first option, or a labelled example): on Záměr to prepare
+ * the závěr, on Potvrzení to compare it with. */
+function Recommended({ rec, record, className }: { rec: Recommendation; record: CaseRecord; className?: string }) {
+  const S = renderer(record)
+  return (
+    <section className={className}>
+      <p className="eyebrow">
+        Doporučený postup {rec?.statement.model === 'ukázka' && <span className="chip muted-chip">ukázka</span>}
+      </p>
+      {rec ? (
+        <>
+          <IntentLabel intent={rec.intent} />
+          <p className="big">{S('recommendation', rec.statement, 'inline')}</p>
+        </>
+      ) : (
+        <p className="muted">Doporučení k porovnání není k dispozici.</p>
+      )}
+    </section>
   )
 }
 

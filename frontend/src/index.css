@@ -1426,6 +1426,7 @@ button.close:hover {
     border-top: 1px solid var(--line);
   }
 }
+.recommended .big,
 .compare .big {
   margin: 0.4rem 0 0;
   line-height: 1.4;
