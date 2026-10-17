@@ -34,7 +34,8 @@ every screen, reachable even when the content has to scroll.
 Rules that still hold: every statement opens its source; AI output is blue; examples standing in
 where there's no AI output (recommended postup and stanoviska of cases the agent hasn't briefed, the
 pathology stanovisko) carry a visible "ukázka" label; Potvrdit records
-who confirmed and when, and means the board agreed (consensus).
+who confirmed and when, and means the board agreed (consensus). After that, Léčebný záměr and Závěr are read-only
+and say so with a lock note (reset the case in Přehled to change them).
 
 Known gaps (mandatory items in `problem_statement.md` left out for simplicity): section order and
 detail level, trial screening. The backend keeps triage, visibility, notes, tasks and the patient's

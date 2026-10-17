@@ -3,7 +3,7 @@ import { AI_POLL_MS, api, type CaseRecord, type Decision, type Intent, type Reco
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
-import { Alert, Check, Doc, IntentIcon, Robot } from './icons'
+import { Alert, Check, Doc, IntentIcon, Lock, Robot } from './icons'
 import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
@@ -81,6 +81,13 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
     </div>
   )
 }
+
+/** Shown where a confirmed conclusion makes the fields read-only, so they don't look broken. */
+const Locked = () => (
+  <p className="locked-note">
+    <Lock /> Závěr je potvrzen a uzamčen. Změnit ho lze po vymazání případu v Přehledu.
+  </p>
+)
 
 type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void; user: string }
 
@@ -391,6 +398,7 @@ function IntentStep({ record, save, next, prev }: StepProps) {
   return (
     <>
       <h1>Léčebný záměr</h1>
+      {locked && <Locked />}
       <div className="tiles">
         {(Object.keys(INTENTS) as Intent[]).map((k) => (
           <button key={k} className={`tile intent-${k} ${intent === k ? 'on' : ''}`} aria-pressed={intent === k} disabled={locked} onClick={() => setIntent(k)}>
@@ -414,6 +422,7 @@ function PlanStep({ c, record, save, next, prev }: StepProps) {
   return (
     <>
       <h1>Závěr</h1>
+      {locked && <Locked />}
       <section className="card form-card">
         <label className="big-field">
           Zvolený postup

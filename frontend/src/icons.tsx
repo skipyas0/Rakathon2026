@@ -47,6 +47,12 @@ export const Doc = () => (
     <path d="M9.5 1.5v3h3M6 8h4.5M6 10.5h4.5" />
   </Icon>
 )
+export const Lock = () => (
+  <Icon>
+    <rect x="3" y="7" width="10" height="7.5" rx="1.5" />
+    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+  </Icon>
+)
 export const Reset = () => (
   <Icon>
     <path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9" />

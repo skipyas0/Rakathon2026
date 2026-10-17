@@ -681,6 +681,18 @@ dialog::backdrop {
   font-size: var(--fs-m);
   line-height: 1.4;
 }
+.locked-note {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  margin: 0 0 1rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--fs-s);
+}
 .ai-note {
   display: flex;
   gap: 0.4rem;
