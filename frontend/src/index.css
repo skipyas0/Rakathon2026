@@ -1176,9 +1176,10 @@ button.back {
   font-size: var(--fs-l);
   padding: 0.7rem 2rem;
 }
-/* Předchozí (grey, left) and Další (right) under every journey screen */
+/* Předchozí (grey) right next to Další, both at the right under every journey screen */
 .nav-row {
   display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.75rem;
   margin-top: 1.5rem;
@@ -1186,15 +1187,9 @@ button.back {
 .nav-row button {
   margin: 0;
 }
-.nav-row button.next {
-  margin-left: auto;
-}
 button.back {
   color: var(--ink-2);
   background: var(--surface-2);
-}
-.confirm-row button.back {
-  margin-right: auto;
 }
 .confirm-row .nav-row {
   margin: 0 0 0 auto;
