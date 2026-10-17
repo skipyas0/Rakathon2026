@@ -199,9 +199,10 @@ bubbles) → patient → key facts → trends → questions → léčebný zám�
 plus a case overview. No role switcher, specialist views, triage, visibility or section
 configuration in the UI (the backend keeps those record fields for later). The final conclusion
 needs consensus of all board members (`MDT_ZASEDANI_PROCES.md` §4.3): the coordinator records it,
-Potvrdit means the board agreed, anyone against blocks it; no per-member sign-off. Soulad s
-doporučenými postupy is derived: chosen léčebný záměr = recommended one (#21). Where the agent has
-no output, a hand-written example labelled "ukázka" stands in (recommendation, stanoviska).
+Potvrdit means the board agreed, anyone against blocks it; no per-member sign-off. Guideline
+compliance is assessed against the board's actual plan and the cited recommendation (#27). Where
+the agent has no output, a hand-written example labelled "ukázka" stands in (recommendation,
+stanoviska).
 Why: The demo has to be simple and legible end to end; the role-based screens were too much.
 
 ## 21. The agent recommends a léčebný záměr — 2026-10-17, yes-and
@@ -209,8 +210,8 @@ Status: accepted
 Decision: Each option the agent proposes carries its léčebný záměr; the first kept option's goes
 to `DecisionSupport.intent`. `/recommendation` returns that option and intent when present, so
 Potvrzení compares the conclusion with real AI output.
-Why: Soulad is derived from the léčebný záměr (#20); without one per option the app could only
-compare with the examples.
+Why: The recommendation carries its treatment intent, text and cited passages into the final
+guideline-compliance assessment.
 
 ## 22. The patient's preference on its own in the briefing — 2026-10-17, yes-and
 Status: accepted
@@ -261,6 +262,17 @@ Přehled, source drawer) are rem, so the UI scales as one; browser zoom works on
 are HTML around the stretched SVG, so they keep the scale too.
 Why: The app is projected in the meeting and also sits in a narrow window next to the hospital
 information system; 21 ad-hoc sizes down to 9px were not legible in either.
+
+## 27. LLM assessment of the board's final plan against guidelines — 2026-10-17
+Status: accepted
+Decision: On Potvrzení, a separate LLM call compares the board's entered plan and rationale with
+the available recommendation and its original cited guideline passages. The call returns a
+compliant / deviation / uncertain verdict, a reason, and only guideline citations already cited
+by that recommendation. The reason and exact guideline sources are saved with the confirmed
+decision; an uncertain result requires a coordinator to resolve compliance manually. If no
+recommendation exists, compliance remains manual.
+Why: A treatment-intent match is not enough to establish whether the board's actual plan follows
+the recommended procedure; the final claim needs a reason and clickable primary sources.
 
 ## 25-backend. Reconcile the backend branch with the coordinator journey — 2026-10-17, Copilot
 Status: accepted | updated 2026-10-17 (second main merge)

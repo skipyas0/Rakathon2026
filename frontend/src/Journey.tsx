@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AI_POLL_MS, api, type CaseRecord, type Decision, type Intent, type Recommendation } from './api'
+import { AI_POLL_MS, api, type CaseRecord, type Decision, type GuidelineAssessment, type Intent, type Recommendation } from './api'
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
@@ -8,6 +8,7 @@ import { fmtDate, fmtDateTime, INTENTS, KIND, load, MIN_SPECIALTIES, save as rem
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
+import { useSources } from './sources'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 
@@ -486,11 +487,66 @@ function PlanStep({ c, record, save, next, prev }: StepProps) {
 
 function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
   const S = renderer(record)
+  const showSources = useSources()
   const d = record.decision
   const locked = !!d.confirmed_by
-  // soulad s doporučenými postupy: automatic when there's a recommendation, else the coordinator says
-  const [manual, setManual] = useState<boolean | null>(null)
-  const compliant = rec ? d.intent === rec.intent : manual
+  const savedAssessment = d.guideline_assessment
+  const sourcesMatch =
+    !!rec &&
+    savedAssessment?.recommendation_sources.length === rec.statement.sources.length &&
+    savedAssessment.recommendation_sources.every(
+      (source, i) =>
+        source.reference === rec.statement.sources[i].reference &&
+        source.excerpt === rec.statement.sources[i].excerpt,
+    )
+  const savedMatches =
+    !!rec &&
+    sourcesMatch &&
+    savedAssessment?.compared_plan === d.plan &&
+    savedAssessment.compared_rationale === d.rationale &&
+    savedAssessment.compared_intent === d.intent &&
+    savedAssessment?.recommendation === rec.statement.text
+  const assessmentKey = JSON.stringify([c.id, d.intent, d.plan, d.rationale, rec?.statement.text, rec?.statement.sources])
+  const [assessmentResult, setAssessmentResult] = useState<
+    { key: string; status: 'done'; assessment: GuidelineAssessment } | { key: string; status: 'error'; error: string } | null
+  >(null)
+  const [assessmentRetry, setAssessmentRetry] = useState(0)
+  const [manualChoice, setManualChoice] = useState<{ key: string; value: boolean } | null>(null)
+  const assessmentNeeded = !!rec && !locked && !!d.plan.trim() && !!d.rationale.trim() && !savedMatches
+  const requestKey = JSON.stringify([assessmentKey, assessmentRetry])
+  const currentResult = assessmentResult?.key === requestKey ? assessmentResult : null
+  const assessment =
+    savedMatches && savedAssessment
+      ? savedAssessment
+      : currentResult?.status === 'done'
+        ? currentResult.assessment
+        : null
+  const assessmentError = currentResult?.status === 'error' ? currentResult.error : ''
+  const assessmentLoading = assessmentNeeded && !currentResult
+  const manual =
+    manualChoice?.key === assessmentKey
+      ? manualChoice.value
+      : rec
+        ? null
+        : d.guideline_compliant
+  useEffect(() => {
+    if (!assessmentNeeded) return
+    let active = true
+    api
+      .assessGuideline(c.id, { intent: d.intent, plan: d.plan, rationale: d.rationale })
+      .then(({ assessment: result }) => {
+        if (active) setAssessmentResult({ key: requestKey, status: 'done', assessment: result })
+      })
+      .catch((e: Error) => {
+        if (active) setAssessmentResult({ key: requestKey, status: 'error', error: e.message })
+      })
+    return () => {
+      active = false
+    }
+  }, [assessmentNeeded, c.id, d.intent, d.plan, d.rationale, requestKey])
+  const assessedCompliance =
+    assessment?.status === 'compliant' ? true : assessment?.status === 'deviation' ? false : null
+  const compliant = rec ? (assessedCompliance ?? manual) : manual
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
   // who confirms, typed here; the last signer in this browser is pre-filled
@@ -503,6 +559,7 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
       ...d,
       attendees: record.board.map((m) => ({ name: m.name, specialty: SPECIALTIES[m.specialty] ?? m.specialty })),
       guideline_compliant: compliant,
+      guideline_assessment: assessment,
       deviation_reason: compliant === false ? reason.trim() : '',
       confirmed_by: signer.trim(),
       confirmed_at: now(),
@@ -536,15 +593,57 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
             <p className="muted">Doporučení k porovnání není k dispozici.</p>
           )}
         </section>
-        {/* soulad s doporučenými postupy belongs to the comparison: the card's footer */}
         {rec ? (
-          <p className={`verdict soulad ${compliant ? 'ok' : 'warn'}`}>
-            {compliant ? <Check /> : <Alert />} {compliant ? 'V souladu s doporučeným postupem' : 'Odchylka od doporučeného postupu'}
-          </p>
+          <>
+            {assessmentLoading && <p className="muted">AI porovnává zvolený postup s doporučením a citovanými pasážemi…</p>}
+            {assessmentError && (
+              <p className="banner bad">
+                {assessmentError}{' '}
+                <button className="link" onClick={() => setAssessmentRetry((n) => n + 1)}>
+                  Zkusit znovu
+                </button>
+              </p>
+            )}
+            {assessment && (
+              <>
+                <p className={`verdict soulad ${assessment.status === 'compliant' ? 'ok' : 'warn'}`}>
+                  {assessment.status === 'compliant' ? <Check /> : <Alert />}{' '}
+                  {assessment.status === 'compliant'
+                    ? 'V souladu s doporučeným postupem'
+                    : assessment.status === 'deviation'
+                      ? 'Odchylka od doporučeného postupu'
+                      : 'Soulad nelze spolehlivě posoudit'}
+                  <button
+                    className="link"
+                    aria-label="Zobrazit guideline zdroje pro hodnocení souladu"
+                    onClick={() =>
+                      showSources({
+                        title: assessment.statement.text,
+                        sources: assessment.statement.sources,
+                        ai: assessment.statement.model,
+                      })
+                    }
+                  >
+                    Zdroje ({assessment.statement.sources.length})
+                  </button>
+                </p>
+                {S('guideline_assessment', assessment.statement)}
+              </>
+            )}
+            {assessment?.status === 'uncertain' && (
+              <div className="bubbles small-bubbles soulad" role="group" aria-label="Potvrďte soulad s doporučenými postupy">
+                {[true, false].map((v) => (
+                  <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManualChoice({ key: assessmentKey, value: v })}>
+                    {v ? 'Přesto označit jako v souladu' : 'Označit jako odchylku'}
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
         ) : (
           <div className="bubbles small-bubbles soulad" role="group" aria-label="Soulad s doporučenými postupy">
             {[true, false].map((v) => (
-              <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManual(v)}>
+              <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManualChoice({ key: assessmentKey, value: v })}>
                 {v ? 'V souladu s postupy' : 'Odchylka od postupů'}
               </button>
             ))}
@@ -581,7 +680,7 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
               </button>
             )}
             <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Kdo potvrzuje" aria-label="Kdo potvrzuje" />
-            <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || against.length > 0 || (asking && !reason.trim())}>
+            <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || against.length > 0 || (rec !== null && (!assessment || assessmentLoading || !!assessmentError)) || (asking && !reason.trim())}>
               {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
             </button>
           </div>

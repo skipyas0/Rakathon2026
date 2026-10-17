@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, model_validator
 
 from mdt_backend.features.cases import ai_status, case_ids, get_case
+from mdt_backend.provenance import Source, Statement
 
 RECORDS = Path(__file__).parents[4] / "data" / "records"
 
@@ -81,6 +82,18 @@ class Attendee(BaseModel):
     specialty: str
 
 
+class GuidelineAssessment(BaseModel):
+    status: Literal["compliant", "deviation", "uncertain"]
+    statement: Statement
+    compared_plan: str
+    compared_rationale: str
+    compared_intent: (
+        Literal["curative", "palliative", "supportive", "surveillance", "deferred"] | None
+    )
+    recommendation: str
+    recommendation_sources: list[Source]
+
+
 class Decision(BaseModel):
     attendees: list[Attendee] = []
     intent: Literal["curative", "palliative", "supportive", "surveillance", "deferred"] | None = (
@@ -90,6 +103,7 @@ class Decision(BaseModel):
     plan: str = ""
     rationale: str = ""
     guideline_compliant: bool | None = None
+    guideline_assessment: GuidelineAssessment | None = None
     deviation_reason: str = ""
     dissent: str = ""
     trial: str = ""

@@ -1,6 +1,6 @@
 // Backend calls + the record types (mirror of backend/src/mdt_backend/features/records.py).
 import type { Case } from './briefing'
-import type { Statement } from './provenance'
+import type { Source, Statement } from './provenance'
 
 export type Status = 'prep' | 'meeting' | 'followup' | 'closed'
 export type Intent = 'curative' | 'palliative' | 'supportive' | 'surveillance' | 'deferred'
@@ -32,6 +32,7 @@ export type Decision = {
   plan: string
   rationale: string
   guideline_compliant: boolean | null
+  guideline_assessment: GuidelineAssessment | null
   deviation_reason: string
   dissent: string
   trial: string
@@ -68,6 +69,15 @@ export type CaseRecord = {
 export type IntakeKind = 'fhir' | 'pdf'
 
 export type Recommendation = { intent: Intent; statement: Statement } | null
+export type GuidelineAssessment = {
+  status: 'compliant' | 'deviation' | 'uncertain'
+  statement: Statement
+  compared_plan: string
+  compared_rationale: string
+  compared_intent: Intent | null
+  recommendation: string
+  recommendation_sources: Source[]
+}
 
 export type History = {
   documents: { reference: string; title: string; date: string | null; author: string | null; sections: { title: string; text: string }[] }[]
@@ -104,6 +114,12 @@ export const api = {
   resetRecord: (id: string) => fetch(`${caseUrl(id)}/record`, { method: 'DELETE' }),
   history: (id: string) => call<History>(`${caseUrl(id)}/history`),
   recommendation: (id: string) => call<Recommendation>(`${caseUrl(id)}/recommendation`),
+  assessGuideline: (id: string, decision: Pick<Decision, 'intent' | 'plan' | 'rationale'>) =>
+    call<{ assessment: GuidelineAssessment }>(`${caseUrl(id)}/guideline-assessment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(decision),
+    }),
   ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),
   /** The AI's draft of the template's history fields: made on first call (~30 s), then cached. */
   zaverDraft: (id: string) => call<{ created: string }>(`${caseUrl(id)}/zaver/draft`, { method: 'POST' }),
