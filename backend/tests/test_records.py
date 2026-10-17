@@ -11,7 +11,7 @@ from mdt_backend.provenance import Statement
 
 FINAL = {
     "attendees": [{"name": "MUDr. A", "specialty": "Chirurg"}],
-    "intent": "curative",
+    "intents": ["curative"],
     "plan": "Resekce",
     "rationale": "Resekabilní",
     "guideline_compliant": True,
@@ -27,8 +27,16 @@ def test_deviation_needs_reason():
 
 def test_confirmed_decision_must_be_complete():
     with pytest.raises(ValidationError):
-        Decision(**{**FINAL, "intent": None})
+        Decision(**{**FINAL, "intents": []})
     Decision(**FINAL)
+    Decision(**{**FINAL, "intents": ["palliative", "supportive"]})
+
+
+def test_records_with_one_intent_still_load():
+    assert Decision(intent="palliative").intents == ["palliative"]
+    assert Decision(intent=None).intents == []
+    final = {k: v for k, v in FINAL.items() if k != "intents"}
+    Decision(**final, intent="curative")
 
 
 def test_guideline_assessment_is_saved_with_decision():
@@ -50,7 +58,7 @@ def test_guideline_assessment_is_saved_with_decision():
             },
             "compared_plan": "Resekce",
             "compared_rationale": "Zvolená možnost",
-            "compared_intent": "curative",
+            "compared_intent": "curative",  # saved before several could be chosen
             "recommendation": "Doporučená systémová léčba",
             "recommendation_sources": [
                 {
@@ -63,6 +71,7 @@ def test_guideline_assessment_is_saved_with_decision():
     }
     decision = Decision(**body)
     assert decision.guideline_assessment.statement.sources[0].reference == "guideline:PRS-3.3"
+    assert decision.guideline_assessment.compared_intents == ["curative"]
 
 
 def case(case_id: str, question: str | None) -> Case:
@@ -227,3 +236,22 @@ def test_specialist_stanovisko_and_stance(client, monkeypatch):
     body = reviewed(client, {**r, "decision": FINAL})
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     assert client.patch(url, json={"supports": False}).status_code == 409
+
+
+def test_quick_picks_read_as_one_line_in_plans_order():
+    d = Decision(
+        choices={
+            "surgery": [{"option": "Chirurgicky řešitelné", "text": "pravostranná hemikolektomie"}],
+            "oncology": [
+                {"option": "Neoadjuvantní léčba", "sub": ["Chemoterapie", "Radioterapie"]},
+                {"option": "Symptomatická péče"},
+            ],
+        }
+    )
+    assert records.choices_text(d) == (
+        "Onkologie: Neoadjuvantní léčba (Chemoterapie, Radioterapie), Symptomatická péče; "
+        "Chirurgie: Chirurgicky řešitelné: pravostranná hemikolektomie"
+    )
+    assert records.choices_text(Decision()) == ""
+    with pytest.raises(ValidationError):  # rows are Plán's, nothing else
+        Decision(choices={"cardiology": [{"option": "x"}]})

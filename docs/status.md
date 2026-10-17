@@ -13,6 +13,15 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   sees all of them) and the batch adds a pathology view.
 - Fly: the web app (https://mdt-copilot-rakathon.fly.dev, yes-and's account) runs the IRIS build
   against the private app `mdt-copilot-iris` (#14); `/api/health` reports `fhir: true`.
+- `yes-and/frontend-tweaks`: the Vývoj tab is gone; its charts open from Klíčové informace → Grafy,
+  one per screen in a pop-up (‹ › / arrow keys). Specialists get it too (shared `FactsStep`).
+  Záměr takes one or more léčebné záměry (decision #31): the record's `intent` became
+  `intents` (old records still load), shown and exported comma-separated. Záměr also shows the
+  doporučený postup as a folded AI row (robot icon) that opens a pop-up with its sources.
+  Záměr is now Plán, with quick picks per specialty (decision #32), exported as "Postup podle
+  odborností" and shown to each specialist. Not yet in the guideline check or FHIR CarePlan.
+  Potvrzení simplified: one soulad line + Porovnat pop-up, důvod odchylky, a required "report
+  checked" checkbox (opening the report is optional).
 - Next, by the scope (`problem_statement.md`): trial screening (POVINNÉ, empty); section
   order/detail configuration (POVINNÉ, 20 % of the score); PDF intake and FHIR export (CORE);
   running the agent from the app; LLM red flags and an LLM guideline-compliance check instead of

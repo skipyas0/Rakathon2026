@@ -57,7 +57,7 @@ def test_assessment_compares_plan_and_returns_original_guideline_source(monkeypa
     response = client.post(
         "/api/cases/example/guideline-assessment",
         json={
-            "intent": "curative",
+            "intents": ["curative", "supportive"],
             "plan": "Resekce",
             "rationale": "Komise ji preferuje.",
         },
@@ -68,6 +68,8 @@ def test_assessment_compares_plan_and_returns_original_guideline_source(monkeypa
     assert result["status"] == "deviation"
     assert result["recommendation_sources"][0]["reference"] == "guideline:PRS-3.3"
     assert "Resekce" in captured["user"] and "Komise ji preferuje." in captured["user"]
+    assert "curative, supportive" in captured["user"]
+    assert result["compared_intents"] == ["curative", "supportive"]
     assert "Pokračovat v léčbě." in captured["user"]
     assert captured["name"] == "guideline_compliance"
     assert result["statement"]["sources"][0]["reference"] == "guideline:PRS-3.3"
@@ -97,6 +99,6 @@ def test_assessment_rejects_uncited_or_unknown_guideline_references(monkeypatch)
 
     response = client.post(
         "/api/cases/example/guideline-assessment",
-        json={"intent": "palliative", "plan": "Léčba", "rationale": "Důvod"},
+        json={"intents": ["palliative"], "plan": "Léčba", "rationale": "Důvod"},
     )
     assert response.status_code == 502

@@ -110,7 +110,7 @@ def test_compliance_keeps_the_board_reasons_beside_the_ai_assessment():
     a = records.GuidelineAssessment(
         status="compliant",
         statement=_stanovisko(text="Postup odpovídá PLI-2.1.", model="m"),
-        compared_plan="p", compared_rationale="r", compared_intent="curative",
+        compared_plan="p", compared_rationale="r", compared_intents=["curative"],
         recommendation="x", recommendation_sources=[],
     )  # fmt: skip
     d = records.Decision(rationale="Kurativní záměr, pacient souhlasí.", guideline_compliant=True,

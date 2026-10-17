@@ -193,9 +193,9 @@ the qualification says "předseda". The coordinator can adopt it; it is never ap
 Why: The board for a repeat MDT is usually the same team; the coordinator starts from facts.
 
 ## 20. One simple journey for the coordinator; the board decides by consensus — 2026-10-17, yes-and
-Status: accepted | updated 2026-10-17 (#27: specialist journeys)
+Status: accepted | updated 2026-10-17 (#27: specialist journeys; Vývoj tab folded into Klíčové informace → Grafy)
 Decision: The coordinator's frontend is one linear journey (`docs/workflow-plan.md`): upload → board
-(specialty bubbles) → patient → key facts → trends → questions → léčebný záměr → závěr → potvrzení
+(specialty bubbles) → patient → course → key facts (charts behind Grafy) → questions → léčebný záměr → závěr → potvrzení
 → export, plus a case overview. Specialists get their own short journey (#27). No triage,
 visibility or section configuration in the UI (the backend keeps those record fields for later). The final conclusion
 needs consensus of all board members (`MDT_ZASEDANI_PROCES.md` §4.3): the coordinator records it,
@@ -349,3 +349,25 @@ Why: The AI draft listed studies already in "Poslední zobrazovací vyšetření
 radiologist's judgement; a conclusion signed by the board must not carry AI text as its decision
 (ground rule: AI is a proposal until a clinician confirms it).
 
+## 31. The board may choose several léčebné záměry — 2026-10-17, yes-and
+Status: accepted | renumbered 2026-10-17: #29 on `yes-and/frontend-tweaks`, which `main` had
+already given to the FHIR export
+Decision: `Decision.intents` is a list (at least one once confirmed), replacing the single
+`intent`; likewise `ComplianceRequest.intents`, `GuidelineAssessment.compared_intents` and the
+overview's `intents`, kept in the tiles' order. Records saved with the single `intent` /
+`compared_intent` load as a one-item list. The recommendation keeps its one `intent`. Any
+combination may be chosen; the app doesn't judge which ones go together.
+Why: A plan often has more than one aim (e.g. paliativní + podpůrná péče); the board decides.
+
+## 32. Quick picks per specialty on Plán, saved beside the free text — 2026-10-17, yes-and
+Status: accepted
+Decision: Záměr is renamed Plán (step id stays `intent`). Under the léčebný záměr tiles, one row
+of bubbles per specialty (Onkologie, Chirurgie, Radiologie, Patologie, Ostatní) offers common
+postupy; several may be picked, sub-options appear once their option is picked, "Chirurgicky
+řešitelné / neřešitelné" and the two radiology verdicts are either/or, and "Jiné" (free text) is
+last in each row. Picks are saved as `Decision.choices` (row → `{option, sub, text}`, labels, not
+ids), separately from Zvolený postup, and exported as one line "Postup podle odborností" in the
+PDF/DOCX and the report. Each specialist sees their row's picks under Navržený postup. The
+options live only in `frontend/src/features/choices/choices.ts`.
+Why: Most conclusions repeat the same few postupy; picking is faster than typing and reads the
+same in every record, while the free text keeps the board's own wording.

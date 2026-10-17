@@ -59,9 +59,8 @@ export const STEPS = [
   { id: 'patient', label: 'Pacient' },
   { id: 'course', label: 'Průběh' },
   { id: 'facts', label: 'Klíčové informace' },
-  { id: 'trends', label: 'Vývoj' },
-  { id: 'questions', label: 'Otázky' }, // short labels: all 11 chevrons fit the journey column
-  { id: 'intent', label: 'Záměr' },
+  { id: 'questions', label: 'Otázky' }, // short labels: all 10 chevrons fit the journey column
+  { id: 'intent', label: 'Plán' }, // léčebný záměr + the specialties' quick picks
   { id: 'plan', label: 'Závěr' },
   { id: 'confirm', label: 'Potvrzení' },
   { id: 'export', label: 'Export' },

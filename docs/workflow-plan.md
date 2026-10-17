@@ -3,8 +3,8 @@
 **Audience:** the team and their coding agents. Agreed target for the frontend (decision #20).
 One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, **Další** per screen and a grey **Předchozí** to the previous
-tab (Vývoj: previous chart page first; screens with input save first, either way, and say so:
-**Uložit a další** on Komise, Záměr and Závěr until the conclusion is locked). Leaving a screen
+tab (screens with input save first, either way, and say so:
+**Uložit a další** on Komise, Plán and Závěr until the conclusion is locked). Leaving a screen
 with unsaved input any other way (chevrons, top bar, role pick, closing the tab) asks first:
 "Máte neuložené změny. Odejít bez uložení?"; cancelling keeps the screen and its input.
 
@@ -14,13 +14,12 @@ with unsaved input any other way (chevrons, top bar, role pick, closing the tab)
 | 2 | Komise | Specialty bubbles; a tap adds it (green outline). At least 3 |
 | 3 | Pacient | Labelled facts (patient, diagnosis, board, MDT date), up to 2 critical findings (else the 2 most important) as red/amber cards, the MDT question in a highlighted card (red when missing), the patient's wishes right under it (AI, when the agent briefed the case; 2 shown) |
 | 4 | Průběh | Diagnoses (4 facts shown) + výkonnostní stav (ECOG), course of the disease (4 latest events); the rest of each one click away |
-| 5 | Klíčové informace | Critical (high) and important (medium) red flags unrolled as red / amber cards; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
-| 6 | Vývoj | Four charts per screen (2×2) when the window is at least 981 × 820 px, else two; no scrolling; Další and Předchozí page through the series first, then leave the tab |
-| 7 | Otázky k diskusi | The agent's 2–3 questions for the board, numbered, each with its source (AI); "not available" until the agent has briefed the case. Preliminary study screening below, with AI-labelled verdicts and expandable criteria/source links; never confirmed eligibility |
-| 8 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
-| 9 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
-| 10 | Potvrzení | Chosen vs recommended postup side by side; an LLM assessment compares the actual plan/rationale with cited recommendations. Uncertain/no-recommendation verdicts are resolved manually; deviation requires a reason. Under Stanoviska, a separate **Zpráva ke kontrole / Zobrazit zprávu** line opens the exact source-backed report, existing AI text, actions and limitations. No new AI call prepares this report. Opening the current revision is required; Potvrdit approves both report and board decision. Changed evidence/decision/specialty input invalidates the revision. Anyone against still blocks consensus. Per user choice, approval is by the existing coordinator demo role, not verified clinician identity |
-| 11 | Export | Original hospital-template PDF preview and PDF/DOCX ("k úpravám") downloads, with cached AI history drafting and blue/sourced values for subsequent clinician review. No FHIR evidence appendix in PDF/DOCX; these drafts are separate from FHIR approval. FHIR R4 JSON uses only the approved snapshot, with no new AI calls or live clinical refresh. Its button says FHIR / R4; conformance limitations remain in the report viewer. A legacy decision needs report attestation only for FHIR, without resetting the decision or blocking PDF/DOCX. Dark grey Zavřít returns to Přehled |
+| 5 | Klíčové informace | Critical (high) and important (medium) red flags unrolled as red / amber cards; the rest in collapsible groups (minor warnings, missing data, each specialty's facts); last, **Grafy** opens a pop-up with one chart per screen, ‹ › (or the arrow keys) switch between them |
+| 6 | Otázky k diskusi | The agent's 2–3 questions for the board, numbered, each with its source (AI); "not available" until the agent has briefed the case. Preliminary study screening below, with AI-labelled verdicts and expandable criteria/source links; never confirmed eligibility |
+| 7 | Plán (Léčebný plán) | Tiles (16:10): kurativní / paliativní / podpůrná péče / sledování / odloženo; one or more (a tap toggles), at least one (decision #31); above them the doporučený postup folded into one blue AI row (robot icon, "ukázka" when an example); a click opens it in a pop-up with its sources, to prepare the závěr; it is compared with the chosen postup on Potvrzení; under the tiles one row of quick picks per specialty (Onkologie, Chirurgie, Radiologie, Patologie, Ostatní), several at once, sub-options once their option is picked, free text ("Jiné") last in each row; each row is collapsible (one open at a time) and sums up its picks when closed (decision #32) |
+| 8 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
+| 9 | Potvrzení | One soulad line: the AI's verdict (labelled AI) on whether the board's plan follows the recommendation, with **Porovnat** opening a pop-up of zvolený vs doporučený postup side by side, the AI's reasoning and its guideline sources (decision #28); "can't tell" or no recommendation: the coordinator marks it. On a deviation a required field asks why the board departs from it. Stanoviska below (anyone against blocks Potvrdit). Then, set apart, **Zpráva ke kontrole**: Zobrazit zprávu (optional) and a required checkbox "Obsah zprávy (FHIR) jsem zkontroloval(a)", unticked by any later change. Potvrdit ("Potvrdit s odchylkou") needs the checkbox and, on a deviation, the reason; it signs the report revision of the decision as it stands (prepared then if not opened) and leads on to Export. Per user choice, approval is by the coordinator demo role, not verified clinician identity |
+| 10 | Export | Original hospital-template PDF preview and PDF/DOCX ("k úpravám") downloads, with cached AI history drafting and blue/sourced values for subsequent clinician review. No FHIR evidence appendix in PDF/DOCX; these drafts are separate from FHIR approval. FHIR R4 JSON uses only the approved snapshot, with no new AI calls or live clinical refresh. Its button says FHIR / R4; conformance limitations remain in the report viewer. A legacy decision needs report attestation only for FHIR, without resetting the decision or blocking PDF/DOCX. Dark grey Zavřít returns to Přehled |
 
 **Specialists** (decision #27): the role button at the top right opens the **Vaše role** pop-up, one
 bubble per role as on Komise (Koordinátor, Chirurgie, Klinická onkologie, Radiologie, Patologie;
@@ -33,7 +32,7 @@ screens:
 |---|--------|--------------|
 | 1 | Pacient | As the coordinator's, with the red flags for their area |
 | 2 | Klíčové informace | As the coordinator's, narrowed to their section, the patient's and their red flags |
-| 3 | Stanovisko | Navržený postup (when written); Podporuje / Nepodporuje; their stanovisko: empty, then Vygenerovat (AI, blue, ~20 s, Potvrdit signs it) or Napsat / Upravit (their own); both signed with the specialty (one person per specialty, decision #27); while the text is open, Zavřít is **Uložit a zavřít** |
+| 3 | Stanovisko | Navržený postup (when written), with the specialty's quick picks from Plán under it; Podporuje / Nepodporuje; their stanovisko: empty, then Vygenerovat (AI, blue, ~20 s, Potvrdit signs it) or Napsat / Upravit (their own); both signed with the specialty (one person per specialty, decision #27); while the text is open, Zavřít is **Uložit a zavřít** |
 
 The coordinator's stanovisko bubbles show the specialist's stanovisko and stance (refreshed every
 10 s on Závěr and Potvrzení); empty until the specialist adds one; other specialties keep the

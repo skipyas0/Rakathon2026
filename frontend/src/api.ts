@@ -12,7 +12,7 @@ export type AgendaItem = {
   mdt_date: string | null
   question: string
   flags: number
-  intent: Intent | null
+  intents: Intent[]
   status: Status
   specialties: string[] // on the board; a specialist sees only these cases
   ai: AiStatus
@@ -25,9 +25,13 @@ export type Confirmation = { by: string; at: string }
 export type Note = { text: string; by: string; at: string }
 export type Prep = { question: string; questions: string[]; prepared_by: string | null; prepared_at: string | null }
 export type Attendee = { name: string; specialty: string }
+/** Plán's quick picks (features/choices): the option, its picked sub-options, its free text. */
+export type Choice = { option: string; sub: string[]; text: string }
+export type ChoiceRow = 'oncology' | 'surgery' | 'radiology' | 'pathology' | 'other'
 export type Decision = {
   attendees: Attendee[]
-  intent: Intent | null
+  intents: Intent[] // léčebný záměr: one or more
+  choices: Partial<Record<ChoiceRow, Choice[]>>
   options_considered: string
   plan: string
   rationale: string
@@ -76,7 +80,7 @@ export type GuidelineAssessment = {
   statement: Statement
   compared_plan: string
   compared_rationale: string
-  compared_intent: Intent | null
+  compared_intents: Intent[]
   recommendation: string
   recommendation_sources: Source[]
 }
@@ -129,7 +133,7 @@ export const api = {
   resetRecord: (id: string) => fetch(`${caseUrl(id)}/record`, { method: 'DELETE' }),
   history: (id: string) => call<History>(`${caseUrl(id)}/history`),
   recommendation: (id: string) => call<Recommendation>(`${caseUrl(id)}/recommendation`),
-  assessGuideline: (id: string, decision: Pick<Decision, 'intent' | 'plan' | 'rationale'>) =>
+  assessGuideline: (id: string, decision: Pick<Decision, 'intents' | 'plan' | 'rationale'>) =>
     call<{ assessment: GuidelineAssessment }>(`${caseUrl(id)}/guideline-assessment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

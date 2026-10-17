@@ -194,7 +194,8 @@ def _sections(case: Case, record: records.CaseRecord, resources: list[dict]) -> 
     human = []
     for label, value in (
         ("Otázka pro MDT", record.prep.question or (case.question.text if case.question else "")),
-        ("Léčebný záměr", d.intent),
+        ("Léčebný záměr", ", ".join(d.intents)),
+        ("Postup podle odborností", records.choices_text(d)),
         ("Zvolený postup", d.plan),
         ("Zdůvodnění", d.rationale),
         ("Zvažované možnosti", d.options_considered),
@@ -277,7 +278,7 @@ def build(case_id: str, record: records.CaseRecord) -> Report:
     if assessment and (
         assessment.compared_plan != record.decision.plan
         or assessment.compared_rationale != record.decision.rationale
-        or assessment.compared_intent != record.decision.intent
+        or assessment.compared_intents != record.decision.intents
     ):
         raise HTTPException(409, "Hodnocení souladu neodpovídá aktuálnímu závěru")
     revision = digest(
@@ -489,7 +490,7 @@ def fhir_bundle(report: Report, decision: records.Decision) -> dict:
             "status": "active",
             "intent": "proposal",
             "subject": patient,
-            "title": f"Závěr MDT: {report.record.decision.intent}",
+            "title": f"Závěr MDT: {', '.join(report.record.decision.intents)}",
             "description": report.record.decision.plan,
             "note": [{"text": report.record.decision.rationale}],
             "careTeam": [reference("team")],

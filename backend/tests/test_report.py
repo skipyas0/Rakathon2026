@@ -63,7 +63,7 @@ def setup(tmp_path, monkeypatch):
         board=[records.Member(name="A", specialty="oncology")],
         decision=records.Decision(
             attendees=[records.Attendee(name="A", specialty="Klinická onkologie")],
-            intent="palliative",
+            intents=["palliative"],
             plan="Doporučený postup",
             rationale="Zdůvodnění",
             guideline_compliant=True,

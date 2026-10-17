@@ -5,6 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from mdt_backend.briefing import Intent
 from mdt_backend.config import settings
 from mdt_backend.features import recommendation
 from mdt_backend.knowledge import guideline_source, guidelines
@@ -18,7 +19,7 @@ STATUS = ["compliant", "deviation", "uncertain"]
 
 
 class ComplianceRequest(BaseModel):
-    intent: Literal["curative", "palliative", "supportive", "surveillance", "deferred"] | None
+    intents: list[Intent] = []
     plan: str
     rationale: str
 
@@ -28,9 +29,7 @@ class Assessment(BaseModel):
     statement: Statement
     compared_plan: str
     compared_rationale: str
-    compared_intent: (
-        Literal["curative", "palliative", "supportive", "surveillance", "deferred"] | None
-    )
+    compared_intents: list[Intent]
     recommendation: str
     recommendation_sources: list[Source]
 
@@ -90,7 +89,7 @@ posouzení, a pouze id z dodaného seznamu.""",
         f"""Doporučená možnost (léčebný záměr: {rec["intent"]}; zdroj modelu: {rec["statement"].model or "neuveden"}):
 {rec["statement"].text}
 
-Rozhodnutí komise (léčebný záměr: {request.intent or "nezvolen"}):
+Rozhodnutí komise (léčebný záměr: {", ".join(request.intents) or "nezvolen"}):
 Zvolený postup: {request.plan}
 Zdůvodnění komise: {request.rationale}
 
@@ -121,7 +120,7 @@ Původní pasáže doporučených postupů, citované doporučenou možností:
             statement=statement,
             compared_plan=request.plan,
             compared_rationale=request.rationale,
-            compared_intent=request.intent,
+            compared_intents=request.intents,
             recommendation=rec["statement"].text,
             recommendation_sources=rec["statement"].sources,
         )

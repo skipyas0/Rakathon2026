@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { api, type CaseRecord, type ReviewReport } from '../../api'
 import { StatementView } from '../../StatementView'
 import { fmtDate, fmtDateTime, SPECIALTIES } from '../../layout'
@@ -8,9 +8,10 @@ type Props = {
   id: string
   record: CaseRecord
   onReady: (revision: string | null, key: string) => void
+  children?: ReactNode // shown at the end of the row (Potvrzení's "I've read it" checkbox)
 }
 
-export function ReportReview({ id, record, onReady }: Props) {
+export function ReportReview({ id, record, onReady, children }: Props) {
   const dialog = useRef<HTMLDialogElement>(null)
   const sourceDialog = useRef<HTMLDialogElement>(null)
   const [sources, setSources] = useState<Shown | null>(null)
@@ -60,6 +61,7 @@ export function ReportReview({ id, record, onReady }: Props) {
         <span className="muted">
           {locked && record.decision.report_revision ? 'Schválena potvrzením závěru.' : 'Potvrzením závěru schvalujete i tuto zprávu včetně AI podkladů.'}
         </span>
+        {children}
       </div>
       <dialog ref={dialog} className="dialog report-dialog" aria-label="Zpráva ke kontrole"
         onClick={(e) => e.target === dialog.current && dialog.current.close()}>
