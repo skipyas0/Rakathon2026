@@ -65,12 +65,6 @@ export const Reset = () => (
     <path d="M2.5 1.8v2.7h2.7" />
   </Icon>
 )
-export const User = () => (
-  <Icon>
-    <circle cx="8" cy="5.5" r="2.8" />
-    <path d="M2.5 14.5c.8-3 2.8-4.5 5.5-4.5s4.7 1.5 5.5 4.5" />
-  </Icon>
-)
 const INTENT_ICON: Record<Intent, ReactNode> = {
   curative: (
     <>

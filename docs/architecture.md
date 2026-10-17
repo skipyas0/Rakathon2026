@@ -85,7 +85,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 
 | File                | Role                                                          |
 |---------------------|---------------------------------------------------------------|
-| `App.tsx`           | Shell: top bar (Přehled / Nový případ, user name), hash routing `#/`, `#/new`, `#/case/<id>/<step>` |
+| `App.tsx`           | Shell: top bar (Přehled / Nový případ), hash routing `#/`, `#/new`, `#/case/<id>/<step>` |
 | `Overview.tsx`      | Přehled: one line per case (name, tumour, board, MDT date, status), columns folding away as the window narrows; opens where the work continues; reset button (after a confirm dialog) deletes the meeting's record |
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
 | `Journey.tsx`       | Steps 2–11 for one case (Předchozí / Další under each; input steps save first): board bubbles, patient (labelled facts, findings, question, the patient's wishes), průběh (diagnosis, ECOG, course), key facts (urgent red flags first), up to 3 trends, the agent's questions for discussion, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (preview of `zaver.pdf` beside PDF / DOCX downloads, FHIR greyed out; asks for the AI draft first) |
@@ -100,7 +100,8 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `api.ts`            | Backend calls + TS mirror of records types                    |
 | `provenance.ts` / `briefing.ts` | TS mirrors of backend models                      |
 
-The user name lives in localStorage and signs the confirmation. Shared state lives in the backend.
+Who confirms is typed on Potvrzení (the last signer is remembered in localStorage and pre-filled).
+Shared state lives in the backend.
 Export = the filled template: PDF preview, PDF / DOCX download.
 
 ## Data

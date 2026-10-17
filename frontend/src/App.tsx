@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Intake } from './Intake'
 import { Journey } from './Journey'
-import { User } from './icons'
-import { load, save, type Step, STEPS } from './layout'
+import { type Step, STEPS } from './layout'
 import { Overview } from './Overview'
 import { SourceDrawer } from './SourceDrawer'
 
@@ -16,9 +15,6 @@ function parse(hash: string): { id: string; step: Step } | null {
 export default function App() {
   const [hash, setHash] = useState(location.hash)
   const route = parse(hash)
-  const [name, setName] = useState(() => load('mdt.user', ''))
-
-  useEffect(() => save('mdt.user', name), [name])
   useEffect(() => {
     const onHash = () => {
       setHash(location.hash)
@@ -42,16 +38,11 @@ export default function App() {
             + Nový případ
           </a>
         </nav>
-        <span className="spacer" />
-        <label className="user">
-          <User />
-          <input value={name} placeholder="Vaše jméno" onChange={(e) => setName(e.target.value)} aria-label="Vaše jméno" />
-        </label>
       </header>
 
       <main>
         {route ? (
-          <Journey key={route.id} id={route.id} step={route.step} user={name.trim()} />
+          <Journey key={route.id} id={route.id} step={route.step} />
         ) : hash === '#/new' ? (
           <Intake />
         ) : (

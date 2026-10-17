@@ -4,7 +4,7 @@ import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
 import { Alert, Check, Download, IntentIcon, Lock, Robot } from './icons'
-import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
+import { fmtDate, fmtDateTime, INTENTS, KIND, load, MIN_SPECIALTIES, save as remember, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
@@ -14,7 +14,7 @@ type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 const SECTION_LABEL: Record<string, string> = { ...SPECIALTIES, patient: 'Pacient' }
 
 /** The coordinator's journey through one case, one screen per step (docs/workflow-plan.md). */
-export function Journey({ id, step, user }: { id: string; step: Step; user: string }) {
+export function Journey({ id, step }: { id: string; step: Step }) {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState('')
   const [aiRunning, setAiRunning] = useState(false)
@@ -58,7 +58,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
   const next = () => go(i + 1)
   // the upload step has no page for an existing case, so the board has no Předchozí
   const prev = i > 1 ? () => go(i - 1) : undefined
-  const props = { c, record, rec, save, next, prev, user }
+  const props = { c, record, rec, save, next, prev }
 
   return (
     <div className="page journey">
@@ -112,7 +112,7 @@ const Locked = () => (
   </p>
 )
 
-type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void; user: string }
+type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void }
 
 /** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
  * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
@@ -461,7 +461,7 @@ function PlanStep({ c, record, save, next, prev }: StepProps) {
   )
 }
 
-function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
+function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
   const S = renderer(record)
   const d = record.decision
   const locked = !!d.confirmed_by
@@ -470,7 +470,8 @@ function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
   const compliant = rec ? d.intent === rec.intent : manual
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
-  const [signer, setSigner] = useState(user) // the top-bar name, or typed here when it's empty
+  // who confirms, typed here; the last signer in this browser is pre-filled
+  const [signer, setSigner] = useState(() => load('mdt.signer', ''))
   const against = record.board.filter((m) => !m.supports) // consensus = everyone supports
 
   const confirm = async () => {
@@ -483,7 +484,10 @@ function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
       confirmed_by: signer.trim(),
       confirmed_at: now(),
     }
-    if (await save({ ...record, decision })) next()
+    if (await save({ ...record, decision })) {
+      remember('mdt.signer', signer.trim())
+      next()
+    }
   }
 
   return (
@@ -553,9 +557,7 @@ function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
                 Předchozí
               </button>
             )}
-            {!user && (
-              <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Vaše jméno" aria-label="Kdo potvrzuje" />
-            )}
+            <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Kdo potvrzuje" aria-label="Kdo potvrzuje" />
             <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || against.length > 0 || (asking && !reason.trim())}>
               {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
             </button>

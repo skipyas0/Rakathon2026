@@ -270,25 +270,6 @@ legend {
   border-radius: 6px;
   letter-spacing: 0.04em;
 }
-.spacer {
-  flex: 1;
-}
-.topbar .user {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0;
-  color: var(--muted);
-  flex: 0 1 15rem; /* the name field gives way first, so the menu never wraps or overflows */
-  min-width: 0;
-}
-.topbar .user input {
-  width: 100%;
-  min-width: 6rem;
-}
-.topbar .role {
-  width: auto;
-}
 .page {
   max-width: 85rem;
   margin: 0 auto;
@@ -1557,7 +1538,7 @@ button.close:hover {
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
-.confirm-row button.next {
+.confirm-row button {
   margin: 0;
 }
 .confirm-row input {
