@@ -1,27 +1,34 @@
 import { useRef, useState } from 'react'
-import type { CaseRecord } from './api'
+import { api, type CaseRecord } from './api'
 import type { Case } from './briefing'
+import { ROLES } from './features/roles/role'
 import { Alert, Check } from './icons'
-import { SPECIALTIES } from './layout'
+import { fmtDateTime, SPECIALTIES } from './layout'
 import { renderer } from './render'
 
-type Props = { c: Case; record: CaseRecord; save: (r: CaseRecord) => Promise<boolean> }
+type Props = { c: Case; record: CaseRecord; onChange: (r: CaseRecord) => void }
 
 /** One bubble per board specialty: green = supports the proposed postup, red = doesn't. A click
  * opens that specialty's stanovisko, where the stance can be switched until the conclusion is
- * locked. The opinion is the agent's verdict for that specialty (the section item agent.py writes as
- * "Stanovisko (…): …"); ponytail: without one, an example ("ukázka") stands in. */
-export function Stanoviska({ c, record, save }: Props) {
+ * locked. The stanovisko is the specialist's own (features/roles: generated or written), empty until
+ * then; ponytail: a specialty without a specialist journey (not in ROLES) shows an example ("ukázka"). */
+export function Stanoviska({ c, record, onChange }: Props) {
   const S = renderer(record)
   const locked = !!record.decision.confirmed_by
   const [role, setRole] = useState<string | null>(null)
+  const [error, setError] = useState('')
   const dialog = useRef<HTMLDialogElement>(null)
   const member = record.board.find((m) => m.specialty === role)
   const label = (s: string) => SPECIALTIES[s] ?? s
-  const items = [...(c.sections.find((s) => s.id === role)?.items.entries() ?? [])]
-  const verdict = items.find(([, s]) => s.text.startsWith('Stanovisko ('))
+  const items = c.sections.find((s) => s.id === role)?.items ?? []
+  const own = role ? record.stanoviska[role] : undefined
+  // stances are written only through the specialist's endpoint, so the coordinator never overwrites one
   const setSupports = (supports: boolean) =>
-    void save({ ...record, board: record.board.map((m) => (m.specialty === role ? { ...m, supports } : m)) })
+    member &&
+    api.updateStanovisko(c.id, member.specialty, { supports }).then(
+      (r) => (onChange(r), setError('')),
+      (e: Error) => setError(e.message),
+    )
 
   return (
     <>
@@ -49,37 +56,50 @@ export function Stanoviska({ c, record, save }: Props) {
                 ×
               </button>
             </header>
+            {error && <div className="banner bad">{error}</div>}
             <div className="segmented-stance" role="group" aria-label="Postoj k navrženému postupu">
-              <button className={member.supports ? 'yes on' : 'yes'} disabled={locked} onClick={() => setSupports(true)}>
+              <button className={member.supports ? 'yes on' : 'yes'} disabled={locked} onClick={() => void setSupports(true)}>
                 <Check /> Podporuje
               </button>
-              <button className={member.supports ? 'no' : 'no on'} disabled={locked} onClick={() => setSupports(false)}>
+              <button className={member.supports ? 'no' : 'no on'} disabled={locked} onClick={() => void setSupports(false)}>
                 <Alert /> Nepodporuje
               </button>
             </div>
             <section className="question-card stanovisko">
               <p className="eyebrow">Stanovisko</p>
-              {verdict ? (
-                // the card says what it is, so the "Stanovisko (…):" prefix isn't repeated
-                <p>{S(`sections.${member.specialty}.${verdict[0]}`, { ...verdict[1], text: verdict[1].text.replace(/^Stanovisko \([^)]*\):\s*/, '') }, 'inline')}</p>
+              {own ? (
+                <>
+                  <p>{S(`stanoviska.${member.specialty}`, own, 'inline')}</p>
+                  {own.confirmed_by && (
+                    <p className="muted">
+                      {own.confirmed_by}
+                      {own.confirmed_at && `, ${fmtDateTime(own.confirmed_at)}`}
+                    </p>
+                  )}
+                </>
+              ) : ROLES.includes(member.specialty) ? (
+                <p className="muted">Odborník zatím stanovisko nezadal.</p>
               ) : (
-                <p>
-                  <span className="chip muted-chip">ukázka</span>{' '}
-                  {member.supports
-                    ? `Z pohledu odbornosti ${label(member.specialty)} bez námitek k navrženému postupu.`
-                    : `Z pohledu odbornosti ${label(member.specialty)} navržený postup nepodporuje.`}
-                </p>
+                <>
+                  <p className="verdict warn">
+                    <Alert /> Odbornost zatím nemá vlastní pohled, text je jen ukázka.
+                  </p>
+                  <p>
+                    <span className="chip muted-chip">ukázka</span>{' '}
+                    {member.supports
+                      ? `Z pohledu odbornosti ${label(member.specialty)} bez námitek k navrženému postupu.`
+                      : `Z pohledu odbornosti ${label(member.specialty)} navržený postup nepodporuje.`}
+                  </p>
+                </>
               )}
             </section>
-            {items.length > (verdict ? 1 : 0) && (
+            {items.length > 0 && (
               <>
                 <h4 className="eyebrow">Podklady · {label(member.specialty)}</h4>
                 <ul className="plain">
-                  {items
-                    .filter(([i]) => i !== verdict?.[0])
-                    .map(([i, s]) => (
-                      <li key={i}>{S(`sections.${member.specialty}.${i}`, s, 'inline')}</li>
-                    ))}
+                  {items.map((s, i) => (
+                    <li key={i}>{S(`sections.${member.specialty}.${i}`, s, 'inline')}</li>
+                  ))}
                 </ul>
               </>
             )}

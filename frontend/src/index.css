@@ -4,7 +4,11 @@
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   /* Type scale (decision 26): five sizes, nothing below --fs-s. The base grows from 16px (laptop,
      narrow window beside the hospital system) to 20px (big or projected screen); every size and
-     the main widths are rem, so the whole UI scales together, and browser zoom still works. */
+     the main widths are rem, so the whole UI scales together, and browser zoom still works.
+     One size per kind of text, on every screen: screen title --fs-2xl (narrow: --fs-xl); section
+     and field labels --fs-s in small caps; content (bullets, cards, facts, red flags, typed text,
+     empty-state lines) --fs-m; highlights (the MDT question, a chart's latest value) --fs-l;
+     small print (dates, chips, sources) --fs-s. */
   font-size: clamp(16px, 8px + 0.6vw, 20px);
   line-height: 1.5;
   --fs-s: 0.875rem;
@@ -51,12 +55,15 @@ body {
   color: var(--ink);
 }
 h1 {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-2xl);
   margin: 0;
   letter-spacing: -0.01em;
 }
 h2 {
-  font-size: var(--fs-l);
+  font-size: var(--fs-s);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
   margin: 0;
 }
 h3 {
@@ -437,7 +444,7 @@ button.confirm {
   width: 100%;
 }
 .trend-value {
-  font-size: var(--fs-xl);
+  font-size: var(--fs-l);
   font-weight: 650;
 }
 .trend-value small {
@@ -543,60 +550,6 @@ button.confirm {
   background: var(--teal-soft);
 }
 
-/* Decision */
-.intent-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  margin: 0;
-  padding: 0.8rem;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  cursor: pointer;
-  color: var(--ink);
-}
-.intent-card input {
-  position: absolute;
-  opacity: 0;
-}
-.intent-card small {
-  color: var(--muted);
-  font-weight: 400;
-}
-.intent-icon {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 50%;
-  font-size: var(--fs-l);
-  color: var(--c);
-  background: color-mix(in srgb, var(--c) 10%, white);
-  margin-bottom: 0.2rem;
-}
-.intent-card:has(input:focus-visible) {
-  outline: 2px solid var(--c);
-  outline-offset: 2px;
-}
-.intent-banner {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.9rem 1rem;
-  border-radius: 10px;
-  color: var(--c);
-  background: color-mix(in srgb, var(--c) 9%, white);
-  font-size: var(--fs-xl);
-  margin-bottom: 1rem;
-}
-.intent-banner div {
-  font-size: var(--fs-m);
-}
-.intent-banner small {
-  display: block;
-  color: var(--ink-2);
-}
 dl div {
   display: grid;
   grid-template-columns: 10rem 1fr;
@@ -661,6 +614,9 @@ dialog::backdrop {
   margin: 0.5rem 0 0.75rem;
   font-size: var(--fs-m);
   line-height: 1.4;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
 }
 /* waiting on the AI: a sliding bar under the label, elapsed time below */
 .working {
@@ -779,8 +735,12 @@ code {
     width: 7.5rem;
   }
   .topbar .user .icon,
+  .role-btn .icon,
   .brand-name {
     display: none;
+  }
+  .role-btn {
+    padding: 0.3rem 0.6rem;
   }
 }
 
@@ -851,6 +811,34 @@ code {
   background: var(--teal-soft);
   color: var(--teal-strong);
 }
+/* the current role, top right: opens the role pop-up */
+.role-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.role-btn:hover {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  color: var(--teal-strong);
+}
+.role-bubbles {
+  margin: 1rem 0 0.25rem;
+}
+/* the specialist's name and what to do with their stanovisko */
+.stanovisko-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
 
 /* Intake */
 .intake .card {
@@ -893,23 +881,9 @@ code {
   max-width: 57.5rem;
 }
 .journey h1 {
-  font-size: var(--fs-2xl);
   margin: 0.5rem 0 1.25rem;
 }
-.journey .huge {
-  font-size: var(--fs-2xl);
-  line-height: 1.25;
-  margin: 0 0 0.75rem;
-}
-.journey .big {
-  font-size: var(--fs-xl);
-  line-height: 1.4;
-}
 .journey h2 {
-  font-size: var(--fs-s);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
   margin: 1.25rem 0 0.5rem;
 }
 .question-card {
@@ -965,7 +939,6 @@ code {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 0 2.5rem;
-  font-size: var(--fs-m);
 }
 .plain {
   list-style: none;
@@ -1130,7 +1103,7 @@ a.chevron.done:hover {
   border: 2px dashed var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  font-size: var(--fs-xl);
+  font-size: var(--fs-m); /* a choice tile like .tile; not the small print of a <label> */
   position: relative;
   cursor: pointer;
 }
@@ -1173,7 +1146,6 @@ a.chevron.done:hover {
 .export-actions .upload-box {
   aspect-ratio: auto;
   flex: 1;
-  font-size: var(--fs-l);
 }
 @media (max-width: 640px) {
   .export {
@@ -1244,7 +1216,6 @@ button.close:hover {
   list-style: none;
   padding: 0;
   margin: 0;
-  font-size: var(--fs-l);
   line-height: 1.4;
 }
 .key-facts li {
@@ -1283,7 +1254,6 @@ button.close:hover {
   background: var(--warn-soft);
 }
 .key-facts.compact {
-  font-size: var(--fs-m);
   margin: 1rem 0 0;
 }
 .key-facts.crit .icon,
@@ -1345,7 +1315,7 @@ button.close:hover {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface); /* white on the page background: the fields need no card around them */
-  font-size: var(--fs-l);
+  font-size: var(--fs-m);
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
@@ -1430,8 +1400,8 @@ button.close:hover {
   }
 }
 .compare .big {
-  font-size: var(--fs-m); /* chosen vs recommended side by side: body size, so Potvrdit fits */
   margin: 0.4rem 0 0;
+  line-height: 1.4;
 }
 .intent-label {
   display: flex;
@@ -1540,10 +1510,6 @@ button.close:hover {
 }
 .confirm-row button {
   margin: 0;
-}
-.confirm-row input {
-  font-size: var(--fs-m);
-  padding: 0.6rem 0.8rem;
 }
 .case-list {
   list-style: none;
@@ -1657,26 +1623,17 @@ button.close:hover {
 
 @media (max-width: 640px) {
   /* the journey on a narrow screen: smaller type, nothing that forces scrolling */
+  h1 {
+    font-size: var(--fs-xl);
+  }
   .journey h1 {
-    font-size: var(--fs-xl);
     margin: 0 0 0.75rem;
-  }
-  .journey .huge {
-    font-size: var(--fs-xl);
-    margin-bottom: 0.25rem;
-  }
-  .journey .big,
-  .key-facts {
-    font-size: var(--fs-m);
   }
   .question-card {
     margin: 0.75rem 0;
     padding: 0.8rem 1rem;
   }
   .question-card .question {
-    font-size: var(--fs-m);
-  }
-  .patient-grid {
     font-size: var(--fs-m);
   }
   .case-facts {

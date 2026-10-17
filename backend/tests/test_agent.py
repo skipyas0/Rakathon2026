@@ -18,7 +18,7 @@ BAD_REF = {"ref": "Observation/NOPE", "excerpt": "x"}
 INVENTED = {"ref": "DiagnosticReport/P01-img06", "excerpt": "bez nálezu, vše v pořádku"}
 
 
-def fake_llm(system, user, schema, name):
+def fake_llm(system, user, schema, name, effort=None):
     if name == "trials":
         return {
             "trials": [
@@ -340,7 +340,11 @@ def test_pipeline_output_reaches_the_meeting_journey(result, tmp_path, monkeypat
     response = client.get(f"/api/cases/{meeting}")
     assert response.status_code == 200
     served = response.json()
-    assert served == {**case.model_dump(mode="json"), "id": meeting}
+    expected = case.model_dump(mode="json")
+    # the batch's per-specialty verdicts aren't served: a stanovisko is the specialist's (#27)
+    for section in expected["sections"]:
+        section["items"] = [i for i in section["items"] if not i["text"].startswith("Stanovisko (")]
+    assert served == {**expected, "id": meeting}
     assert len(served["decision_support"]["trials"]) == 6
     assert served["preference"] and served["previous_board"]
     assert any(f["statement"]["model"].startswith("pravidla-v2:") for f in served["red_flags"])
@@ -349,3 +353,19 @@ def test_pipeline_output_reaches_the_meeting_journey(result, tmp_path, monkeypat
     assert recommendation["intent"] == "palliative"
     assert recommendation["statement"] == case.decision_support.options[0].model_dump(mode="json")
     assert client.get(f"/api/cases/{meeting}/ai").json() == {"status": "done"}
+
+
+def test_live_stanovisko_is_quick_and_cited(monkeypatch, fake_fhir):
+    """The app's Vygenerovat: low reasoning effort on every call, only the verdict extracted."""
+    seen = []
+
+    def llm(system, user, schema, name, effort=None):
+        seen.append((name, effort, sorted(schema["properties"])))
+        return fake_llm(system, user, schema, name)
+
+    monkeypatch.setattr(agent, "chat_json", llm)
+    s = agent.stanovisko(agent.Record("P01"), "surgery")
+    assert s.text == "Bez námitek." and [x.reference for x in s.sources] == ["guideline:PRS-2.2"]
+    assert [n for n, _, _ in seen] == ["context", "opinion", "verdict"]
+    assert {e for _, e, _ in seen} == {"low"}
+    assert seen[-1][2] == ["verdict"]

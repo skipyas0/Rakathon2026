@@ -9,7 +9,8 @@ export type TimelineEvent = {
   statement: Statement
 }
 
-export type RedFlag = { severity: 'high' | 'medium' | 'low'; statement: Statement }
+// area: the specialty it concerns (section id); none or 'patient' = everyone
+export type RedFlag = { severity: 'high' | 'medium' | 'low'; statement: Statement; area?: string | null }
 
 export type Section = { id: string; title: string; items: Statement[] }
 

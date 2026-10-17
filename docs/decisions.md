@@ -193,14 +193,14 @@ the qualification says "předseda". The coordinator can adopt it; it is never ap
 Why: The board for a repeat MDT is usually the same team; the coordinator starts from facts.
 
 ## 20. One simple journey for the coordinator; the board decides by consensus — 2026-10-17, yes-and
-Status: accepted
-Decision: The frontend is one linear journey (`docs/workflow-plan.md`): upload → board (specialty
-bubbles) → patient → key facts → trends → questions → léčebný záměr → závěr → potvrzení → export,
-plus a case overview. No role switcher, specialist views, triage, visibility or section
-configuration in the UI (the backend keeps those record fields for later). The final conclusion
+Status: accepted | updated 2026-10-17 (#27: specialist journeys)
+Decision: The coordinator's frontend is one linear journey (`docs/workflow-plan.md`): upload → board
+(specialty bubbles) → patient → key facts → trends → questions → léčebný záměr → závěr → potvrzení
+→ export, plus a case overview. Specialists get their own short journey (#27). No triage,
+visibility or section configuration in the UI (the backend keeps those record fields for later). The final conclusion
 needs consensus of all board members (`MDT_ZASEDANI_PROCES.md` §4.3): the coordinator records it,
 Potvrdit means the board agreed, anyone against blocks it; no per-member sign-off. Guideline
-compliance is assessed against the board's actual plan and the cited recommendation (#27). Where
+compliance is assessed against the board's actual plan and the cited recommendation (#28). Where
 the agent has no output, a hand-written example labelled "ukázka" stands in (recommendation,
 stanoviska).
 Why: The demo has to be simple and legible end to end; the role-based screens were too much.
@@ -253,9 +253,13 @@ Why: The template is the official output; a preview with an editable DOCX is the
 keeps AI output labelled and sourced without a per-field confirmation screen.
 
 ## 26. One type scale that grows with the screen — 2026-10-17, yes-and
-Status: accepted
+Status: accepted | updated 2026-10-17 (one size per kind of text)
 Decision: Five font sizes only, as CSS variables (`--fs-s` 0.875rem, `--fs-m` 1rem, `--fs-l` 1.2rem,
-`--fs-xl` 1.5rem, `--fs-2xl` 2rem); nothing smaller than `--fs-s`. The root size is fluid,
+`--fs-xl` 1.5rem, `--fs-2xl` 2rem); nothing smaller than `--fs-s`. One size per kind of text, the
+same on every screen and pop-up: screen title `2xl` (`xl` at ≤ 640 px); section and field labels
+`s` in small caps (every `h2`, `h3`, eyebrow); content `m` (bullets, cards, facts, red flags,
+discussion questions, typed text, empty-state lines, choice tiles); highlights `l` (the MDT
+question, a chart's latest value; `m` at ≤ 640 px); small print `s` (dates, chips, sources). The root size is fluid,
 `clamp(16px, 8px + 0.6vw, 20px)`: 16px on laptops and in a narrow window beside the hospital
 system, up to 20px on big or projected screens. Sizes and the main widths (page, journey column,
 Přehled, source drawer) are rem, so the UI scales as one; browser zoom works on top. Chart labels
@@ -263,8 +267,31 @@ are HTML around the stretched SVG, so they keep the scale too.
 Why: The app is projected in the meeting and also sits in a narrow window next to the hospital
 information system; 21 ad-hoc sizes down to 9px were not legible in either.
 
-## 27. LLM assessment of the board's final plan against guidelines — 2026-10-17
+## 27. Specialists: a picked role, a short journey, their own stanovisko — 2026-10-17, yes-and
 Status: accepted
+Decision: A role button (top right) opens a pop-up of role bubbles: Koordinátor or one of the process doc's 4
+specialist roles (surgery, oncology, radiology, pathology), stored per browser, not authenticated.
+A specialist sees only the cases whose board the coordinator put their specialty on, and walks
+Pacient → Klíčové informace → Stanovisko: the coordinator's screens narrowed to their section, the
+patient's and the red flags for their area (`RedFlag.area`; none = everyone), then their stance and
+stanovisko. The stanovisko is empty until the specialist generates it (the agent's specialist step
+alone, blue, to confirm) or writes it (signed); editing makes it theirs. Stances and stanoviska are
+written only through `/stanovisko/{specialty}` (the coordinator's stance bubbles too); the record
+PUT keeps the stored ones. The agent's batch verdict per specialty is not shown. Board specialties
+outside the 4 keep the "ukázka" stanovisko, with a warning.
+A stanovisko is signed with the specialty's name (e.g. "Chirurgie") and the time, and the
+coordinator's Potvrdit with "Koordinátor/ka" (no name field; the export prints "Koordinátor/ka
+onkologické péče: přítomen/a"): for now each role is one person, so the role answers "who" (ground
+rule 4). Once a role can have several people, ask for a name again (once per browser) and sign
+with it. Vygenerovat runs the agent's specialist step live in a quick mode (`specialist(…,
+quick=True)`: reasoning effort "low", only the verdict extracted, ~20 s instead of 40–55 s); the
+batch `mdt-agent` keeps the default effort and its full output.
+Why: The board members prepare their part before the meeting (process doc §3); one shared record
+written from two screens must not lose a specialist's input to the coordinator's stale copy.
+
+## 28. LLM assessment of the board's final plan against guidelines — 2026-10-17
+Status: accepted | renumbered 2026-10-17: #27 on the `backend` branch, which `main` had already
+given to the specialists' decision
 Decision: On Potvrzení, a separate LLM call compares the board's entered plan and rationale with
 the available recommendation and its original cited guideline passages. The call returns a
 compliant / deviation / uncertain verdict, a reason, and only guideline citations already cited

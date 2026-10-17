@@ -1,27 +1,52 @@
 import { useEffect, useState } from 'react'
+import { getRole, setRole, SPECIALIST_STEPS } from './features/roles/role'
+import { RolePicker } from './features/roles/RolePicker'
+import { SpecialistJourney } from './features/roles/SpecialistJourney'
 import { Intake } from './Intake'
 import { Journey } from './Journey'
-import { type Step, STEPS } from './layout'
+import { STEPS } from './layout'
 import { Overview } from './Overview'
 import { SourceDrawer } from './SourceDrawer'
+import { hasUnsaved, mayLeave } from './unsaved'
 
-/** #/ = Přehled, #/new = upload (step 1), #/case/<id>/<step> = the journey through one case. */
-function parse(hash: string): { id: string; step: Step } | null {
-  const [, kind, id, step] = hash.split('/')
+/** #/ = Přehled, #/new = upload (step 1), #/case/<id>/<step> = the journey through one case (the
+ * coordinator's, or the specialist's when a specialist role is set). */
+function parse(hash: string): { id: string; step: string } | null {
+  const [, kind, id, step = ''] = hash.split('/')
   if (kind !== 'case' || !id) return null
-  return { id: decodeURIComponent(id), step: STEPS.some((s) => s.id === step) ? (step as Step) : 'patient' }
+  return { id: decodeURIComponent(id), step }
 }
+
+/** The step if the journey has it, else its first screen with content (Pacient). */
+const stepIn = <T extends string>(steps: readonly { id: T }[], step: string) => steps.find((s) => s.id === step)?.id ?? ('patient' as T)
 
 export default function App() {
   const [hash, setHash] = useState(location.hash)
   const route = parse(hash)
+  const [role, setRoleState] = useState(getRole)
+  const pick = (r: string) => {
+    if (!mayLeave()) return // asked before the role changes the screen
+    setRole(r)
+    setRoleState(r)
+    location.hash = '#/' // the role's Přehled
+  }
   useEffect(() => {
+    let shown = location.hash
     const onHash = () => {
+      // unsaved input and the user stays: put the address back, the screen keeps its input
+      if (!mayLeave()) return history.replaceState(null, '', shown || location.pathname)
+      shown = location.hash
       setHash(location.hash)
       scrollTo(0, 0)
     }
+    // closing or reloading the tab: the browser's own "leave site?" dialog
+    const onUnload = (e: BeforeUnloadEvent) => hasUnsaved() && e.preventDefault()
     addEventListener('hashchange', onHash)
-    return () => removeEventListener('hashchange', onHash)
+    addEventListener('beforeunload', onUnload)
+    return () => {
+      removeEventListener('hashchange', onHash)
+      removeEventListener('beforeunload', onUnload)
+    }
   }, [])
 
   return (
@@ -34,19 +59,26 @@ export default function App() {
           <a href="#/" className={hash === '#/new' || route ? '' : 'on'}>
             Přehled
           </a>
-          <a href="#/new" className={hash === '#/new' ? 'on' : ''}>
-            + Nový případ
-          </a>
+          {!role && (
+            <a href="#/new" className={hash === '#/new' ? 'on' : ''}>
+              + Nový případ
+            </a>
+          )}
         </nav>
+        <RolePicker role={role} onPick={pick} />
       </header>
 
       <main>
         {route ? (
-          <Journey key={route.id} id={route.id} step={route.step} />
-        ) : hash === '#/new' ? (
+          role ? (
+            <SpecialistJourney key={route.id} id={route.id} step={stepIn(SPECIALIST_STEPS, route.step)} role={role} />
+          ) : (
+            <Journey key={route.id} id={route.id} step={stepIn(STEPS, route.step)} />
+          )
+        ) : hash === '#/new' && !role ? (
           <Intake />
         ) : (
-          <Overview />
+          <Overview role={role} />
         )}
       </main>
     </SourceDrawer>

@@ -30,6 +30,13 @@ export const Robot = ({ label }: { label?: string }) => (
     <path d="M6.5 10h3M1 7v2.2M15 7v2.2" />
   </Icon>
 )
+export const Person = () => (
+  <Icon>
+    <circle cx="8" cy="5.2" r="2.6" />
+    <path d="M2.8 14c0-2.9 2.3-4.6 5.2-4.6s5.2 1.7 5.2 4.6" />
+  </Icon>
+)
+
 export const Check = () => (
   <Icon>
     <path d="M3 8.5l3 3 7-7" />

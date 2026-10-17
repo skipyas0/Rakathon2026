@@ -83,6 +83,10 @@ def get_case(case_id: str) -> Case:
     if patient := meetings().get(case_id):
         if (ai := agent.OUT_DIR / f"{patient}.json").exists():
             case = Case.model_validate_json(ai.read_text(encoding="utf-8"))
+            # the agent's batch verdict per specialty stays out: a stanovisko is the specialist's
+            # to generate or write (features/stanovisko.py)
+            for sec in case.sections:
+                sec.items = [s for s in sec.items if not s.text.startswith("Stanovisko (")]
             return case.model_copy(update={"id": case_id})
         return build_case(case_id, record(patient))
     raise HTTPException(404, f"No case {case_id!r}")

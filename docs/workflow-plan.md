@@ -3,7 +3,10 @@
 **Audience:** the team and their coding agents. Agreed target for the frontend (decision #20).
 One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, **Další** per screen and a grey **Předchozí** to the previous
-tab (Vývoj: previous chart page first; screens with input save first, either way).
+tab (Vývoj: previous chart page first; screens with input save first, either way, and say so:
+**Uložit a další** on Komise, Záměr and Závěr until the conclusion is locked). Leaving a screen
+with unsaved input any other way (chevrons, top bar, role pick, closing the tab) asks first:
+"Máte neuložené změny. Odejít bez uložení?"; cancelling keeps the screen and its input.
 
 | # | Screen | What's on it |
 |---|--------|--------------|
@@ -16,8 +19,25 @@ tab (Vývoj: previous chart page first; screens with input save first, either wa
 | 7 | Otázky k diskusi | The agent's 2–3 questions for the board, numbered, each with its source (AI); "not available" until the agent has briefed the case. Preliminary study screening below, with AI-labelled verdicts and expandable criteria/source links; never confirmed eligibility |
 | 8 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
 | 9 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
-| 10 | Potvrzení | Chosen vs recommended postup side by side; a separate LLM assessment compares the board's actual plan and rationale with the recommendation and its cited guideline passages; the AI explains its verdict and links the original passages. On uncertainty the coordinator resolves the verdict manually; without a recommendation compliance is marked manually. On a deviation, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); who confirms is typed next to Potvrdit (the last signer pre-filled). Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
+| 10 | Potvrzení | Chosen vs recommended postup side by side; a separate LLM assessment compares the board's actual plan and rationale with the recommendation and its cited guideline passages; the AI explains its verdict and links the original passages. On uncertainty the coordinator resolves the verdict manually; without a recommendation compliance is marked manually. On a deviation, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); Potvrdit signs as "Koordinátor/ka", no name (decision #27). Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
 | 11 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once); the format boxes carry a download icon; dark grey Zavřít (next to Předchozí) returns to Přehled |
+
+**Specialists** (decision #27): the role button at the top right opens the **Vaše role** pop-up, one
+bubble per role as on Komise (Koordinátor, Chirurgie, Klinická onkologie, Radiologie, Patologie;
+the current one green); a tap picks it and leads to that role's Přehled.
+A specialist's Přehled lists only the cases the coordinator put their specialty on the board of (a
+case may show for no specialist), without the reset button or Nový případ. Their journey has three
+screens:
+
+| # | Screen | What's on it |
+|---|--------|--------------|
+| 1 | Pacient | As the coordinator's, with the red flags for their area |
+| 2 | Klíčové informace | As the coordinator's, narrowed to their section, the patient's and their red flags |
+| 3 | Stanovisko | Navržený postup (when written); Podporuje / Nepodporuje; their stanovisko: empty, then Vygenerovat (AI, blue, ~20 s, Potvrdit signs it) or Napsat / Upravit (their own); both signed with the specialty (one person per specialty, decision #27); while the text is open, Zavřít is **Uložit a zavřít** |
+
+The coordinator's stanovisko bubbles show the specialist's stanovisko and stance (refreshed every
+10 s on Závěr and Potvrzení); empty until the specialist adds one; other specialties keep the
+"ukázka" text with a warning.
 
 Plus **Přehled** (`#/`): one tidy line per case with a coloured status (Potvrzeno / Rozpracováno /
 Nový); on narrower windows the board name, then the tumour, then the date fold away. A confirmed
@@ -25,8 +45,10 @@ case opens Export; a started case has a reset button (confirm dialog) that clear
 says "AI připravuje…" and every screen of the case shows a blue banner; both check every 10 s and
 the case reloads itself when the briefing is ready.
 
-Progress: green chevrons above every screen (finished ones link back, the current one solid). Below
-980 px only the current step ("3 / 10 · Pacient") between a back arrow and a disabled forward arrow.
+Progress: green chevrons above every screen (the current one solid; every step up to the furthest
+one reached in the case links, so after going back the later steps are one click away; remembered
+per browser, forgotten on reset). Below 980 px only the current step ("3 / 10 · Pacient") between
+back and forward arrows, which link the same way.
 Narrow screens (≤ 640 px): compact top bar and type, a smaller question, and Předchozí / Další fixed at the bottom edge, in the same place on
 every screen, reachable even when the content has to scroll.
 
@@ -39,4 +61,4 @@ and say so with a lock note (reset the case in Přehled to change them).
 Known gaps (mandatory items in `problem_statement.md` left out for simplicity): section order and
 detail level. The backend keeps triage, visibility, notes, tasks and the patient's
 stance in the record for later screens. Against `MDT_ZASEDANI_PROCES.md`: no per-member sign-off;
-the stanovisko bubbles stand in (anyone against blocks Potvrdit).
+the stanovisko bubbles stand in (anyone against blocks Potvrdit); roles are picked, not logged in.
