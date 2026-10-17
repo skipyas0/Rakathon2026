@@ -142,12 +142,11 @@ function PatientStep({ c, record, next, prev }: StepProps) {
   // what must not be missed: critical findings, else the most important ones
   const critical = [...c.red_flags.entries()].filter(([, f]) => f.severity === 'high')
   const alerts = (critical.length ? critical : [...c.red_flags.entries()].filter(([, f]) => f.severity === 'medium')).slice(0, 2)
-  // [label, value, prefix shown when narrow screens hide the labels]
-  const facts: [string, string | null | undefined, string?][] = [
+  const facts: [string, string | null | undefined][] = [
     ['Pacient', c.label],
     ['Diagnóza', TUMOURS[c.tumour] ?? c.tumour],
     ['Komise', c.board],
-    ['MDT', c.mdt_date && fmtDate(c.mdt_date), 'MDT '],
+    ['MDT', c.mdt_date && fmtDate(c.mdt_date)],
   ]
   return (
     <>
@@ -155,13 +154,10 @@ function PatientStep({ c, record, next, prev }: StepProps) {
       <dl className="case-facts">
         {facts
           .filter(([, v]) => v)
-          .map(([label, value, prefix]) => (
-            <div key={label} title={label}>
+          .map(([label, value]) => (
+            <div key={label}>
               <dt>{label}</dt>
-              <dd>
-                {prefix && <span className="narrow-only">{prefix}</span>}
-                {value}
-              </dd>
+              <dd>{value}</dd>
             </div>
           ))}
       </dl>

@@ -27,9 +27,9 @@ the case reloads itself when the briefing is ready.
 
 Progress: green chevrons above every screen (finished ones link back, the current one solid). Below
 980 px only the current step ("3 / 10 · Pacient") between a back arrow and a disabled forward arrow.
-Narrow screens (≤ 640 px): compact top bar and type, Pacient's facts as one dot-separated line of
-values (labels as tooltips), a smaller question, and Předchozí / Další fixed at the bottom edge,
-in the same place on every screen, reachable even when the content has to scroll.
+Narrow screens (≤ 640 px): compact top bar and type (the name field shrinks first, the menu never
+wraps), a smaller question, and Předchozí / Další fixed at the bottom edge, in the same place on
+every screen, reachable even when the content has to scroll.
 
 Rules that still hold: every statement opens its source; AI output is blue; examples standing in
 where there's no AI output (recommended postup and stanoviska of cases the agent hasn't briefed, the

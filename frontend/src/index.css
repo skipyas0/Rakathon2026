@@ -279,9 +279,12 @@ legend {
   gap: 0.4rem;
   margin: 0;
   color: var(--muted);
+  flex: 0 1 15rem; /* the name field gives way first, so the menu never wraps or overflows */
+  min-width: 0;
 }
 .topbar .user input {
-  width: 14rem;
+  width: 100%;
+  min-width: 6rem;
 }
 .topbar .role {
   width: auto;
@@ -802,6 +805,7 @@ code {
   gap: 0.25rem;
 }
 .topnav a {
+  white-space: nowrap;
   padding: 0.35rem 0.7rem;
   border-radius: 8px;
   color: var(--ink-2);
@@ -922,9 +926,6 @@ code {
   margin: 0;
   font-size: var(--fs-m);
   font-weight: 600;
-}
-.narrow-only {
-  display: none;
 }
 .patient-grid {
   display: grid;
@@ -1611,25 +1612,13 @@ button.back {
   .patient-grid {
     font-size: var(--fs-m);
   }
-  /* Pacient's facts as one line of values, dot-separated; the labels move to tooltips */
   .case-facts {
-    display: block;
+    gap: 0.5rem 1.5rem;
     margin-bottom: 0.75rem;
   }
-  .case-facts div,
-  .case-facts dd {
-    display: inline;
-  }
-  .case-facts dt {
-    display: none;
-  }
-  .case-facts div + div::before {
-    content: '·';
-    margin: 0 0.4rem;
-    color: var(--muted);
-  }
-  .narrow-only {
-    display: inline;
+  /* the question card has less space below it here, so the wishes card is pulled up less */
+  .question-card.preference {
+    margin-top: -0.35rem;
   }
   /* the journey's buttons always sit in the same place at the bottom edge, on every screen;
      the page keeps room for them so its last lines aren't hidden behind the bar */
@@ -1665,7 +1654,6 @@ button.back {
     padding: 1rem 0.5rem;
   }
   .topnav a {
-    white-space: nowrap;
     padding: 0.3rem 0.5rem;
   }
 }
