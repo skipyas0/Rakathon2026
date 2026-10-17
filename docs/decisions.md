@@ -205,9 +205,13 @@ Why: The template is the official output; a preview with an editable DOCX is the
 keeps AI output labelled and sourced without a per-field confirmation screen.
 
 ## 26. One type scale that grows with the screen — 2026-10-17, yes-and
-Status: accepted
+Status: accepted | updated 2026-10-17 (one size per kind of text)
 Decision: Five font sizes only, as CSS variables (`--fs-s` 0.875rem, `--fs-m` 1rem, `--fs-l` 1.2rem,
-`--fs-xl` 1.5rem, `--fs-2xl` 2rem); nothing smaller than `--fs-s`. The root size is fluid,
+`--fs-xl` 1.5rem, `--fs-2xl` 2rem); nothing smaller than `--fs-s`. One size per kind of text, the
+same on every screen and pop-up: screen title `2xl` (`xl` at ≤ 640 px); section and field labels
+`s` in small caps (every `h2`, `h3`, eyebrow); content `m` (bullets, cards, facts, red flags,
+discussion questions, typed text, empty-state lines, choice tiles); highlights `l` (the MDT
+question, a chart's latest value; `m` at ≤ 640 px); small print `s` (dates, chips, sources). The root size is fluid,
 `clamp(16px, 8px + 0.6vw, 20px)`: 16px on laptops and in a narrow window beside the hospital
 system, up to 20px on big or projected screens. Sizes and the main widths (page, journey column,
 Přehled, source drawer) are rem, so the UI scales as one; browser zoom works on top. Chart labels

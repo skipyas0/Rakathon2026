@@ -354,7 +354,7 @@ export function FactsStep({ c, record, next, prev }: ViewProps) {
           {list(important, 'warn')}
         </>
       )}
-      {!critical.length && !important.length && <p className="big">Žádná kritická ani důležitá upozornění.</p>}
+      {!critical.length && !important.length && <p>Žádná kritická ani důležitá upozornění.</p>}
       <h2>Další informace</h2>
       <div className="more-grid">
         {groups
@@ -597,7 +597,7 @@ function ExportStep({ c, record, prev }: StepProps) {
   }, [c.id, d.confirmed_by])
   if (!d.confirmed_by)
     return (
-      <p className="big">
+      <p>
         Závěr zatím není potvrzen. <a href={`#/case/${encodeURIComponent(c.id)}/confirm`}>Zpět na potvrzení</a>
       </p>
     )
