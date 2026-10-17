@@ -38,7 +38,7 @@ export function Overview({ role }: { role: string }) {
     <div className="page journey overview">
       <h1>Případy</h1>
       {error && <div className="banner bad">{error}</div>}
-      {shown?.length === 0 && role && <p className="muted">Koordinátor vám zatím nepřidělil žádný případ.</p>}
+      {shown?.length === 0 && role && <p className="muted big">Koordinátor vám zatím nepřidělil žádný případ.</p>}
       <ul className="case-list">
         {shown?.map((it) => {
           const confirmed = it.status === 'followup' || it.status === 'closed'
