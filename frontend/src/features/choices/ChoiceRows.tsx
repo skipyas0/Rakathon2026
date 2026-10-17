@@ -1,10 +1,10 @@
 // Plán's quick-pick rows (options and rules in choices.ts).
-import { Fragment } from 'react'
 import type { Choice } from '../../api'
 import { Check } from '../../icons'
-import { CHOICE_ROWS, type Option, type Picks } from './choices'
+import { CHOICE_ROWS, choiceText, type Option, type Picks } from './choices'
 
-/** One row per specialty; each scrolls sideways when its chips don't fit. */
+/** One collapsible row per specialty, its picks summed up when closed; one open at a time (the
+ * native `name` group), so the screen doesn't grow past the window. */
 export function ChoiceRows({ value, onChange, disabled }: { value: Picks; onChange: (v: Picks) => void; disabled: boolean }) {
   return (
     <div className="choice-rows">
@@ -22,13 +22,17 @@ export function ChoiceRows({ value, onChange, disabled }: { value: Picks; onChan
           )
         const update = (o: Option, u: Partial<Choice>) => set(picks.map((p) => (p.option === o.label ? { ...p, ...u } : p)))
         return (
-          <div key={row.id} className="choice-row">
-            <span className="eyebrow">{row.label}</span>
-            <div className="choice-scroll small-bubbles" role="group" aria-label={row.label}>
+          <details key={row.id} className="more choice-row" name="choices">
+            <summary>
+              <span className="eyebrow">{row.label}</span>
+              <span className={picks.length ? 'choice-summary' : 'choice-summary muted'}>{picks.length ? picks.map(choiceText).join(', ') : 'nevybráno'}</span>
+            </summary>
+            <div className="choice-options small-bubbles" role="group" aria-label={row.label}>
               {row.options.map((o) => {
                 const pick = picks.find((p) => p.option === o.label)
                 return (
-                  <Fragment key={o.label}>
+                  // a picked option with sub-options or a text field is framed with them, so a wrapped line can't look like the next option's
+                  <span key={o.label} className={pick && (o.sub || o.text) ? 'choice-group open' : 'choice-group'}>
                     <button className={`bubble ${pick ? 'on' : ''}`} aria-pressed={!!pick} disabled={disabled} onClick={() => toggle(o)}>
                       {pick && <Check />} {o.label}
                     </button>
@@ -52,11 +56,11 @@ export function ChoiceRows({ value, onChange, disabled }: { value: Picks; onChan
                         onChange={(e) => update(o, { text: e.target.value })}
                       />
                     )}
-                  </Fragment>
+                  </span>
                 )
               })}
             </div>
-          </div>
+          </details>
         )
       })}
     </div>

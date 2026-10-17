@@ -332,45 +332,68 @@ legend {
 .recommended-row:hover .row-link {
   text-decoration-style: solid;
 }
-/* Plán: one row of quick picks per specialty, scrolling sideways when it doesn't fit */
+/* Plán: one collapsible row of quick picks per specialty; the closed row sums up its picks */
 .choice-rows {
-  display: grid;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--line);
 }
 .choice-row {
-  display: grid;
-  grid-template-columns: 7.5rem minmax(0, 1fr);
-  align-items: center;
-  gap: 0.75rem;
+  padding-block: 0.45rem; /* tighter than other .more groups: all five fit with one open */
 }
-.choice-scroll {
-  display: flex;
-  gap: 0.4rem;
-  overflow-x: auto;
-  padding: 2px; /* room for the focus ring */
-  scrollbar-width: thin;
+.choice-row summary {
+  display: flex; /* a flex summary loses the native marker: drawn like it below */
+  align-items: baseline;
+  gap: 0.6rem;
+  list-style: none;
 }
-.choice-scroll .bubble {
+.choice-row summary::-webkit-details-marker {
+  display: none;
+}
+.choice-row summary::before {
+  content: '▶';
+  font-size: 0.7em;
+}
+.choice-row[open] summary::before {
+  content: '▼';
+}
+.choice-row .eyebrow {
   flex: none;
-  white-space: nowrap;
+  width: 7.5rem;
 }
-.choice-scroll .bubble.sub {
+.choice-summary {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-s);
+}
+.choice-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.6rem 0 0.2rem;
+}
+.choice-group {
+  display: contents;
+}
+.choice-group.open {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.2rem;
+  border: 1px dashed var(--ok);
+  border-radius: 1.3rem;
+}
+.choice-options .bubble.sub {
   border-style: dashed; /* a sub-option of the pick before it */
 }
-.choice-scroll .bubble.sub.on {
+.choice-options .bubble.sub.on {
   border-style: solid;
 }
 .choice-text {
-  flex: none;
   width: 14rem;
+  max-width: 100%;
   font-size: var(--fs-s);
-}
-@media (max-width: 640px) {
-  .choice-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.2rem;
-  }
 }
 /* a specialist's own picks under Navržený postup */
 .picked {
@@ -1437,7 +1460,7 @@ button.close:hover {
 .tile {
   flex-direction: column;
   gap: 0.75rem;
-  aspect-ratio: 1;
+  aspect-ratio: 16 / 10; /* not square: Plán's specialty rows fit under them, one open */
   border: 2px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
