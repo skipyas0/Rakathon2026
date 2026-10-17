@@ -53,17 +53,18 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   oxaliplatin for neuropathy per KRC-3.2 + MMR/MSI), Jaccard 0.67. Wording and the exact list of
   findings vary between runs; the RED findings overlapped (stale staging, new hip pain without
   imaging / missing chest CT, MMR/MSI, neuropathy).
-- Red-flag rules v2 (decision 19): generic families A–H over a concept layer, configured in
-  `backend/src/mdt_backend/rules.toml`; LLM symptom classifier in the agent, keyword fallback in
-  the plain briefing. 10–15 flags per patient (P01–P06), each with record sources and guideline
-  passage; unit tests on synthetic records with other codes/wording (`tests/test_rules.py`). The
-  P07 holdout was not used for design or tuning — evaluate on it.
 - `bundles.bundle_paths()` now finds bundles in per-patient folders (`pacienti/P01/P01_bundle.json`,
   the dataset's current layout) — before, the app found no FHIR cases with that layout.
 
 ## Contributor 3
 
 -
+
+## Codex
+
+- PDF export typography now follows the 15 pt / 11.5 pt / 9.5 pt legend; AI-source captions remain
+  at 6.5 pt. Header uses the gender-neutral coordinator label, lists each mapped member as
+  `Jméno, odbornost`, and no longer adds a "Další odbornosti" row. Export tests pass (4/4).
 
 ## Copilot - synthetic holdout fixture
 
@@ -73,62 +74,3 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   server or evaluated by the LLM pipeline.
 - Passed official FHIR R4 JSON-schema validation and local checks for composition/size,
   references, attachments, PROM answer types, chronology, citations and label leakage.
-
-## Copilot - IRIS deployment documentation
-
-- Added [iris-fhir-deployment.md](iris-fhir-deployment.md): server behavior, existing
-  Docker configuration, restart steps, and a combined IRIS/web-app deployment example
-  with explicit durable-volume reuse, initialization, verification, and deployment caveats.
-- Documentation only; no runtime configuration or patient data changed.
-
-## Copilot - preliminary study screening
-
-- Implemented one cited strict-JSON LLM call in `agent.screen_trials`, feeding the existing trial
-  panel and criterion confirmation flow without changing the API contract or dataset.
-- User-selected priority: supported exclusion match → non-match; otherwise any supported
-  inclusion match → potential match (unknown criteria allowed); otherwise data missing.
-- Follow-up: a supported cancer-type mismatch also means non-match (decision 21). The same
-  call adds a diagnosis statement citing `trial:<id>#diagnosis`; uncertain origin remains unknown.
-- All criteria retained; absent/invalid citations become unknown and are logged. Invalid catalogue
-  coverage fails explicitly. Meeting view now expands criterion evidence and labels the filter
-  as preliminary, not confirmed eligibility.
-- Validation: 50 screening, pipeline, briefing and provenance tests passed; changed Python files
-  pass Ruff lint/format and Python syntax validation; frontend lint and production build passed.
-- Live validation: all six briefings saved and served by the running API. P05 initially timed out,
-  then succeeded on retry. P01–P04/P06 screening was refreshed with the cancer-type gate without
-  rerunning their other LLM steps. Each case has six studies and 51 assessments (45 criteria plus
-  six cancer-type assessments); saved/API results agree, with sourced claims and incompatible
-  cancer types consistently marked non-match.
-- Browser verified six studies, expandable criteria and source drawers with both study/patient
-  evidence; P02 → COLUMBA-LM now shows non-match with the cited cancer-type explanation.
-
-## Copilot - backend/frontend branch reconciliation
-
-- Merged `main` into `backend` after saving the original backend tip and partial rebase under
-  `recovery/backend-before-main-20261017` and `recovery/partial-rebase-20261017`.
-- Preserve the v2 rules, symptom classifier and study screening; adopt the current coordinator
-  journey, meeting ids, treatment intent, patient preference and AI-running status from `main`.
-- The current IRIS-only policy supersedes older notes about HAPI, disk fallback and offline
-  agent input. Study evidence moves to the journey discussion step; the old case view stays deleted.
-- Validation: `cd backend && uv run pytest` (93 passed), `uv run ruff check .` and
-  `uv run ruff format --check .` (passed); `cd frontend && npm run lint && npm run build`
-  (passed). Regression tests cover the full pipeline output served under a meeting id, including
-  v2 flags, studies, preference, intent and AI status, plus running-marker cleanup on failure.
-- Second merge: `origin/main` at `c0b502f` (UI polish + deployment/export fixes), preserving
-  v2 rules and study screening. Adopted the new navigation, responsive charts and PDF/DOCX
-  export; ported verbatim ECOG/PROM excerpts into v2 rules and exposed patient age in source text.
-  Recovery ref: `recovery/backend-before-main-20261017-0729`.
-- Second-merge validation: backend pytest (101 passed), Ruff lint/format (passed), frontend
-  lint/build (passed); browser shows all six studies alongside Předchozí / Další navigation.
-
-## Copilot - FHIR export rulebook
-
-- Prepared [fhir-export-rulebook.md](fhir-export-rulebook.md), a researched implementation proposal;
-  no application code changed.
-- Recommendation: R4 document export using validated mCODE STU4 profiles where applicable, local
-  Czech MDT workflow profiles, and a versioned ECCDM logical-model crosswalk. ECCDM's published
-  1.0.0-ballot implementation material is informative, not a complete oncology profile contract.
-- Covers the brief's Condition/TNM, Observation, QuestionnaireResponse, CarePlan/Task and Provenance
-  requirements; exact-revision clinical approval, consensus, immutable snapshots and acceptance tests.
-- Official published specifications and relevant current source contracts inspected. Documentation
-  only: no runtime tests run and no implementation/conformance claim made.
