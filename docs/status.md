@@ -15,11 +15,16 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
   yes-and's personal account).
 - Branch `yes-and/meeting-records` (pushed, not merged): the full role-based workflow (#16).
-- Branch `yes-and/journey-meets-pipeline`: the simple coordinator journey (#20,
-  docs/workflow-plan.md), built; old screens removed (still on `yes-and/meeting-records`). Next:
-  rebase onto `main` to join it with the LLM pipeline.
-- Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
-  `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
+- Branch `yes-and/journey-meets-pipeline` (on top of `backend`): the simple coordinator journey
+  (#20, docs/workflow-plan.md) joined with Contributor 2's agent. Cases are meetings over the
+  FHIR server's nominated patients; the agent's briefing feeds every screen, its first option +
+  léčebný záměr is the recommendation (#21), its verdicts the stanoviska, its questions a new step,
+  the patient's wishes a card on Pacient (#22). "ukázka" examples remain only where the agent has
+  no output (pathology stanovisko, unbriefed cases).
+- The agent also runs against the local HAPI (`FHIR_BASE_URL=http://localhost:8080/fhir`, empty
+  `FHIR_USER`), loaded with `mdt-load-fhir`.
+- Next: trial screening (still empty). Ground truth (`ground_truth/` in the dataset README) is not
+  delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
 - Gaps against `MDT_ZASEDANI_PROCES.md` + the record template (not started):
   - The app's decision form doesn't follow `docs/template_zaver_zasedani/form.md`; the filled
