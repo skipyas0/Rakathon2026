@@ -1,9 +1,22 @@
 # MDT FHIR export: implementation rulebook
 
-**Status:** researched implementation proposal, not implemented or clinically approved.
+**Status:** implementation rulebook; the review/snapshot/local-R4 subset described below is
+implemented. Strict mCODE profiling, clinical production authorization and NIS publishing remain
+unimplemented. This document is not clinical approval.
 **Research checked:** 17 October 2026.
 **Scope:** export the patient evidence, MDT process, recommendation and action plan alongside
 the existing hospital-template PDF/DOCX. No new treatment decisions or automatic orders.
+
+**Implemented prototype:** Potvrzení now has a separate report-viewer button below Stanoviska.
+It prepares a deterministic snapshot from IRIS evidence and existing AI text; Potvrdit approves
+that revision with the board decision. Changes invalidate readiness; approved FHIR uses only
+the snapshot. Per subsequent user direction, PDF/DOCX retain the original hospital-template
+workflow, including cached AI history drafting at export and a clinician-review notice, without
+the FHIR evidence appendix. Those drafts are not approved by FHIR attestation. References below
+to unified PDF/FHIR approval remain a future target, not implemented behavior.
+The existing coordinator-role demo attestation is retained by explicit user
+choice, not replaced with authenticated clinician accounts. Source codes/TNM remain unchanged and
+the viewer/export disclose mCODE gaps. This does not satisfy all production gates in this rulebook.
 
 ## 1. Recommendation: mCODE implementation patterns, ECCDM semantic alignment
 
@@ -67,7 +80,7 @@ The relevant contracts are [CaseRecord and Decision](../backend/src/mdt_backend/
 | Current behavior | Required implementation change |
 |---|---|
 | PDF/DOCX work; FHIR is a disabled export tile | Add a downloadable R4 document, then a separately controlled IRIS publishing operation |
-| Decision confirmation is a typed name and timestamp | Bind clinical approval to authenticated identity and authorization; preserve the typed display name only as display |
+| Decision confirmation currently records the generic coordinator role and a timestamp | Bind clinical approval to authenticated identity and authorization; a role label is not a person's identity |
 | Coordinator records consensus; member support defaults to true | Start each member undecided, explicitly record support/opposition/abstention and recorder/time; do not invent member signatures |
 | Confirmations are keyed by mutable statement paths | Give claims stable IDs and revisions; bind approval to exact content, source versions and mapping version |
 | AI history is generated on the Export screen after decision confirmation | Generate before final review; require its own approval. Earlier decision approval cannot approve later text |
@@ -283,7 +296,8 @@ and passage selectors, not fake clinical resource references.
 Use `Composition.attester` for final document attestation. An authenticated electronic attestation
 is not automatically a cryptographic signature or qualified signature. Add `Provenance.signature`
 or Bundle signature only when actual signature generation/verification, trust and institutional
-requirements are implemented. A typed name alone is insufficient evidence of trusted identity.
+requirements are implemented. A generic role label or typed name alone is insufficient evidence
+of trusted identity.
 
 Store rejected drafts and approval history with appropriate access/retention controls. Use
 AuditEvent or equivalent security audit logs for viewing/export/publishing; this complements rather
@@ -395,6 +409,177 @@ CapabilityStatement and document-ingestion contract.
 Use the official HL7 FHIR Validator with pinned packages for profile/terminology validation and
 application tests for approval, consensus and workflow rules. JSON Schema or IRIS acceptance alone
 is insufficient proof of profile conformance or clinical correctness.
+
+### 8.1 Measured input coverage: what can be reused today
+
+The following inventory was read from the running IRIS server and application API on 17 October
+2026. These are resource/field counts, **not a claim that the resources already validate as mCODE**.
+No source patient files were used, no LLM was called, and no records were modified.
+
+| Patient | Conditions | Observations | Observations with coded test/concept | Clinician ECOG | Text TNM records | Biomarker records | Original PROM responses |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| P01 | 5 | 86 | 73 | 5 | 2 | 11 | 2 |
+| P02 | 5 | 106 | 92 | 4 | 1 | 4 | 2 |
+| P03 | 5 | 85 | 79 | 3 | 1 | 4 | 2 |
+| P04 | 5 | 91 | 79 | 3 | 2 | 5 | 2 |
+| P05 | 5 | 110 | 92 | 5 | 2 | 14 | 2 |
+| P06 | 6 | 100 | 85 | 4 | 2 | 8 | 2 |
+| **Total** | **31** | **578** | **500** | **24** | **10** | **46** | **12** |
+
+Additional structured evidence includes 78 DiagnosticReports, 52 DocumentReferences,
+29 ImagingStudies, 152 MedicationAdministrations, 25 MedicationRequests and 17 Procedures.
+The seven source CarePlans and six source Tasks concern existing history/nomination, not the new
+board's recommendation or action plan.
+
+Important measured gaps:
+
+- All six Patient resources have `name.text`, but no `name.given`/`name.family`. The mCODE Cancer
+  Patient snapshot inherits US Core invariant `us-core-6`, requiring given and/or family name.
+  Do not split a synthetic display label into a fictitious person's name to pass validation.
+  Obtain genuine structured identity upstream or explicitly use the local R4 Patient profile.
+- All 10 TNM Observations use `valueString`, text-only `code`, and no `method`; all already have a
+  cancer Condition `focus`. None can be called complete simply because it contains recognizable
+  tokens: each requires its own parsed-field/method validation.
+  Some name a TNM edition, but that does not establish AJCC versus UICC.
+- All 46 biomarker records have text-only test codes. Eight explicitly say the test was not
+  performed, sometimes because material was insufficient. These eight are missing-test evidence,
+  not eight completed test results.
+- The 500/578 coded Observations (86.5%) measure availability of input codes only. They do not
+  establish correct code selection, profile conformance, supported terminology or complete coverage.
+- All six served briefings contain existing AI summary/specialty/timeline/support material, but
+  their `preference` arrays were empty at inspection. The original PROM answers still exist and
+  should be used directly. Do not assume a missing generated preference means the patient had none.
+- No claim confirmations or signed specialty statements were recorded in the six CaseRecords
+  inspected. Existing AI wording is reusable as a draft, not already approved clinical content.
+
+### 8.2 Exact pre-confirmation data contract
+
+Prepare the following **before** enabling final confirmation. The requirement is a frozen export
+candidate whose clinical contents are shown to the MDT; technical IDs/code-system URIs can be
+available in details rather than cluttering the main screen. This is this application's export
+contract, not a claim that mCODE requires every possible clinical measurement for every patient.
+
+| Review block | Specific data prepared and shown | Deterministic input/reuse | Missing work or decision before confirmation |
+|---|---|---|---|
+| Identity and meeting | Patient identifier/display identity; each primary cancer's identity; meeting ID, date and board; exact question and referrer | Patient, Conditions, nomination ServiceRequest/Task; `CaseRecord.prep.question` override | Resolve patient/cancer identity and mCODE Patient name constraint; show uncertainty, never invent demographics |
+| Diagnosis | Each primary/secondary/suspected cancer, original diagnosis code/text, anatomical site/laterality, diagnosis date precision, verification/clinical status; histology/morphology/grade when available | Condition fields and ICD-O extensions; linked pathology evidence | Precompute reviewed terminology mapping and preserve original codes. Text histology/grade can be retained as evidence if no approved structured extraction exists |
+| Staging | Cancer identity; assessment date and evidence; clinical/pathological/yc/yp context; T, N, M and stage group separately; system and edition; explicit unknowns; competing assessments | Existing stage strings and TNM Observations already identify values/date/focus; deterministic tokenization for supported syntax | Resolve/retain conflicting assessments; approve any nontrivial parsing/coding. Unknown publisher/method cannot be invented. Show each component's prefix, not just one prefix for the whole record |
+| Biomarkers and relevant labs | Per result: exact test, result/value type, unit/scale, clinical/sample date, sample site/method when known, performer/source; tested versus not tested; conflicting specimens/results | Existing Observation payloads; 24 ECOG and lab measurements already typed; biomarker `valueString` is permitted by Tumor Marker Test if other constraints are satisfied | Map text-only test identities through curated terminology. Do not force a qualitative string into a number or infer a negative result. Genomic interpretation requires a separate supported mapping/review |
+| Performance and patient voice | Clinician ECOG with date/assessor; separate patient function answer; selected symptom scores with recall period and dates; raw goals/preferences/refusals | Original Observations and both QuestionnaireResponses, including item/linkId, respondent and Questionnaire version | Make patient wishes visible even when `Case.preference` is empty; approve any AI paraphrase or derived score, not the original patient response |
+| Evidence/history | Dated surgeries, actual treatment administrations, pertinent pathology/imaging and prior MDT decisions; source references; optional concise summary | Original event/report resources, existing record/AI timeline, summary and specialty Statements | Choose evidence scope; approve selected AI text. Preserve actual precision: do not turn a month-only treatment start into a fictitious first-of-month date |
+| MDT decision | Treatment aim, exact selected approach, rationale, alternatives if discussed, guideline verdict and cited passages, deviation reason, specialty opinions/dissent, explicit member stances | `Decision` fields, guideline assessment, `stanoviska`, board; existing AI options are context, not the chosen plan | Human records selected plan/rationale; final guideline assessment must match exact plan/rationale/aim. Resolve undecided members and identify accountable clinical attester |
+| Action plan | Each action's stable ID, what is to be done, responsible person/team or explicit unassigned state, due date or explicit unset state, linked cancer/plan and status; re-evaluation date | Existing `tasks` and `decision.reevaluation` where actually populated | Current simple journey has no action-task editor. Capture actions explicitly; a free-text plan alone does not supply structured Tasks. AI task extraction is optional and must happen before review |
+| Patient decision, if already known | Acceptance/refusal/discussion, wording/source, who recorded it and when; separately agreed plan if applicable | `patient_stance`, `agreed_plan` or original source response | Do not make future patient consent mandatory for exporting the board recommendation; show not yet discussed when unknown |
+| Export approval | Exact included AI claims, approved values/text/codes, sources/versions, gaps/conflicts and their disposition; attester identity/authority; snapshot revision | Claim ledger plus deterministic source/technical metadata | Explicit approval of this enumerated revision. A generic coordinator-role label, member attendance or prior source clicks do not establish clinical approval |
+
+For **each exported Observation**, prepare `subject`, `status`, `code`, clinical time if known,
+typed `value[x]` or a profile-permitted absence representation, relevant method/specimen/performer
+when known, source identity/version and linked cancer where applicable. Do not substitute export
+time for missing clinical time.
+
+For **each TNM stage group**, additionally prepare the required cancer `focus` and staging
+`method`, plus the selected stage value/coding and member observations. TNM component profiles
+also require `method`. Apply the full profile snapshot, not just the top-level required fields.
+In particular, a missing mandatory method cannot be repaired by post-confirmation LLM inference.
+
+For **each Task**, prepare description, patient, parent CarePlan, status/intent, owner or explicit
+unassigned state, requested date if known and source/author. For **CarePlan**, prepare the
+patient, addressed cancer(s), proposal intent, lifecycle status, exact recommendation, treatment
+aim, evidence, activities and author/care team. Curative/palliative are treatment aims, not
+CarePlan.intent values.
+
+For **each AI assertion**, prepare stable claim ID/revision, exact text or typed value, model/prompt
+identity, generation event/time where recorded, evidence/selectors and review disposition.
+Missing historical generation metadata must be declared missing or recovered from the saved trace,
+not reconstructed from the export time. Approval person/time are supplied by the final attestation
+or an earlier valid claim approval; all technical metadata must already be available.
+
+### 8.3 What can come from parsing, and what can reuse existing LLM data?
+
+| Export area | Without any new LLM call | Existing LLM data that can be reused | What is not currently supplied by that LLM data |
+|---|---|---|---|
+| Patient, diagnoses and original evidence | Copy fields, preserve status/time and original coding; build links deterministically | None needed | Structured names/valid terminology cannot be inferred merely to satisfy mCODE |
+| TNM | Parse explicitly stated tokens and group into typed staging candidates using tested grammar and a curated code map | Summary/timeline may restate stage and cite source | No typed mCODE stage components, coded method or reliable resolution of conflicting stages |
+| Biomarkers | Preserve actual result strings and metadata; curated test-code mapping; direct typed values where available | Specialty/summary Statements explain clinical relevance | No uniform typed biomarker extraction schema or validated terminology mappings |
+| ECOG, labs, PROM answers | Direct copy or deterministic item-to-Observation mapping, preserving scale and respondent | Existing symptom/preference prose only if present | AI-selected chart indicators are not the clinical source; empty preferences cannot supply goals |
+| Clinical report narrative | Use deterministic labels/tables or existing record wording | `Case.summary`, `timeline[].statement`, `sections[].items`; meeting `stanoviska`; selected red flags | Text Statements do not automatically become coded diagnoses/results or performed events |
+| Options/guidelines | Preserve board's choice and linked evidence; reuse stored matching assessment | `decision_support.options/questions`, trial criterion drafts, `Decision.guideline_assessment.statement` | Proposed option is not selected treatment; screening is not enrollment; a stale assessment must be recomputed before confirmation |
+| Action plan | Serialize explicitly entered Tasks and plan fields | Optional pre-confirmation extraction from the board's plan could propose tasks | Current AI outputs do not provide a structured `what/who/due/status` task list for the actual chosen plan |
+| Provenance/document | Assemble resources, source links, hashes, model metadata, approval events, references and narrative from the frozen snapshot | Existing Statement model/source fields and saved trace metadata | Reviewer identity, source versions, exact approval scope and generation timestamps are not consistently in each Statement today |
+
+**Recommended minimum:** no new LLM clinical generation is necessary to build the first useful
+structured export. Use original FHIR evidence plus explicit board fields and curated mappings;
+reuse selected existing AI prose only after review. If mappings or mandatory source data are
+missing, resolve them before confirmation or clearly choose the local R4 representation instead
+of declaring an mCODE profile that cannot be met.
+
+This is not a claim that a parser alone can make all present inputs fully mCODE-conformant.
+Terminology, source identity and unknown staging-method constraints are real gates.
+
+**Existing LLM reuse is strongest for narrative, not structured completion.** For P02, the served
+briefing already contained seven AI executive facts, four original-record summary entries,
+19 timeline events and 70 specialty-section items. These are overlapping views, not 100 distinct
+new facts and not approved export content. Select/deduplicate what the report actually needs;
+do not force the MDT to approve every trial-screening or discussion-support statement merely
+because it was generated.
+
+The PDF-only history-drafting call is unnecessary for FHIR: mCODE has no mandatory free-form
+epicrisis or hospital-template history fields. Prefer rendering reviewed existing statements and
+structured evidence. If exact PDF fields still require new AI wording, generate those drafts
+before final review and show every included field; they may not appear for the first time on Export.
+Unfilled template counts must remain unknown, never default to zero.
+
+There is no defensible single percentage for “the report generated by LLM”: resource copies,
+narrative sentences and clinical assertions have different denominators. The measured baseline is
+31 source Conditions, 578 Observations and 12 original responses available without LLM, including
+24 clinician ECOG measurements. All 10 TNM and 46 biomarker entries need the mapping/absence
+handling described above. The **target is zero LLM calls and zero new clinical interpretation
+after confirmation**, not a percentage of AI-authored report.
+
+### 8.4 One final review, not another review after export
+
+1. **Prepare automatically:** freeze source versions; map clinical fields; select existing approved
+   or reviewable narrative; create the draft Composition/CarePlan/Tasks; collect source/AI metadata.
+   Run any desired LLM task extraction, summary or fresh guideline check now, never later.
+2. **Show in existing steps:** diagnosis/staging in Prubeh, dated biomarkers in Klicove informace,
+   ECOG/PROMs/preferences in the patient/course views, specialty statements and decision/actions
+   in Zaver. Missing fields need explicit visible states.
+3. **Extend Potvrzeni:** show an exact final report preview, the staging/biomarker mappings that
+   add meaning beyond the source, selected AI claims, concrete action table, unresolved gaps,
+   member stances and clinical attester. Collapsed or previously visited material is not implicit
+   approval; provide explicit review/acceptance scope.
+4. **Preflight automatically:** validate clinical payload/profile/terminology/reference graph.
+   Distinguish strict mCODE failures from permissible local-profile gaps; disclose the actual
+   selected profile set before approval. Approval cannot override a claimed profile's constraints.
+5. **Confirm once:** an authorized clinician explicitly attests the enumerated clinical content
+   and AI-assisted claims in that revision. Record board consensus separately as required by local
+   policy. Earlier individual approvals can be reused if exact revisions and source versions match.
+6. **Finalize deterministically:** attach actual attester/time, Provenance and document metadata;
+   validate the final Bundle again. Sign using the agreed process if implemented. Store the
+   immutable artifact. Automatic validation failure blocks export with an explicit error; it
+   never triggers automatic clinical repair.
+7. **Export:** download the stored artifact, and render PDF from that same snapshot. No LLM,
+   live-data refresh, narrative rewrite, code remapping or new treatment/task extraction.
+
+Only technical serialization, document identifiers, approval timestamps and attestation/provenance
+assembly may be completed after approval. These operations cannot change the reviewed clinical
+meaning. A changed source, plan, guideline assessment or mapping produces a new candidate revision
+requiring renewed approval of affected content, not a hidden export-time change.
+
+### 8.5 Explicit release gates
+
+- **Clinical completeness:** selected approach/rationale/aim and an explicit action-plan disposition
+  exist; unknown tests or patient consent do not prevent a properly qualified recommendation.
+- **mCODE validity:** every declared profile passes its full validation, including referenced
+  profile dependencies. Missing Patient name or TNM method is an actual conformance gap, not
+  something clinician sign-off alone repairs. Do not silently downgrade profiles after approval.
+- **AI accountability:** every included AI claim or AI-generated code assignment is in the
+  approved manifest. Raw attributed source evidence does not need reauthoring as a new AI claim.
+- **Snapshot consistency:** the content approved, validated, stored and downloaded is the same
+  revision; no future AI generation is needed to finish it.
+- **Current limitation:** the implemented exporter produces local R4 documents, not complete
+  mCODE-conformant bundles. Six synthetic case documents passed the official R4 JSON schema locally;
+  this is not full mCODE profile/terminology validation or clinical certification.
 
 ## 9. Primary sources
 
