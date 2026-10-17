@@ -3,8 +3,9 @@ import { AI_POLL_MS, type AgendaItem, api } from './api'
 import { Check, Reset, Robot } from './icons'
 import { fmtDate, TUMOURS } from './layout'
 
-/** Přehled: every case and whether its conclusion is confirmed; opens where the work continues. */
-export function Overview() {
+/** Přehled: every case and whether its conclusion is confirmed; opens where the work continues.
+ * A specialist (`role`) sees only the cases the coordinator put their specialty on the board of. */
+export function Overview({ role }: { role: string }) {
   const [items, setItems] = useState<AgendaItem[] | null>(null)
   const [error, setError] = useState('')
   const [reloads, setReloads] = useState(0)
@@ -29,15 +30,17 @@ export function Overview() {
     else setError(`Případ se nepodařilo vymazat (HTTP ${r.status})`)
   }
 
+  const shown = role ? items?.filter((it) => it.specialties.includes(role)) : items
   return (
     <div className="page journey overview">
       <h1>Případy</h1>
       {error && <div className="banner bad">{error}</div>}
+      {shown?.length === 0 && role && <p className="muted big">Koordinátor vám zatím nepřidělil žádný případ.</p>}
       <ul className="case-list">
-        {items?.map((it) => {
+        {shown?.map((it) => {
           const confirmed = it.status === 'followup' || it.status === 'closed'
           const state = confirmed ? 'done' : it.specialties.length ? 'progress' : 'new'
-          const step = confirmed ? 'export' : it.specialties.length ? 'patient' : 'board'
+          const step = role ? 'patient' : confirmed ? 'export' : it.specialties.length ? 'patient' : 'board'
           return (
             <li key={it.id} className={`case-card ${state}`}>
               <a href={`#/case/${encodeURIComponent(it.id)}/${step}`}>
@@ -54,7 +57,7 @@ export function Overview() {
                 <span className="case-meta case-date">{it.mdt_date && `MDT ${fmtDate(it.mdt_date)}`}</span>
                 <span className="pill">{confirmed ? <><Check /> Potvrzeno</> : state === 'progress' ? 'Rozpracováno' : 'Nový'}</span>
               </a>
-              {state !== 'new' && (
+              {state !== 'new' && !role && (
                 <button className="icon-btn case-reset" title="Vymazat záznam případu" aria-label={`Vymazat záznam případu ${it.label}`} onClick={() => void reset(it)}>
                   <Reset />
                 </button>

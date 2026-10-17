@@ -63,6 +63,7 @@ export type CaseRecord = {
   visibility: Record<string, string[]> // specialty → section ids; absent = own + patient
   patient_stance: PatientStance | null // the patient's decision; never changes the recommendation
   agreed_plan: string
+  stanoviska: Record<string, Statement> // specialty → its specialist's stanovisko (features/roles)
 }
 
 export type IntakeKind = 'fhir' | 'pdf'
@@ -107,6 +108,16 @@ export const api = {
   ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),
   /** The AI's draft of the template's history fields: made on first call (~30 s), then cached. */
   zaverDraft: (id: string) => call<{ created: string }>(`${caseUrl(id)}/zaver/draft`, { method: 'POST' }),
+  /** The specialist's step of the agent (~45 s); the AI draft replaces their stored stanovisko. */
+  generateStanovisko: (id: string, specialty: string) =>
+    call<CaseRecord>(`${caseUrl(id)}/stanovisko/${specialty}/generate`, { method: 'POST' }),
+  /** Fields left out stay as they are. */
+  updateStanovisko: (id: string, specialty: string, u: { supports?: boolean; statement?: Statement }) =>
+    call<CaseRecord>(`${caseUrl(id)}/stanovisko/${specialty}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(u),
+    }),
   intake: (kind: IntakeKind, files: { name: string; data: string }[]) =>
     call<{ case_id: string }>('/api/intake', {
       method: 'POST',

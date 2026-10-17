@@ -39,6 +39,15 @@ export function Journey({ id, step }: { id: string; step: Step }) {
     void poll(false)
     return () => window.clearTimeout(timer)
   }, [id])
+  // specialists set their stances and stanoviska meanwhile (features/roles): a fresh record on
+  // every step, and every AI_POLL_MS on the screens that show the stanoviska
+  useEffect(() => {
+    const refresh = () => api.record(id).then((record) => setData((d) => d && { ...d, record }), () => {})
+    void refresh()
+    if (step !== 'plan' && step !== 'confirm') return
+    const t = window.setInterval(refresh, AI_POLL_MS)
+    return () => window.clearInterval(t)
+  }, [id, step])
 
   if (error) return <div className="banner bad page">{error}</div>
   if (!data || data.c.id !== id) return <p className="muted page">Načítám…</p>
@@ -58,7 +67,8 @@ export function Journey({ id, step }: { id: string; step: Step }) {
   const next = () => go(i + 1)
   // the upload step has no page for an existing case, so the board has no Předchozí
   const prev = i > 1 ? () => go(i - 1) : undefined
-  const props = { c, record, rec, save, next, prev }
+  const setRecord = (record: CaseRecord) => setData({ ...data, record })
+  const props = { c, record, rec, save, setRecord, next, prev }
 
   return (
     <div className="page journey">
@@ -84,7 +94,7 @@ export function Journey({ id, step }: { id: string; step: Step }) {
 
 /** A wait on the AI: moving bar, elapsed seconds and the usual duration. ponytail: no stages, the
  * request is one LLM call the browser can't see into; add server-sent stages if waits get long. */
-function Working({ label, typical }: { label: string; typical: number }) {
+export function Working({ label, typical }: { label: string; typical: number }) {
   const [seconds, setSeconds] = useState(0)
   useEffect(() => {
     const t = window.setInterval(() => setSeconds((s) => s + 1), 1000)
@@ -106,18 +116,24 @@ function Working({ label, typical }: { label: string; typical: number }) {
 }
 
 /** Shown where a confirmed conclusion makes the fields read-only, so they don't look broken. */
-const Locked = () => (
+export const Locked = () => (
   <p className="locked-note">
     <Lock /> Rozhodnutí komise je potvrzeno a uzamčeno. Změnit ho lze po vymazání případu v Přehledu.
   </p>
 )
 
-type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void }
+type StepProps = Data & {
+  save: (r: CaseRecord) => Promise<boolean>
+  setRecord: (r: CaseRecord) => void
+  next: () => void
+  prev?: () => void
+}
+type ViewProps = Pick<StepProps, 'c' | 'record' | 'next' | 'prev'> // screens the specialists share
 
 /** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
  * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
  * going either way never loses what was entered. */
-const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean }) => (
+export const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean }) => (
   <div className="nav-row">
     {prev && (
       <button className="back" onClick={prev}>
@@ -164,7 +180,7 @@ const FACTS = 4 // diagnosis facts shown (the agent's key facts come first), the
 const WISHES = 2 // patient's wishes shown under the question, the rest one click away
 
 /** Who the patient is, what must not be missed, the question and the patient's wishes. */
-function PatientStep({ c, record, next, prev }: StepProps) {
+export function PatientStep({ c, record, next, prev }: ViewProps) {
   const S = renderer(record)
   const question = record.prep.question || c.question?.text
   const preference = [...(c.preference ?? []).entries()]
@@ -289,7 +305,7 @@ function CourseStep({ c, record, next, prev }: StepProps) {
 
 const UNROLLED = 4
 
-function FactsStep({ c, record, next, prev }: StepProps) {
+export function FactsStep({ c, record, next, prev }: ViewProps) {
   const S = renderer(record)
   const flags = (sev: RedFlag['severity']) => [...c.red_flags.entries()].filter(([, f]) => f.severity === sev)
   // at most UNROLLED findings in full (critical first), so the screen doesn't scroll
@@ -436,7 +452,7 @@ function IntentStep({ record, save, next, prev }: StepProps) {
   )
 }
 
-function PlanStep({ c, record, save, next, prev }: StepProps) {
+function PlanStep({ c, record, save, setRecord, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [plan, setPlan] = useState(record.decision.plan)
   const [rationale, setRationale] = useState(record.decision.rationale)
@@ -455,13 +471,13 @@ function PlanStep({ c, record, save, next, prev }: StepProps) {
         Zdůvodnění
         <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
       </label>
-      <Stanoviska c={c} record={record} save={save} />
+      <Stanoviska c={c} record={record} onChange={setRecord} />
       <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} />
     </>
   )
 }
 
-function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
+function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps) {
   const S = renderer(record)
   const d = record.decision
   const locked = !!d.confirmed_by
@@ -529,7 +545,7 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
         )}
       </div>
 
-      <Stanoviska c={c} record={record} save={save} />
+      <Stanoviska c={c} record={record} onChange={setRecord} />
       {against.length > 0 && !locked && (
         <p className="verdict warn">
           <Alert /> Komise nemá konsenzus: nesouhlasí {against.map((m) => SPECIALTIES[m.specialty] ?? m.specialty).join(', ')}
