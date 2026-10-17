@@ -16,6 +16,7 @@ from mdt_backend.features import (
     intake,
     recommendation,
     records,
+    report,
     stanovisko,
 )
 
@@ -50,6 +51,7 @@ app.include_router(recommendation.router)
 app.include_router(compliance.router)
 app.include_router(export.router)
 app.include_router(stanovisko.router)
+app.include_router(report.router)
 
 
 @app.get("/api/health")

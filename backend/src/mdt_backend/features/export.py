@@ -1,13 +1,7 @@
-"""Závěr zasedání MDT: docs/template_zaver_zasedani/form.md filled for one meeting, as PDF (preview
-and download) and DOCX (download, for edits).
+"""Hospital-template PDF/DOCX for clinician review, separate from approved FHIR reports.
 
-HEADER   – the board (record) and the patient (FHIR Patient). No AI.
-BODY     – the patient's history: one LLM call over the FHIR record (POST …/zaver/draft), one value
-           per template line plus the resources it came from, cached in data/zavery/<case>.json.
-           AI output: blue in both formats, its sources under each value. "Otázka na MDT" comes
-           from the nomination (record), not the LLM.
-RESPONSE – the board's confirmed decision and the sourced AI guideline-compliance assessment.
-The coordinator previews the PDF; to change anything they download the DOCX and edit it."""
+The AI history draft is labelled and sourced, but is not approved by FHIR report attestation.
+"""
 
 import datetime as dt
 import io
@@ -37,6 +31,15 @@ PRAGUE = ZoneInfo("Europe/Prague")  # stored times are UTC; the record shows loc
 NOT_FILLED = "nevyplněno"  # no AI draft for this field (yet): not a claim that data are missing
 NO_SOURCE = "⚠ bez ověřeného zdroje"
 QUESTION = "Otázka na MDT"
+# the radiologist's opinion on the imaging presented at the meeting, not a list of past studies
+IMAGING = "Zobrazovací metody MDT"
+NOT_AI = (QUESTION, IMAGING)  # BODY lines the AI history draft never fills
+NO_RADIOLOGY = "Stanovisko radiologa nebylo zaznamenáno"
+ASSESSMENT = {
+    "compliant": "V souladu",
+    "deviation": "Odchylka",
+    "uncertain": "Soulad nelze spolehlivě posoudit",
+}
 
 INTENTS = {
     "curative": "Kurativní",
@@ -167,12 +170,12 @@ def _history_schema(fields: list[Field]) -> dict:
 
 
 def draft_history(resources: list[dict]) -> dict[str, dict]:
-    """Template path → {value, sources} for every BODY line but the question; one LLM call.
-    Sources the record doesn't contain are dropped."""
+    """Template path → {value, sources} for the BODY's history lines (not the question nor the
+    radiologist's opinion); one LLM call. Sources the record doesn't contain are dropped."""
     fields = [
         f
         for f in leaves(parse_template(TEMPLATE.read_text("utf-8"))["BODY"])
-        if f.label != QUESTION
+        if f.label not in NOT_AI
     ]
     field_list = "\n".join(
         f"f{i:02d}: {f.path}" + (f" (výchozí: {f.value})" if f.value else "")
@@ -242,9 +245,52 @@ def _local(t: dt.datetime) -> str:
     return f"{t.astimezone(PRAGUE):%d. %m. %Y %H:%M}"
 
 
+def radiology_opinion(rec: records.CaseRecord) -> tuple[str, list[str] | None]:
+    """The radiologist's signed stanovisko for "Zobrazovací metody MDT": their own text (black), or
+    the AI draft they confirmed (blue, cited). An unconfirmed AI draft is never printed."""
+    s = rec.stanoviska.get("radiology")
+    if not s or not s.confirmed_by:
+        draft = " (AI návrh radiolog nepotvrdil)" if s else ""
+        return f"{NO_RADIOLOGY}{draft}.", None
+    at = f", {_local(s.confirmed_at)}" if s.confirmed_at else ""
+    if s.origin == "ai":
+        return f"{s.text} (AI návrh potvrdil(a) {s.confirmed_by}{at})", [
+            x.reference for x in s.sources
+        ]
+    return f"{s.text} ({s.confirmed_by}{at})", None
+
+
+def compliance_lines(d: records.Decision) -> list[Field]:
+    """The AI's guideline assessment may stay AI (blue, cited); the board's own reasons for its
+    choice are printed beside it, in black."""
+    label = "Soulad s doporučenými postupy"
+
+    def sub(name: str, value: str, sources: list[str] | None = None) -> Field:
+        return Field(name, 2, value or NOT_FILLED, False, f"Závěr MDT > {label} > {name}", sources)
+
+    lines = [Field(label, 1, "", True, f"Závěr MDT > {label}")]
+    a = d.guideline_assessment
+    if a:
+        lines.append(
+            sub(
+                f"Hodnocení AI ({a.statement.model})",
+                f"{ASSESSMENT[a.status]} – {a.statement.text}",
+                [x.reference for x in a.statement.sources],
+            )
+        )
+    if not a or a.status == "uncertain":  # then the board decided compliance itself
+        verdict = {True: "Ano", False: "Ne", None: ""}[d.guideline_compliant]
+        lines.append(sub("Soulad dle komise", verdict))
+    lines.append(sub("Zdůvodnění komise", d.rationale))
+    if d.guideline_compliant is False:
+        lines.append(sub("Důvod odchylky", d.deviation_reason))
+    return lines
+
+
 def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
     """The template filled for the meeting (sections) + the AI draft used (or None). 404 for an
-    unknown case, 409 before the board's conclusion is confirmed."""
+    unknown case, 409 before the board's conclusion is confirmed. Every decision is the board's
+    own text or printed as unfilled; AI appears only in the history and the compliance check."""
     c = cases.get_case(case_id)
     rec = records.get_record(case_id)
     d = rec.decision
@@ -261,46 +307,29 @@ def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
     for f in leaves(sections["BODY"]):
         if f.label == QUESTION:
             f.value = question
+        elif f.label == IMAGING:  # before the cache: older drafts still hold an AI list here
+            f.value, f.sources = radiology_opinion(rec)
         elif f.path in ai:
             f.value, f.sources = ai[f.path]["value"], ai[f.path]["sources"]
         else:
             f.value = NOT_FILLED
 
-    def line(label: str, value: str, sources: list[str] | None = None) -> Field:
-        return Field(label, 1, value, False, f"Závěr MDT > {label}", sources)
+    def line(label: str, value: str) -> Field:
+        return Field(label, 1, value or NOT_FILLED, False, f"Závěr MDT > {label}")
 
-    response: list[Field | None] = [
+    at = f", {_local(d.confirmed_at)}" if d.confirmed_at else ""
+    sections["RESPONSE"] = [
         Field("Závěr MDT", 0, "", True, "Závěr MDT"),
-        line("Léčebný záměr", INTENTS.get(d.intent or "", "–")),
+        line("Léčebný záměr", INTENTS.get(d.intent or "", "")),
         line("Zvolený postup", d.plan),
         line("Zdůvodnění", d.rationale),
-    ]
-    response += [
-        line(label, value)
-        for label, value in (
-            ("Zvažované možnosti", d.options_considered),
-            ("Odlišná stanoviska", d.dissent),
-            ("Zařazení do klinické studie", d.trial),
-            ("Re-evaluace", d.reevaluation and f"{d.reevaluation:%d. %m. %Y}"),
-        )
-        if value
-    ]
-    assessment = d.guideline_assessment
-    if assessment:
-        compliant = "V souladu" if d.guideline_compliant else "Odchylka"
-        compliant += f" – {assessment.statement.text}"
-        if d.deviation_reason:
-            compliant += f" Zdůvodnění komise: {d.deviation_reason}"
-        compliance_sources = [source.reference for source in assessment.statement.sources]
-    else:
-        compliant = "Ano" if d.guideline_compliant else f"Ne – {d.deviation_reason}"
-        compliance_sources = None
-    at = f", {_local(d.confirmed_at)}" if d.confirmed_at else ""
-    response += [
-        line("Soulad s doporučenými postupy", compliant, compliance_sources),
+        line("Zvažované možnosti", d.options_considered),
+        line("Odlišná stanoviska", d.dissent),
+        line("Zařazení do klinické studie", d.trial),
+        line("Re-evaluace", d.reevaluation and f"{d.reevaluation:%d. %m. %Y}"),
+        *compliance_lines(d),
         line("Potvrdil(a)", f"{d.confirmed_by}{at} (konsenzus komise)"),
     ]
-    sections["RESPONSE"] = response
     return sections, draft
 
 
@@ -308,12 +337,13 @@ TITLES = {"HEADER": "Multidisciplinární tým a pacient", "BODY": "Podklady pro
 
 
 def _ai_note(draft: dict | None) -> str:
-    if not draft:
-        return ""
-    created = _local(dt.datetime.fromisoformat(draft["created"]))
+    history = ""
+    if draft:
+        created = _local(dt.datetime.fromisoformat(draft["created"]))
+        history = f" Historie: {draft['model']}, {created}, ze zdravotního záznamu."
     return (
-        f"Modře: údaje doplněné AI ({draft['model']}, {created}) ze zdravotního záznamu, "
-        "u každého je uveden zdroj. Ke kontrole lékařem; úpravy v DOCX."
+        f"Modře: návrhy AI, u každého je uveden zdroj.{history} Ke kontrole lékařem; úpravy "
+        "v DOCX. Rozhodnutí v závěru jsou text komise, nevyplněné údaje jsou tak označeny."
     )
 
 

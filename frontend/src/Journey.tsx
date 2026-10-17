@@ -10,6 +10,7 @@ import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
 import { useSources } from './sources'
 import { setUnsaved, useUnsaved } from './unsaved'
+import { ReportReview } from './features/report/ReportReview'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 
@@ -570,19 +571,27 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
   const assessedCompliance =
     assessment?.status === 'compliant' ? true : assessment?.status === 'deviation' ? false : null
   const compliant = rec ? (assessedCompliance ?? manual) : manual
-  const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
   const against = record.board.filter((m) => !m.supports) // consensus = everyone supports
-  useUnsaved(!locked && (manualChoice?.key === assessmentKey || reason.trim() !== d.deviation_reason))
-
-  const confirm = async () => {
-    if (compliant === false && !reason.trim()) return setAsking(true)
-    const decision: Decision = {
+  const reviewRecord: CaseRecord = locked ? record : {
+    ...record,
+    decision: {
       ...d,
       attendees: record.board.map((m) => ({ name: m.name, specialty: SPECIALTIES[m.specialty] ?? m.specialty })),
       guideline_compliant: compliant,
       guideline_assessment: assessment,
       deviation_reason: compliant === false ? reason.trim() : '',
+    },
+  }
+  const reviewKey = JSON.stringify(reviewRecord)
+  const [reviewed, setReviewed] = useState<{ revision: string; key: string } | null>(null)
+  const reportReady = reviewed?.key === reviewKey
+  useUnsaved(!locked && (manualChoice?.key === assessmentKey || reason.trim() !== d.deviation_reason))
+
+  const confirm = async () => {
+    const decision: Decision = {
+      ...reviewRecord.decision,
+      report_revision: reviewed?.revision ?? null,
       // ponytail: one coordinator, signed by the role, no name (decision #27); ask for a name once
       // several people coordinate
       confirmed_by: 'Koordinátor/ka',
@@ -673,6 +682,14 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
       </div>
 
       <Stanoviska c={c} record={record} onChange={setRecord} />
+      <ReportReview id={c.id} record={reviewRecord}
+        onReady={(revision, key) => setReviewed(revision ? { revision, key } : null)} />
+      {compliant === false && !locked && (
+        <label className="big-field deviation">
+          Důvod odchylky od doporučeného postupu
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} />
+        </label>
+      )}
       {against.length > 0 && !locked && (
         <p className="verdict warn">
           <Alert /> Komise nemá konsenzus: nesouhlasí {against.map((m) => SPECIALTIES[m.specialty] ?? m.specialty).join(', ')}
@@ -684,24 +701,24 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
           <p className="verdict ok">
             <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
           </p>
+          {!d.report_revision && (
+            <button className="primary" disabled={!reportReady} onClick={confirm}>
+              Potvrdit zprávu k dříve potvrzenému závěru
+            </button>
+          )}
           <Nav next={next} prev={prev} />
         </>
       ) : (
         <>
-          {asking && (
-            <label className="big-field deviation">
-              Důvod odchylky od doporučeného postupu
-              <textarea autoFocus value={reason} onChange={(e) => setReason(e.target.value)} />
-            </label>
-          )}
+          {!reportReady && <p className="muted">Před potvrzením otevřete aktuální zprávu ke kontrole.</p>}
           <div className="confirm-row">
             {prev && (
               <button className="back" onClick={prev}>
                 Předchozí
               </button>
             )}
-            <button className="primary next" onClick={confirm} disabled={compliant === null || against.length > 0 || (rec !== null && (!assessment || assessmentLoading || !!assessmentError)) || (asking && !reason.trim())}>
-              {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
+            <button className="primary next" onClick={confirm} disabled={!reportReady || compliant === null || against.length > 0 || (rec !== null && (!assessment || assessmentLoading || !!assessmentError)) || (compliant === false && !reason.trim())}>
+              {compliant === false ? 'Potvrdit s odchylkou' : 'Potvrdit'}
             </button>
           </div>
         </>
@@ -712,7 +729,6 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
 
 function ExportStep({ c, record, prev }: StepProps) {
   const d = record.decision
-  // the AI drafts the template's history once; until then (or if it can't) the preview shows it unfilled
   const [draft, setDraft] = useState<{ created?: string; error?: string } | null>(null)
   useEffect(() => {
     if (d.confirmed_by) api.zaverDraft(c.id).then(setDraft, (e: Error) => setDraft({ error: e.message }))
@@ -730,6 +746,12 @@ function ExportStep({ c, record, prev }: StepProps) {
       <p className="verdict ok">
         <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
       </p>
+      {!d.report_revision ? (
+        <p className="banner bad">
+          Starší závěr nemá schválenou revizi zprávy.{' '}
+          <a href={`#/case/${encodeURIComponent(c.id)}/confirm`}>Otevřít zprávu a potvrdit ji k závěru</a>.
+        </p>
+      ) : null}
       {!draft ? (
         <Working label="AI doplňuje podklady ze zdravotního záznamu" typical={20} />
       ) : (
@@ -747,12 +769,11 @@ function ExportStep({ c, record, prev }: StepProps) {
                 <strong>DOCX</strong>
                 <span className="muted small">k úpravám</span>
               </a>
-              {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
-              <div className="upload-box soon" aria-disabled>
+              {d.report_revision && <a className="upload-box" href={`${url}.fhir.json`} download>
                 <Download />
                 <strong>FHIR</strong>
-                <span className="chip muted-chip">Připravujeme</span>
-              </div>
+                <span className="muted small">R4</span>
+              </a>}
             </div>
           </div>
         </>

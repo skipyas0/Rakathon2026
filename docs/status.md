@@ -34,6 +34,9 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   complete record from the server. The web API reads it too (case list, briefings, source drawer;
   decision 18), falling back to the bundles on disk only when the server is unreachable.
 - `uv run mdt-zaver P01`: MDT conclusion (form.md) as PDF, two gpt-6-luna calls (decision 13).
+- Hospital-template PDF/DOCX (decision 30): decisions only from the board (empty ones printed
+  "nevyplněno"); "Zobrazovací metody MDT" = the radiologist's signed stanovisko or "Stanovisko
+  radiologa nebylo zaznamenáno"; compliance = AI assessment + the board's own reasons.
   CLI only — not wired into the API/UI yet; ~40 s per patient.
 - `uv run mdt-agent P01 [--runs 2]`: MDT agent over IRIS (decision 17): CACC → RED/YELLOW findings
   → radiology/surgery/oncology views → 1–2 guideline options, every citation checked in code.
@@ -123,12 +126,38 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 
 ## Copilot - FHIR export rulebook
 
-- Prepared [fhir-export-rulebook.md](fhir-export-rulebook.md), a researched implementation proposal;
-  no application code changed.
+- Initial research: prepared [fhir-export-rulebook.md](fhir-export-rulebook.md) as an implementation
+  proposal without application changes; the implemented subset is recorded below.
 - Recommendation: R4 document export using validated mCODE STU4 profiles where applicable, local
   Czech MDT workflow profiles, and a versioned ECCDM logical-model crosswalk. ECCDM's published
   1.0.0-ballot implementation material is informative, not a complete oncology profile contract.
 - Covers the brief's Condition/TNM, Observation, QuestionnaireResponse, CarePlan/Task and Provenance
   requirements; exact-revision clinical approval, consensus, immutable snapshots and acceptance tests.
-- Official published specifications and relevant current source contracts inspected. Documentation
-  only: no runtime tests run and no implementation/conformance claim made.
+- Initial research inspected official published specifications and current source contracts;
+  no implementation/conformance claim was made in that documentation-only phase.
+- Extended the rulebook with an explicit pre-confirmation field contract, parsing-versus-existing-AI
+  reuse matrix and one-review snapshot workflow. Live IRIS/API inventory: 31 Conditions,
+  578 Observations (500 coded), 24 clinician ECOG, 10 textual TNM, 46 text-code biomarkers
+  (8 unperformed-test entries), 12 QuestionnaireResponses across P01-P06.
+- Checked mCODE STU4 snapshots: structured Patient name and coded TNM method remain real gaps.
+  Existing AI prose can supply reviewed narrative, not automatic typed mCODE facts. That research
+  inventory made no LLM calls or clinical mutations; it did not establish export conformance.
+- Implemented the separate report-review line/dialog below Stanoviska on Potvrzení. Final decision
+  confirmation requires and approves the exact prepared revision; changed clinical/source/specialty
+  inputs invalidate it. Frozen source dialogs and FHIR R4 JSON require no export-time AI
+  or live clinical refresh. Legacy decisions can attest a report without resetting their plan.
+- User explicitly selected the existing coordinator-role demo attestation, not verified accounts.
+  Export retains source codes/text and visibly reports mCODE gaps; strict mCODE profiling and NIS
+  publishing are not implemented. Questionnaire definition asset is packaged for portable PROMs.
+- Validation: `cd backend && uv run pytest -q` (121 passed; existing Starlette/httpx deprecation
+  warning), `cd backend && uv run ruff check .` and `uv run ruff format --check .` (passed),
+  `cd frontend && npm run lint && npm run build` (passed), `git diff --check` (passed).
+  Browser verified the report button, blocked confirmation before review, report dialog and frozen-source inspection.
+  Six locally generated P01-P06 documents passed the official FHIR R4 JSON schema (zero errors);
+  this does not claim full mCODE/terminology validation. No real case was finally confirmed in testing.
+- Subsequent user change: restored original hospital-template PDF/DOCX and cached AI-history draft
+  workflow for later clinician review, independent of FHIR approval. Removed the appended FHIR
+  evidence/warnings from those formats and the mCODE disclaimer from the download button.
+  The report viewer retains conformance limitations; the FHIR snapshot/approval behavior is unchanged.
+  Revalidation: 122 backend tests passed; frontend lint/build passed. Regression tests assert the
+  original three template sections, AI review notice, no FHIR appendix and independent FHIR gating.

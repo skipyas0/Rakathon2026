@@ -39,6 +39,7 @@ export type Decision = {
   reevaluation: string | null
   confirmed_by: string | null // who confirmed the board's consensus
   confirmed_at: string | null
+  report_revision: string | null
 }
 export type Task = { what: string; who: string; due: string | null; done: boolean }
 export type Member = { name: string; specialty: string; chair: boolean; supports: boolean } // specialty = section id
@@ -85,6 +86,19 @@ export type History = {
   meetings: { id: string; mdt_date: string | null; status: Status; decision: Decision }[]
 }
 
+export type ReviewReport = {
+  revision: string
+  created: string
+  case_id: string
+  label: string
+  board: string | null
+  mdt_date: string | null
+  record: CaseRecord
+  sections: { title: string; items: Statement[] }[]
+  resources: Record<string, unknown>[]
+  warnings: string[]
+}
+
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, init)
   // a crash answers plain text, not JSON: say "server error" instead of a JSON parse error
@@ -124,6 +138,13 @@ export const api = {
   ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),
   /** The AI's draft of the template's history fields: made on first call (~30 s), then cached. */
   zaverDraft: (id: string) => call<{ created: string }>(`${caseUrl(id)}/zaver/draft`, { method: 'POST' }),
+  prepareReport: (id: string, record: CaseRecord) =>
+    call<ReviewReport>(`${caseUrl(id)}/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record),
+    }),
+  approvedReport: (id: string) => call<ReviewReport>(`${caseUrl(id)}/report`),
   /** The specialist's step of the agent (~20 s); the AI draft replaces their stored stanovisko. */
   generateStanovisko: (id: string, specialty: string) =>
     call<CaseRecord>(`${caseUrl(id)}/stanovisko/${specialty}/generate`, { method: 'POST' }),
