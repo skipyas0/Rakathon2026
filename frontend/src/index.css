@@ -315,6 +315,16 @@ legend {
   background: var(--ai-soft);
   color: var(--ai);
 }
+/* Záměr: the recommended postup folded into one row; opens in a pop-up */
+.recommended-row {
+  margin-top: 1.5rem;
+  background: var(--ai-soft);
+  border-color: var(--ai-line);
+  color: var(--ai);
+}
+.recommended-dialog .intent-label {
+  margin-top: 0.75rem;
+}
 .banner.warn {
   background: var(--warn-soft);
   border-color: transparent;
@@ -1426,7 +1436,7 @@ button.close:hover {
     border-top: 1px solid var(--line);
   }
 }
-.recommended .big,
+.recommended-dialog .big,
 .compare .big {
   margin: 0.4rem 0 0;
   line-height: 1.4;

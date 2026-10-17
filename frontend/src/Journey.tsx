@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AI_POLL_MS, api, type CaseRecord, type Decision, type GuidelineAssessment, type Intent, type Recommendation } from './api'
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
@@ -445,7 +445,7 @@ function IntentStep({ record, rec, save, next, prev }: StepProps) {
           </button>
         ))}
       </div>
-      {rec && <Recommended rec={rec} record={record} className="question-card recommended" />}
+      {rec && <RecommendedPopup rec={rec} record={record} />}
       <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intents.length} saves={!locked} />
     </>
   )
@@ -742,12 +742,12 @@ function ExportStep({ c, record, prev }: StepProps) {
   )
 }
 
-/** The recommended postup (the agent's first option, or a labelled example): on Záměr to prepare
- * the závěr, on Potvrzení to compare it with. */
-function Recommended({ rec, record, className }: { rec: Recommendation; record: CaseRecord; className?: string }) {
+/** The recommended postup (the agent's first option, or a labelled example), to compare the
+ * závěr with on Potvrzení. */
+function Recommended({ rec, record }: { rec: Recommendation; record: CaseRecord }) {
   const S = renderer(record)
   return (
-    <section className={className}>
+    <section>
       <p className="eyebrow">
         Doporučený postup {rec?.statement.model === 'ukázka' && <span className="chip muted-chip">ukázka</span>}
       </p>
@@ -760,6 +760,33 @@ function Recommended({ rec, record, className }: { rec: Recommendation; record: 
         <p className="muted">Doporučení k porovnání není k dispozici.</p>
       )}
     </section>
+  )
+}
+
+/** Záměr: the same recommendation folded into one AI row, to prepare the závěr; a click opens it in
+ * a pop-up, where every source opens as anywhere else. */
+function RecommendedPopup({ rec, record }: { rec: NonNullable<Recommendation>; record: CaseRecord }) {
+  const S = renderer(record)
+  const dialog = useRef<HTMLDialogElement>(null)
+  const example = rec.statement.model === 'ukázka' && <span className="chip muted-chip">ukázka</span>
+  return (
+    <>
+      <button className="recommended-row" onClick={() => dialog.current?.showModal()}>
+        <Robot label="AI" /> Doporučený postup <span className="muted">·</span> <IntentIcon intent={rec.intent} /> {INTENTS[rec.intent].label} {example}
+      </button>
+      <dialog ref={dialog} className="dialog recommended-dialog" onClick={(e) => e.target === dialog.current && dialog.current.close()}>
+        <div className="dialog-body">
+          <header>
+            <h3>Doporučený postup {example}</h3>
+            <button className="icon-btn" onClick={() => dialog.current?.close()} aria-label="Zavřít">
+              ×
+            </button>
+          </header>
+          <IntentLabel intent={rec.intent} />
+          <p className="big">{S('recommendation', rec.statement, 'inline')}</p>
+        </div>
+      </dialog>
+    </>
   )
 }
 

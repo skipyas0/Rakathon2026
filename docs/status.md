@@ -17,7 +17,7 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   one per screen in a pop-up (‹ › / arrow keys). Specialists get it too (shared `FactsStep`).
   Záměr takes one or more léčebné záměry (decision #31): the record's `intent` became
   `intents` (old records still load), shown and exported comma-separated. Záměr also shows the
-  doporučený postup (as on Potvrzení), to prepare the závěr.
+  doporučený postup as a folded AI row (robot icon) that opens a pop-up with its sources.
 - Next, by the scope (`problem_statement.md`): trial screening (POVINNÉ, empty); section
   order/detail configuration (POVINNÉ, 20 % of the score); PDF intake and FHIR export (CORE);
   running the agent from the app; LLM red flags and an LLM guideline-compliance check instead of
