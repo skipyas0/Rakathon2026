@@ -4,10 +4,11 @@ import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
 import { Alert, Check, Download, IntentIcon, Lock, Robot } from './icons'
-import { fmtDate, fmtDateTime, INTENTS, KIND, load, MIN_SPECIALTIES, save as remember, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
+import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
+import { setUnsaved, useUnsaved } from './unsaved'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 
@@ -39,6 +40,15 @@ export function Journey({ id, step }: { id: string; step: Step }) {
     void poll(false)
     return () => window.clearTimeout(timer)
   }, [id])
+  // specialists set their stances and stanoviska meanwhile (features/roles): a fresh record on
+  // every step, and every AI_POLL_MS on the screens that show the stanoviska
+  useEffect(() => {
+    const refresh = () => api.record(id).then((record) => setData((d) => d && { ...d, record }), () => {})
+    void refresh()
+    if (step !== 'plan' && step !== 'confirm') return
+    const t = window.setInterval(refresh, AI_POLL_MS)
+    return () => window.clearInterval(t)
+  }, [id, step])
 
   if (error) return <div className="banner bad page">{error}</div>
   if (!data || data.c.id !== id) return <p className="muted page">Načítám…</p>
@@ -46,6 +56,7 @@ export function Journey({ id, step }: { id: string; step: Step }) {
   const save = async (r: CaseRecord) => {
     try {
       setData({ ...data, record: await api.saveRecord(id, r) })
+      setUnsaved(false) // a step saves all its input, so it may leave without asking
       setError('')
       return true
     } catch (e) {
@@ -58,7 +69,8 @@ export function Journey({ id, step }: { id: string; step: Step }) {
   const next = () => go(i + 1)
   // the upload step has no page for an existing case, so the board has no Předchozí
   const prev = i > 1 ? () => go(i - 1) : undefined
-  const props = { c, record, rec, save, next, prev }
+  const setRecord = (record: CaseRecord) => setData({ ...data, record })
+  const props = { c, record, rec, save, setRecord, next, prev }
 
   return (
     <div className="page journey">
@@ -84,7 +96,7 @@ export function Journey({ id, step }: { id: string; step: Step }) {
 
 /** A wait on the AI: moving bar, elapsed seconds and the usual duration. ponytail: no stages, the
  * request is one LLM call the browser can't see into; add server-sent stages if waits get long. */
-function Working({ label, typical }: { label: string; typical: number }) {
+export function Working({ label, typical }: { label: string; typical: number }) {
   const [seconds, setSeconds] = useState(0)
   useEffect(() => {
     const t = window.setInterval(() => setSeconds((s) => s + 1), 1000)
@@ -106,18 +118,26 @@ function Working({ label, typical }: { label: string; typical: number }) {
 }
 
 /** Shown where a confirmed conclusion makes the fields read-only, so they don't look broken. */
-const Locked = () => (
+export const Locked = () => (
   <p className="locked-note">
     <Lock /> Rozhodnutí komise je potvrzeno a uzamčeno. Změnit ho lze po vymazání případu v Přehledu.
   </p>
 )
 
-type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void }
+type StepProps = Data & {
+  save: (r: CaseRecord) => Promise<boolean>
+  setRecord: (r: CaseRecord) => void
+  next: () => void
+  prev?: () => void
+}
+type ViewProps = Pick<StepProps, 'c' | 'record' | 'next' | 'prev'> // screens the specialists share
 
 /** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
  * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
- * going either way never loses what was entered. */
-const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean }) => (
+ * going either way never loses what was entered; `saves` says so on the button ("Uložit a další",
+ * "Uložit a zavřít"), since a chevron click leaves without saving. */
+type NavProps = { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean; saves?: boolean }
+export const Nav = ({ next, prev, close, disabled, saves }: NavProps) => (
   <div className="nav-row">
     {prev && (
       <button className="back" onClick={prev}>
@@ -126,12 +146,12 @@ const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => 
     )}
     {next && (
       <button className="primary next" onClick={next} disabled={disabled}>
-        Další
+        {saves ? 'Uložit a další' : 'Další'}
       </button>
     )}
     {close && (
-      <button className="close" onClick={close}>
-        Zavřít
+      <button className="close" onClick={close} disabled={disabled}>
+        {saves ? 'Uložit a zavřít' : 'Zavřít'}
       </button>
     )}
   </div>
@@ -140,6 +160,7 @@ const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => 
 function BoardStep({ record, save, next }: StepProps) {
   const [chosen, setChosen] = useState(() => record.board.map((m) => m.specialty))
   const toggle = (s: string) => setChosen(chosen.includes(s) ? chosen.filter((x) => x !== s) : [...chosen, s])
+  useUnsaved([...chosen].sort().join() !== record.board.map((m) => m.specialty).sort().join())
   const submit = async () => {
     const board = chosen.map((s) => record.board.find((m) => m.specialty === s) ?? { name: '', specialty: s, chair: false, supports: true })
     if (await save({ ...record, board })) next()
@@ -154,7 +175,7 @@ function BoardStep({ record, save, next }: StepProps) {
           </button>
         ))}
       </div>
-      <Nav next={submit} disabled={chosen.length < MIN_SPECIALTIES} />
+      <Nav next={submit} disabled={chosen.length < MIN_SPECIALTIES} saves />
     </>
   )
 }
@@ -164,7 +185,7 @@ const FACTS = 4 // diagnosis facts shown (the agent's key facts come first), the
 const WISHES = 2 // patient's wishes shown under the question, the rest one click away
 
 /** Who the patient is, what must not be missed, the question and the patient's wishes. */
-function PatientStep({ c, record, next, prev }: StepProps) {
+export function PatientStep({ c, record, next, prev }: ViewProps) {
   const S = renderer(record)
   const question = record.prep.question || c.question?.text
   const preference = [...(c.preference ?? []).entries()]
@@ -289,7 +310,7 @@ function CourseStep({ c, record, next, prev }: StepProps) {
 
 const UNROLLED = 4
 
-function FactsStep({ c, record, next, prev }: StepProps) {
+export function FactsStep({ c, record, next, prev }: ViewProps) {
   const S = renderer(record)
   const flags = (sev: RedFlag['severity']) => [...c.red_flags.entries()].filter(([, f]) => f.severity === sev)
   // at most UNROLLED findings in full (critical first), so the screen doesn't scroll
@@ -416,6 +437,7 @@ function TrendsStep({ c, next, prev }: StepProps) {
 function IntentStep({ record, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [intent, setIntent] = useState(record.decision.intent)
+  useUnsaved(!locked && intent !== record.decision.intent)
   const keep = async (go: () => void) => {
     if (locked || !intent || (await save({ ...record, decision: { ...record.decision, intent } }))) go()
   }
@@ -431,15 +453,16 @@ function IntentStep({ record, save, next, prev }: StepProps) {
           </button>
         ))}
       </div>
-      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intent} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intent} saves={!locked} />
     </>
   )
 }
 
-function PlanStep({ c, record, save, next, prev }: StepProps) {
+function PlanStep({ c, record, save, setRecord, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [plan, setPlan] = useState(record.decision.plan)
   const [rationale, setRationale] = useState(record.decision.rationale)
+  useUnsaved(!locked && (plan.trim() !== record.decision.plan || rationale.trim() !== record.decision.rationale))
   const keep = async (go: () => void) => {
     if (locked || (await save({ ...record, decision: { ...record.decision, plan: plan.trim(), rationale: rationale.trim() } }))) go()
   }
@@ -455,13 +478,13 @@ function PlanStep({ c, record, save, next, prev }: StepProps) {
         Zdůvodnění
         <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
       </label>
-      <Stanoviska c={c} record={record} save={save} />
-      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} />
+      <Stanoviska c={c} record={record} onChange={setRecord} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} saves={!locked} />
     </>
   )
 }
 
-function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
+function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps) {
   const S = renderer(record)
   const d = record.decision
   const locked = !!d.confirmed_by
@@ -470,9 +493,8 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
   const compliant = rec ? d.intent === rec.intent : manual
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
-  // who confirms, typed here; the last signer in this browser is pre-filled
-  const [signer, setSigner] = useState(() => load('mdt.signer', ''))
   const against = record.board.filter((m) => !m.supports) // consensus = everyone supports
+  useUnsaved(!locked && (manual !== null || reason.trim() !== d.deviation_reason))
 
   const confirm = async () => {
     if (compliant === false && !reason.trim()) return setAsking(true)
@@ -481,13 +503,12 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
       attendees: record.board.map((m) => ({ name: m.name, specialty: SPECIALTIES[m.specialty] ?? m.specialty })),
       guideline_compliant: compliant,
       deviation_reason: compliant === false ? reason.trim() : '',
-      confirmed_by: signer.trim(),
+      // ponytail: one coordinator, signed by the role, no name (decision #27); ask for a name once
+      // several people coordinate
+      confirmed_by: 'Koordinátor/ka',
       confirmed_at: now(),
     }
-    if (await save({ ...record, decision })) {
-      remember('mdt.signer', signer.trim())
-      next()
-    }
+    if (await save({ ...record, decision })) next()
   }
 
   return (
@@ -529,7 +550,7 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
         )}
       </div>
 
-      <Stanoviska c={c} record={record} save={save} />
+      <Stanoviska c={c} record={record} onChange={setRecord} />
       {against.length > 0 && !locked && (
         <p className="verdict warn">
           <Alert /> Komise nemá konsenzus: nesouhlasí {against.map((m) => SPECIALTIES[m.specialty] ?? m.specialty).join(', ')}
@@ -557,8 +578,7 @@ function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
                 Předchozí
               </button>
             )}
-            <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Kdo potvrzuje" aria-label="Kdo potvrzuje" />
-            <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || against.length > 0 || (asking && !reason.trim())}>
+            <button className="primary next" onClick={confirm} disabled={compliant === null || against.length > 0 || (asking && !reason.trim())}>
               {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
             </button>
           </div>

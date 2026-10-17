@@ -29,16 +29,16 @@ def test_header_from_board_and_patient_never_invented():
     d = records.Decision(attendees=[{"name": "", "specialty": "Chirurgie"},
                                     {"name": "MUDr. R", "specialty": "Radiologie"},
                                     {"name": "", "specialty": "Radiační onkologie"}])  # fmt: skip
-    d.confirmed_by = "Koordinátorka K"  # the rest of a complete decision doesn't matter here
+    d.confirmed_by = "Koordinátor/ka"  # the rest of a complete decision doesn't matter here
     export.fill_header(s["HEADER"], PATIENT, d, "GIT komise")
     values = {f.label: f.value for f in export.leaves(s["HEADER"])}
     assert values["Jméno, příjmení pacienta"] == "Pacientka P09 (fiktivní)"
     assert values["Rodné číslo (pojišťovna) pacienta"] == NOT_FOUND  # not in the dataset
-    assert values["III.chirurgická klinika"] == "přítomen"
+    assert values["III.chirurgická klinika"] == "přítomen/a"
     assert values["Klinika zobrazovacích metod"] == "MUDr. R"
     assert values["Ústav Patologie"] == "–"  # not on the board
     assert values["Další odbornosti"] == "Radiační onkologie"
-    assert values["Koordinátorka onkologické péče"] == "Koordinátorka K"
+    assert values["Koordinátor/ka onkologické péče"] == "přítomen/a"
     assert s["HEADER"][0].label == "GIT komise, multidisciplinární tým"
 
 

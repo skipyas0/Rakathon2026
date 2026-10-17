@@ -46,7 +46,8 @@ INTENTS = {
     "deferred": "Odloženo",
 }
 # template department line → the board specialty's label (as the confirmed decision's attendees
-# carry it, frontend SPECIALTIES); the coordinator line is whoever confirmed the conclusion.
+# carry it, frontend SPECIALTIES); the coordinator, unnamed (decision #27), is present once the
+# conclusion is confirmed.
 # ponytail: the template comes from a sarcoma board; other specialties go on one extra line.
 DEPARTMENTS = {
     "Klinika zobrazovacích metod": "Radiologie",
@@ -54,7 +55,10 @@ DEPARTMENTS = {
     "III.chirurgická klinika": "Chirurgie",
     "Ústav Patologie": "Patologie",
 }
-COORDINATOR = "Koordinátorka onkologické péče"
+COORDINATOR = "Koordinátorka onkologické péče"  # as the template words it
+# printed gender-neutral: who coordinates (and who is present) isn't known to be a woman or a man
+COORDINATOR_LABEL = "Koordinátor/ka onkologické péče"
+PRESENT = "přítomen/a"
 
 
 @dataclass
@@ -117,12 +121,13 @@ def fill_header(
             f.value = patient_values[f.label]
         elif f.label in DEPARTMENTS:
             a = present.get(DEPARTMENTS[f.label])
-            f.value = (a.name or "přítomen") if a else "–"
+            f.value = (a.name or PRESENT) if a else "–"
         elif f.label == COORDINATOR:
-            f.value = d.confirmed_by or "–"
+            f.label = COORDINATOR_LABEL
+            f.value = PRESENT if d.confirmed_by else "–"
     others = [s for s in present if s not in DEPARTMENTS.values()]
     if others:
-        at = next(i for i, f in enumerate(lines) if f and f.label == COORDINATOR)
+        at = next(i for i, f in enumerate(lines) if f and f.label == COORDINATOR_LABEL)
         lines.insert(at, Field("Další odbornosti", 0, ", ".join(others), False, "Další odbornosti"))
 
 

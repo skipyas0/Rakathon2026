@@ -29,6 +29,7 @@ class TimelineEvent(BaseModel):
 class RedFlag(BaseModel):
     severity: Literal["high", "medium", "low"]
     statement: Statement  # cites both conflicting sources (e.g. lab + questionnaire)
+    area: str | None = None  # specialty it concerns (section id); None or "patient" = everyone
 
 
 class Section(BaseModel):

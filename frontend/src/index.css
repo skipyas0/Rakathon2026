@@ -779,8 +779,12 @@ code {
     width: 7.5rem;
   }
   .topbar .user .icon,
+  .role-btn .icon,
   .brand-name {
     display: none;
+  }
+  .role-btn {
+    padding: 0.3rem 0.6rem;
   }
 }
 
@@ -850,6 +854,34 @@ code {
 .topnav a.on {
   background: var(--teal-soft);
   color: var(--teal-strong);
+}
+/* the current role, top right: opens the role pop-up */
+.role-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-weight: 600;
+}
+.role-btn:hover {
+  border-color: var(--teal);
+  background: var(--teal-soft);
+  color: var(--teal-strong);
+}
+.role-bubbles {
+  margin: 1rem 0 0.25rem;
+}
+/* the specialist's name and what to do with their stanovisko */
+.stanovisko-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
 }
 
 /* Intake */
@@ -1540,10 +1572,6 @@ button.close:hover {
 }
 .confirm-row button {
   margin: 0;
-}
-.confirm-row input {
-  font-size: var(--fs-m);
-  padding: 0.6rem 0.8rem;
 }
 .case-list {
   list-style: none;

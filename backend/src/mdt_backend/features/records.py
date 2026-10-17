@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, model_validator
 
 from mdt_backend.features.cases import ai_status, case_ids, get_case
+from mdt_backend.provenance import Statement
 
 RECORDS = Path(__file__).parents[4] / "data" / "records"
 
@@ -141,6 +142,8 @@ class CaseRecord(BaseModel):
     # after the meeting: recommendation (decision) ≠ patient's stance ≠ agreed plan ≠ care (tasks)
     patient_stance: PatientStance | None = None
     agreed_plan: str = ""
+    # specialty → its specialist's stanovisko: AI-generated or their own (features/stanovisko.py)
+    stanoviska: dict[str, Statement] = {}
 
 
 Status = Literal["prep", "meeting", "followup", "closed"]
@@ -163,6 +166,11 @@ def _load(case_id: str) -> CaseRecord:
     return (
         CaseRecord.model_validate_json(path.read_text("utf-8")) if path.exists() else CaseRecord()
     )
+
+
+def save(case_id: str, record: CaseRecord) -> None:
+    RECORDS.mkdir(parents=True, exist_ok=True)
+    _path(case_id).write_text(record.model_dump_json(indent=2), "utf-8")
 
 
 @router.get("")
@@ -205,6 +213,13 @@ def reset_record(case_id: str) -> None:
 @router.put("/{case_id}/record")
 def put_record(case_id: str, record: CaseRecord) -> CaseRecord:
     old = _load(case_id)
+    # stances and stanoviska are the specialists' (features/stanovisko.py): the coordinator's
+    # copy of the record may be stale, so it never overwrites them
+    stance = {m.specialty: m.supports for m in old.board}
+    board = [
+        m.model_copy(update={"supports": stance.get(m.specialty, m.supports)}) for m in record.board
+    ]
+    record = record.model_copy(update={"board": board, "stanoviska": old.stanoviska})
     if old.decision.confirmed_by and record.decision != old.decision:
         raise HTTPException(409, "Závěr je potvrzen a uzamčen")
     if record.prep.prepared_by and not (record.prep.question.strip() or get_case(case_id).question):
@@ -214,6 +229,5 @@ def put_record(case_id: str, record: CaseRecord) -> CaseRecord:
         raise HTTPException(422, f"Komise nemá konsenzus (nesouhlasí: {', '.join(against)})")
     if record.prep.prepared_by and len({m.specialty for m in record.board}) < MIN_SPECIALTIES:
         raise HTTPException(422, f"Komise musí mít alespoň {MIN_SPECIALTIES} odbornosti")
-    RECORDS.mkdir(parents=True, exist_ok=True)
-    _path(case_id).write_text(record.model_dump_json(indent=2), "utf-8")
+    save(case_id, record)
     return record

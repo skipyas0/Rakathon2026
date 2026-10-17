@@ -85,6 +85,14 @@ SPECIALISTS = {
             "výkonnostní stav"
         ),
     ),
+    "pathology": (
+        "Patologie",
+        (
+            "patolog – hodnotí histologii: histologický typ, grading, imunohistochemie a molekulární "
+            "biomarkery (ER/PR, HER2, MMR/MSI, KRAS, PD-L1…), stáří a adekvátnost vzorku, potřeba "
+            "rebiopsie nebo doplnění vyšetření"
+        ),
+    ),
 }
 SEVERITY = {"RED": "high", "YELLOW": "medium"}
 SECTION_TITLES = {"pathology": "Patologie", "patient": "Pacient"}
@@ -162,6 +170,7 @@ VERDICT_SCHEMA = _obj(
     verdict=_obj(text=_STR, refs=_REFS, guideline_ids=_GL),
     missing=_arr(_STR),
 )
+VERDICT_ONLY_SCHEMA = _obj(verdict=VERDICT_SCHEMA["properties"]["verdict"])
 RECOMMEND_SCHEMA = _obj(
     options=_arr(
         _obj(
@@ -382,9 +391,11 @@ def missing(text: str) -> Statement:
 
 
 # --- 3–6. LLM steps ----------------------------------------------------------------------------
-def _call(trace: dict, step: str, system: str, user: str, schema: dict) -> dict:
+def _call(
+    trace: dict, step: str, system: str, user: str, schema: dict, effort: str | None = None
+) -> dict:
     t0 = time.monotonic()
-    out = chat_json(system, user, schema, name=step.split(":")[0])
+    out = chat_json(system, user, schema, name=step.split(":")[0], effort=effort)
     trace["steps"][step] = {"seconds": round(time.monotonic() - t0, 1), "output": out}
     return out
 
@@ -434,9 +445,19 @@ Záznam pacienta (jeden záznam na řádek, reference v hranatých závorkách):
 
 
 def specialist(
-    key: str, rec: Record, dx: dict, cacc: dict, issues: dict, question: str, trace: dict
+    key: str,
+    rec: Record,
+    dx: dict,
+    cacc: dict,
+    issues: dict,
+    question: str,
+    trace: dict,
+    quick: bool = False,
 ) -> dict:
+    """`quick` (the app's live Vygenerovat, ~2× faster): low reasoning effort and only the verdict
+    extracted (no points, no missing data), which is all the app shows."""
     title, role = SPECIALISTS[key]
+    effort = "low" if quick else None
     focus = {
         "cacc": [p for p in cacc["prerequisites"] if p["area"] == key],
         "findings": [f for f in issues["findings"] if f["area"] in (key, "patient")],
@@ -456,6 +477,7 @@ Tvoje položky kontrolního seznamu a nálezy: {json.dumps(focus, ensure_ascii=F
 Seznam záznamů:
 {index(rec.bundle, rec.refs())}""",
         CONTEXT_SCHEMA,
+        effort,
     )
     context = {}
     for ref in dict.fromkeys(r.strip().strip("[]").split("#")[0] for r in pick["refs"]):
@@ -482,22 +504,59 @@ hranatých závorek referenci záznamu nebo id pasáže, např. [Observation/P01
 {RULES}""",
         material,
         TEXT_SCHEMA,
+        effort,
     )["text"]
     # 5c: structured points extracted from that text, with verifiable citations
+    asks = [
+        (
+            "- points: 3–6 klíčových bodů (≤ 1 věta, čísla s jednotkami a daty), každý s refs a\n"
+            "  guideline_ids, kde pravidlo plyne z pasáže,"
+        ),
+        (
+            "- verdict: závěr k otázce komise v 1–2 větách, opřený o pasáže (guideline_ids) a "
+            "záznamy (refs),"
+        ),
+        (
+            "- missing: údaje z tvé odbornosti, které pro rozhodnutí chybějí (krátké názvy, bez "
+            "věty o chybění)."
+        ),
+    ]
+    wanted = "\n".join(asks[1:2] if quick else asks)
     verdict = _call(
         trace,
         f"verdict:{key}",
         f"""Jsi {role}, člen onkologické komise (MDT). Ze svého stanoviska (níže) vytáhni:
-- points: 3–6 klíčových bodů (≤ 1 věta, čísla s jednotkami a daty), každý s refs a
-  guideline_ids, kde pravidlo plyne z pasáže,
-- verdict: závěr k otázce komise v 1–2 větách, opřený o pasáže (guideline_ids) a záznamy (refs),
-- missing: údaje z tvé odbornosti, které pro rozhodnutí chybějí (krátké názvy, bez věty o chybění).
+{wanted}
 Nic nepřidávej, co ve stanovisku není.
 {RULES}""",
         f"Stanovisko:\n{text}\n\n{material}",
-        VERDICT_SCHEMA,
+        VERDICT_ONLY_SCHEMA if quick else VERDICT_SCHEMA,
+        effort,
     )
-    return {"key": key, "title": title, "context": list(context), "text": text, **verdict}
+    return {
+        "key": key,
+        "title": title,
+        "context": list(context),
+        "text": text,
+        "points": [],
+        "missing": [],
+        **verdict,
+    }
+
+
+def stanovisko(rec: Record, key: str) -> Statement | None:
+    """One specialist's step on its own (the app's Vygenerovat): their verdict on the board's
+    question, cited; None when no citation holds. ponytail: without the batch's checklist and
+    findings (build_cacc, find_issues, +2 calls); pass them in when the step should see them."""
+    case = build_case(rec.case_id, rec.bundle)
+    dx = diagnosis(rec.bundle)
+    question = case.question.text if case.question else NOT_FOUND
+    trace: dict = {"steps": {}}
+    v = specialist(key, rec, dx, {"prerequisites": []}, {"findings": []}, question, trace, True)
+    vd = v["verdict"]
+    return Citations(rec, dx["passages"]).statement(
+        vd["text"], vd["refs"], vd["guideline_ids"], f"{key}.verdict"
+    )
 
 
 def executive_summary(
@@ -767,7 +826,8 @@ def run(case_id: str) -> tuple[Case, dict]:
     for i, f in enumerate(issues["findings"]):
         s = cite.statement(f["text"], f["refs"], f["guideline_ids"], f"findings.{i}")
         if s:
-            case.red_flags.append(RedFlag(severity=SEVERITY[f["severity"]], statement=s))
+            flag = RedFlag(severity=SEVERITY[f["severity"]], statement=s, area=f["area"])
+            case.red_flags.append(flag)
         elif f["kind"] == "chybejici_udaj":
             gaps.setdefault(f["area"], set()).add(f["text"])
     # extra flags from the executive summary (ones the checks above didn't raise)

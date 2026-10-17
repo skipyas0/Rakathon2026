@@ -27,7 +27,8 @@ to the brief, as their header says. The dataset's `README.md` is the authority o
 | [docs/template_zaver_zasedani/](docs/template_zaver_zasedani/) | Template for the board's final record, to be filled in live in the app |
 
 The board reaches its final conclusion by **consensus of all members**; in the app the
-**coordinator records it** and ticks each member's consent (decision #16).
+**coordinator records it**, each specialist sets their own stance, and anyone against blocks it
+(decisions #20, #27).
 
 ## Ground rules (non-negotiable)
 
@@ -37,7 +38,9 @@ The board reaches its final conclusion by **consensus of all members**; in the a
    content, everywhere it appears (UI, exports).
 3. **Every AI claim has a source** — the exact FHIR resource / questionnaire answer, viewable on
    click. If the data isn't there, say what is missing + `V dostupné dokumentaci se nenachází.` — never guess.
-4. **Record human decisions** with who made them and when.
+4. **Record human decisions** with who made them and when. (For now each role is one person, so
+   the role is the "who": stanoviska are signed "Chirurgie" etc., the conclusion "Koordinátor/ka";
+   decision #27 says when names come back.)
 
 These are enforced in code — use them, don't work around them:
 - Backend: `Statement` / `Source` in [backend/src/mdt_backend/provenance.py](backend/src/mdt_backend/provenance.py)
