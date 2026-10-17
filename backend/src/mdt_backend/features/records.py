@@ -194,6 +194,14 @@ def get_record(case_id: str) -> CaseRecord:
     return _load(case_id)
 
 
+@router.delete("/{case_id}/record", status_code=204)
+def reset_record(case_id: str) -> None:
+    """Back to a new case: the meeting's record (board, confirmations, decision) is deleted, even
+    a confirmed one. Patient data and AI briefings stay. ponytail: a demo reset; a real record is
+    versioned with an audit trail, never deleted."""
+    _path(case_id).unlink(missing_ok=True)
+
+
 @router.put("/{case_id}/record")
 def put_record(case_id: str, record: CaseRecord) -> CaseRecord:
     old = _load(case_id)

@@ -131,9 +131,30 @@ def value_of(r: dict) -> str:
     return ""
 
 
+def answer_line(question: str, answer: dict) -> str:
+    """One questionnaire answer exactly as `text_of` shows it, so an excerpt is verbatim and the
+    source drawer can highlight it."""
+    return f"{question}: {value_of(answer)}"
+
+
+def observation_line(o: dict) -> str:
+    """An Observation exactly as `text_of` shows it (without its range), for verbatim excerpts."""
+    return f"{title_of(o)}: {value_of(o)}"
+
+
 def text_of(r: dict) -> str:
     """Full human-readable text of a resource, for the 'whole record' view."""
     t = r["resourceType"]
+    if t == "Patient":
+        lines = [n["text"] for n in r.get("name", []) if n.get("text")]
+        if r.get("birthDate"):
+            lines.append(r["birthDate"])
+        lines.extend(
+            f"věk {e['valueInteger']}"
+            for e in r.get("extension", [])
+            if "vek" in e.get("url", "") and "valueInteger" in e
+        )
+        return "\n".join(lines) or title_of(r)
     if t == "DiagnosticReport":
         body = "\n\n".join(_decode(a) for a in r.get("presentedForm", []))
         return "\n\n".join(
@@ -148,12 +169,12 @@ def text_of(r: dict) -> str:
         )
     if t == "QuestionnaireResponse":
         return "\n".join(
-            f"{i['text']}: {value_of(i['answer'][0])}" for i in r["item"] if i.get("answer")
+            answer_line(i["text"], i["answer"][0]) for i in r["item"] if i.get("answer")
         )
     if t == "Observation":
         rng = (r.get("referenceRange") or [{}])[0]
         lo, hi = rng.get("low", {}).get("value"), rng.get("high", {}).get("value")
         ref = f" (norma {lo:g}–{hi:g})" if lo is not None and hi is not None else ""
-        return f"{title_of(r)}: {value_of(r)}{ref}"
+        return f"{observation_line(r)}{ref}"
     notes = [n["text"] for n in r.get("note", [])]
     return "\n\n".join([title_of(r), *notes])

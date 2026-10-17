@@ -47,10 +47,22 @@ export const Doc = () => (
     <path d="M9.5 1.5v3h3M6 8h4.5M6 10.5h4.5" />
   </Icon>
 )
-export const User = () => (
+export const Download = () => (
   <Icon>
-    <circle cx="8" cy="5.5" r="2.8" />
-    <path d="M2.5 14.5c.8-3 2.8-4.5 5.5-4.5s4.7 1.5 5.5 4.5" />
+    <path d="M8 2v8M4.8 7 8 10.2 11.2 7" />
+    <path d="M2.5 11v2.5h11V11" />
+  </Icon>
+)
+export const Lock = () => (
+  <Icon>
+    <rect x="3" y="7" width="10" height="7.5" rx="1.5" />
+    <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+  </Icon>
+)
+export const Reset = () => (
+  <Icon>
+    <path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9" />
+    <path d="M2.5 1.8v2.7h2.7" />
   </Icon>
 )
 const INTENT_ICON: Record<Intent, ReactNode> = {

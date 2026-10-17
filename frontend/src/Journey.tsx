@@ -3,8 +3,8 @@ import { AI_POLL_MS, api, type CaseRecord, type Decision, type Intent, type Reco
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
-import { Alert, Check, Doc, IntentIcon, Robot } from './icons'
-import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
+import { Alert, Check, Download, IntentIcon, Lock, Robot } from './icons'
+import { fmtDate, fmtDateTime, INTENTS, KIND, load, MIN_SPECIALTIES, save as remember, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
@@ -14,7 +14,7 @@ type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 const SECTION_LABEL: Record<string, string> = { ...SPECIALTIES, patient: 'Pacient' }
 
 /** The coordinator's journey through one case, one screen per step (docs/workflow-plan.md). */
-export function Journey({ id, step, user }: { id: string; step: Step; user: string }) {
+export function Journey({ id, step }: { id: string; step: Step }) {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState('')
   const [aiRunning, setAiRunning] = useState(false)
@@ -53,11 +53,12 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
       return false
     }
   }
-  const next = () => {
-    const i = STEPS.findIndex((s) => s.id === step)
-    location.hash = `#/case/${encodeURIComponent(id)}/${STEPS[i + 1].id}`
-  }
-  const props = { c, record, rec, save, next, user }
+  const i = STEPS.findIndex((s) => s.id === step)
+  const go = (to: number) => (location.hash = `#/case/${encodeURIComponent(id)}/${STEPS[to].id}`)
+  const next = () => go(i + 1)
+  // the upload step has no page for an existing case, so the board has no Předchozí
+  const prev = i > 1 ? () => go(i - 1) : undefined
+  const props = { c, record, rec, save, next, prev }
 
   return (
     <div className="page journey">
@@ -69,6 +70,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
       )}
       {step === 'board' && <BoardStep {...props} />}
       {step === 'patient' && <PatientStep {...props} />}
+      {step === 'course' && <CourseStep {...props} />}
       {step === 'facts' && <FactsStep {...props} />}
       {step === 'trends' && <TrendsStep {...props} />}
       {step === 'questions' && <QuestionsStep {...props} />}
@@ -80,12 +82,59 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
   )
 }
 
-type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; user: string }
+/** A wait on the AI: moving bar, elapsed seconds and the usual duration. ponytail: no stages, the
+ * request is one LLM call the browser can't see into; add server-sent stages if waits get long. */
+function Working({ label, typical }: { label: string; typical: number }) {
+  const [seconds, setSeconds] = useState(0)
+  useEffect(() => {
+    const t = window.setInterval(() => setSeconds((s) => s + 1), 1000)
+    return () => window.clearInterval(t)
+  }, [])
+  return (
+    <div className="working" role="status">
+      <p>
+        <Robot /> {label}…
+      </p>
+      <div className="working-bar" aria-hidden>
+        <span />
+      </div>
+      <p className="working-time">
+        {seconds} s · {seconds <= typical * 2 ? `obvykle kolem ${typical} s` : 'trvá déle než obvykle'}
+      </p>
+    </div>
+  )
+}
 
-const Next = ({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) => (
-  <button className="primary next" onClick={onClick} disabled={disabled}>
-    Další
-  </button>
+/** Shown where a confirmed conclusion makes the fields read-only, so they don't look broken. */
+const Locked = () => (
+  <p className="locked-note">
+    <Lock /> Rozhodnutí komise je potvrzeno a uzamčeno. Změnit ho lze po vymazání případu v Přehledu.
+  </p>
+)
+
+type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void }
+
+/** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
+ * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
+ * going either way never loses what was entered. */
+const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean }) => (
+  <div className="nav-row">
+    {prev && (
+      <button className="back" onClick={prev}>
+        Předchozí
+      </button>
+    )}
+    {next && (
+      <button className="primary next" onClick={next} disabled={disabled}>
+        Další
+      </button>
+    )}
+    {close && (
+      <button className="close" onClick={close}>
+        Zavřít
+      </button>
+    )}
+  </div>
 )
 
 function BoardStep({ record, save, next }: StepProps) {
@@ -105,7 +154,7 @@ function BoardStep({ record, save, next }: StepProps) {
           </button>
         ))}
       </div>
-      <Next onClick={submit} disabled={chosen.length < MIN_SPECIALTIES} />
+      <Nav next={submit} disabled={chosen.length < MIN_SPECIALTIES} />
     </>
   )
 }
@@ -114,35 +163,35 @@ const RECENT = 4 // latest events shown; the whole course is one click away (no 
 const FACTS = 4 // diagnosis facts shown (the agent's key facts come first), the rest one click away
 const WISHES = 2 // patient's wishes shown under the question, the rest one click away
 
-function PatientStep({ c, record, next }: StepProps) {
+/** Who the patient is, what must not be missed, the question and the patient's wishes. */
+function PatientStep({ c, record, next, prev }: StepProps) {
   const S = renderer(record)
-  const course = (from: number) => (
-    <ol className="course">
-      {c.timeline.slice(Math.max(0, from)).map((e, i, all) => {
-        const k = c.timeline.length - all.length + i
-        return (
-          <li key={k}>
-            <time>{fmtDate(e.date)}</time>
-            <span className="kind">{KIND[e.kind]}</span>
-            {S(`timeline.${k}`, e.statement, 'inline')}
-          </li>
-        )
-      })}
-    </ol>
-  )
   const question = record.prep.question || c.question?.text
-  const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
-  const facts = [...c.summary.entries()].filter(([i]) => i !== ecog)
   const preference = [...(c.preference ?? []).entries()]
   const items = (list: [number, Statement][], path: string) =>
     list.map(([i, s]) => <li key={i}>{S(`${path}.${i}`, s, 'inline')}</li>)
   // what must not be missed: critical findings, else the most important ones
   const critical = [...c.red_flags.entries()].filter(([, f]) => f.severity === 'high')
   const alerts = (critical.length ? critical : [...c.red_flags.entries()].filter(([, f]) => f.severity === 'medium')).slice(0, 2)
+  const facts: [string, string | null | undefined][] = [
+    ['Pacient', c.label],
+    ['Diagnóza', TUMOURS[c.tumour] ?? c.tumour],
+    ['Komise', c.board],
+    ['MDT', c.mdt_date && fmtDate(c.mdt_date)],
+  ]
   return (
     <>
-      <h1 className="huge">{c.label}</h1>
-      <p className="muted">{[TUMOURS[c.tumour], c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
+      <h1>Pacient</h1>
+      <dl className="case-facts">
+        {facts
+          .filter(([, v]) => v)
+          .map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+      </dl>
       {alerts.length > 0 && (
         <ul className={`key-facts compact ${critical.length ? 'crit' : 'warn'}`}>
           {alerts.map(([i, f]) => (
@@ -170,6 +219,35 @@ function PatientStep({ c, record, next }: StepProps) {
           )}
         </section>
       )}
+      <Nav next={next} prev={prev} />
+    </>
+  )
+}
+
+/** The diagnosis, performance status and the course of the disease. */
+function CourseStep({ c, record, next, prev }: StepProps) {
+  const S = renderer(record)
+  const course = (from: number) => (
+    <ol className="course">
+      {c.timeline.slice(Math.max(0, from)).map((e, i, all) => {
+        const k = c.timeline.length - all.length + i
+        return (
+          <li key={k}>
+            <time>{fmtDate(e.date)}</time>
+            <span className="kind">{KIND[e.kind]}</span>
+            {S(`timeline.${k}`, e.statement, 'inline')}
+          </li>
+        )
+      })}
+    </ol>
+  )
+  const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
+  const facts = [...c.summary.entries()].filter(([i]) => i !== ecog)
+  const items = (list: [number, Statement][], path: string) =>
+    list.map(([i, s]) => <li key={i}>{S(`${path}.${i}`, s, 'inline')}</li>)
+  return (
+    <>
+      <h1>Průběh</h1>
       <div className="patient-grid">
         <section>
           <h2>Diagnóza</h2>
@@ -204,14 +282,14 @@ function PatientStep({ c, record, next }: StepProps) {
           )}
         </section>
       </div>
-      <Next onClick={next} />
+      <Nav next={next} prev={prev} />
     </>
   )
 }
 
 const UNROLLED = 4
 
-function FactsStep({ c, record, next }: StepProps) {
+function FactsStep({ c, record, next, prev }: StepProps) {
   const S = renderer(record)
   const flags = (sev: RedFlag['severity']) => [...c.red_flags.entries()].filter(([, f]) => f.severity === sev)
   // at most UNROLLED findings in full (critical first), so the screen doesn't scroll
@@ -273,16 +351,28 @@ function FactsStep({ c, record, next }: StepProps) {
             </details>
           ))}
       </div>
-      <Next onClick={next} />
+      <Nav next={next} prev={prev} />
     </>
   )
 }
 
-const PER_PAGE = 2 // charts per screen, so nothing scrolls
 const TRIAL_VERDICTS = { eligible: 'Potenciálně vhodný', ineligible: 'Nevhodný', missing_data: 'Chybí údaj' }
+// charts per screen, so nothing scrolls: a 2×2 grid when the window is wide and tall enough
+const WIDE = '(min-width: 981px) and (min-height: 820px)'
+
+function useMedia(query: string) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setMatch(m.matches)
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [query])
+  return match
+}
 
 /** The 2–3 questions the agent says the board must settle, before it picks the léčebný záměr. */
-function QuestionsStep({ c, record, next }: StepProps) {
+function QuestionsStep({ c, record, next, prev }: StepProps) {
   const S = renderer(record)
   const questions = c.decision_support.questions
   return (
@@ -319,39 +409,43 @@ function QuestionsStep({ c, record, next }: StepProps) {
           ))}
         </section>
       )}
-      <Next onClick={next} />
+      <Nav next={next} prev={prev} />
     </>
   )
 }
 
-function TrendsStep({ c, next }: StepProps) {
-  const [page, setPage] = useState(0)
-  const pages = Math.ceil(c.trends.length / PER_PAGE)
+function TrendsStep({ c, next, prev }: StepProps) {
+  const perPage = useMedia(WIDE) ? 4 : 2
+  const [first, setFirst] = useState(0) // index of the page's first chart, kept when perPage changes
+  const pages = Math.ceil(c.trends.length / perPage)
+  const page = Math.min(Math.floor(first / perPage), Math.max(0, pages - 1))
   return (
     <>
       <h1>
         Vývoj {pages > 1 && <span className="muted page-count">{page + 1} / {pages}</span>}
       </h1>
       <div className="journey-trends">
-        {c.trends.slice(page * PER_PAGE, (page + 1) * PER_PAGE).map((t) => (
+        {c.trends.slice(page * perPage, (page + 1) * perPage).map((t) => (
           <TrendChart key={t.id} trend={t} />
         ))}
         {!c.trends.length && <p className="muted">Bez měřených hodnot.</p>}
       </div>
-      <Next onClick={() => (page + 1 < pages ? setPage(page + 1) : next())} />
+      {/* both buttons page through the charts first, then leave the tab */}
+      <Nav next={() => (page + 1 < pages ? setFirst((page + 1) * perPage) : next())} prev={page > 0 ? () => setFirst((page - 1) * perPage) : prev} />
     </>
   )
 }
 
-function IntentStep({ record, save, next }: StepProps) {
+function IntentStep({ record, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [intent, setIntent] = useState(record.decision.intent)
-  const submit = async () => {
-    if (locked || (await save({ ...record, decision: { ...record.decision, intent } }))) next()
+  const keep = async (go: () => void) => {
+    if (locked || !intent || (await save({ ...record, decision: { ...record.decision, intent } }))) go()
   }
   return (
     <>
       <h1>Léčebný záměr</h1>
+      {locked && <Locked />}
       <div className="tiles">
         {(Object.keys(INTENTS) as Intent[]).map((k) => (
           <button key={k} className={`tile intent-${k} ${intent === k ? 'on' : ''}`} aria-pressed={intent === k} disabled={locked} onClick={() => setIntent(k)}>
@@ -360,38 +454,37 @@ function IntentStep({ record, save, next }: StepProps) {
           </button>
         ))}
       </div>
-      <Next onClick={submit} disabled={!intent} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intent} />
     </>
   )
 }
 
-function PlanStep({ c, record, save, next }: StepProps) {
+function PlanStep({ c, record, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [plan, setPlan] = useState(record.decision.plan)
   const [rationale, setRationale] = useState(record.decision.rationale)
-  const submit = async () => {
-    if (locked || (await save({ ...record, decision: { ...record.decision, plan: plan.trim(), rationale: rationale.trim() } }))) next()
+  const keep = async (go: () => void) => {
+    if (locked || (await save({ ...record, decision: { ...record.decision, plan: plan.trim(), rationale: rationale.trim() } }))) go()
   }
   return (
     <>
       <h1>Závěr</h1>
-      <section className="card form-card">
-        <label className="big-field">
-          Zvolený postup
-          <textarea value={plan} disabled={locked} onChange={(e) => setPlan(e.target.value)} />
-        </label>
-        <label className="big-field">
-          Zdůvodnění
-          <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
-        </label>
-        <Stanoviska c={c} record={record} save={save} />
-        <Next onClick={submit} disabled={!plan.trim() || !rationale.trim()} />
-      </section>
+      {locked && <Locked />}
+      <label className="big-field">
+        Zvolený postup
+        <textarea value={plan} disabled={locked} onChange={(e) => setPlan(e.target.value)} />
+      </label>
+      <label className="big-field">
+        Zdůvodnění
+        <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
+      </label>
+      <Stanoviska c={c} record={record} save={save} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} />
     </>
   )
 }
 
-function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
+function ConfirmStep({ c, record, rec, save, next, prev }: StepProps) {
   const S = renderer(record)
   const d = record.decision
   const locked = !!d.confirmed_by
@@ -400,7 +493,8 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
   const compliant = rec ? d.intent === rec.intent : manual
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
-  const [signer, setSigner] = useState(user) // the top-bar name, or typed here when it's empty
+  // who confirms, typed here; the last signer in this browser is pre-filled
+  const [signer, setSigner] = useState(() => load('mdt.signer', ''))
   const against = record.board.filter((m) => !m.supports) // consensus = everyone supports
 
   const confirm = async () => {
@@ -413,7 +507,10 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
       confirmed_by: signer.trim(),
       confirmed_at: now(),
     }
-    if (await save({ ...record, decision })) next()
+    if (await save({ ...record, decision })) {
+      remember('mdt.signer', signer.trim())
+      next()
+    }
   }
 
   return (
@@ -439,21 +536,21 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
             <p className="muted">Doporučení k porovnání není k dispozici.</p>
           )}
         </section>
+        {/* soulad s doporučenými postupy belongs to the comparison: the card's footer */}
+        {rec ? (
+          <p className={`verdict soulad ${compliant ? 'ok' : 'warn'}`}>
+            {compliant ? <Check /> : <Alert />} {compliant ? 'V souladu s doporučeným postupem' : 'Odchylka od doporučeného postupu'}
+          </p>
+        ) : (
+          <div className="bubbles small-bubbles soulad" role="group" aria-label="Soulad s doporučenými postupy">
+            {[true, false].map((v) => (
+              <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManual(v)}>
+                {v ? 'V souladu s postupy' : 'Odchylka od postupů'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-
-      {rec ? (
-        <p className={`verdict ${compliant ? 'ok' : 'warn'}`}>
-          {compliant ? <Check /> : <Alert />} {compliant ? 'V souladu s doporučeným postupem' : 'Odchylka od doporučeného postupu'}
-        </p>
-      ) : (
-        <div className="bubbles small-bubbles" role="group" aria-label="Soulad s doporučenými postupy">
-          {[true, false].map((v) => (
-            <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManual(v)}>
-              {v ? 'V souladu s postupy' : 'Odchylka od postupů'}
-            </button>
-          ))}
-        </div>
-      )}
 
       <Stanoviska c={c} record={record} save={save} />
       {against.length > 0 && !locked && (
@@ -463,12 +560,12 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
       )}
 
       {locked ? (
-        <div className="confirm-row">
+        <>
           <p className="verdict ok">
             <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
           </p>
-          <Next onClick={next} />
-        </div>
+          <Nav next={next} prev={prev} />
+        </>
       ) : (
         <>
           {asking && (
@@ -478,9 +575,12 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
             </label>
           )}
           <div className="confirm-row">
-            {!user && (
-              <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Vaše jméno" aria-label="Kdo potvrzuje" />
+            {prev && (
+              <button className="back" onClick={prev}>
+                Předchozí
+              </button>
             )}
+            <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Kdo potvrzuje" aria-label="Kdo potvrzuje" />
             <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || against.length > 0 || (asking && !reason.trim())}>
               {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
             </button>
@@ -491,33 +591,54 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
   )
 }
 
-function ExportStep({ c, record }: StepProps) {
+function ExportStep({ c, record, prev }: StepProps) {
   const d = record.decision
+  // the AI drafts the template's history once; until then (or if it can't) the preview shows it unfilled
+  const [draft, setDraft] = useState<{ created?: string; error?: string } | null>(null)
+  useEffect(() => {
+    if (d.confirmed_by) api.zaverDraft(c.id).then(setDraft, (e: Error) => setDraft({ error: e.message }))
+  }, [c.id, d.confirmed_by])
   if (!d.confirmed_by)
     return (
       <p className="big">
         Závěr zatím není potvrzen. <a href={`#/case/${encodeURIComponent(c.id)}/confirm`}>Zpět na potvrzení</a>
       </p>
     )
+  const url = `/api/cases/${encodeURIComponent(c.id)}/zaver`
   return (
     <>
       <h1>Export</h1>
       <p className="verdict ok">
         <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
       </p>
-      <div className="upload">
-        <a className="upload-box" href={`/api/cases/${encodeURIComponent(c.id)}/zaver.pdf`} download>
-          <Doc />
-          <strong>PDF</strong>
-        </a>
-        <span className="or">nebo</span>
-        {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
-        <div className="upload-box soon" aria-disabled>
-          <Doc />
-          <strong>FHIR</strong>
-          <span className="chip muted-chip">Připravujeme</span>
-        </div>
-      </div>
+      {!draft ? (
+        <Working label="AI doplňuje podklady ze zdravotního záznamu" typical={20} />
+      ) : (
+        <>
+          {draft.error && <div className="banner bad">{draft.error}</div>}
+          <div className="export">
+            <iframe className="preview" src={`${url}.pdf?v=${draft.created ?? ''}`} title="Náhled závěru" />
+            <div className="export-actions">
+              <a className="upload-box" href={`${url}.pdf`} download>
+                <Download />
+                <strong>PDF</strong>
+              </a>
+              <a className="upload-box" href={`${url}.docx`} download>
+                <Download />
+                <strong>DOCX</strong>
+                <span className="muted small">k úpravám</span>
+              </a>
+              {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
+              <div className="upload-box soon" aria-disabled>
+                <Download />
+                <strong>FHIR</strong>
+                <span className="chip muted-chip">Připravujeme</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      <Nav prev={prev} close={() => (location.hash = '#/')} />
     </>
   )
 }

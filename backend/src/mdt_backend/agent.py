@@ -1,6 +1,6 @@
 """MDT agent: guideline-grounded AI layer on top of the deterministic briefing (from_fhir.py).
 
-Pipeline (a fixed chain of tool steps and strict-JSON LLM calls, decision #16):
+Pipeline (a fixed chain of tool steps and strict-JSON LLM calls, decision #17):
   1. gather      – the patient's record from the IRIS FHIR server only (Patient/$everything;
                    ids mapped back to the dataset's via the loader's tag)
   2. diagnosis   – primary ICD-10 code → the tumour's guideline (KRC/PLI/PRS) + general MDT rules (OBC)

@@ -6,12 +6,13 @@ const num = (v: number) => v.toLocaleString('cs-CZ', { maximumFractionDigits: 1 
 const t = (d: string) => new Date(d).getTime()
 
 /** One measured value over time: 2px line, ringed dots, reference range as a band. Data comes
- * straight from records (not AI), so it renders as fact; every point opens its source. */
+ * straight from records (not AI), so it renders as fact; every point opens its source. The SVG
+ * stretches with the column, so its labels are HTML around it (type scale, legible at any width). */
 export function TrendChart({ trend }: { trend: Trend }) {
   const show = useSources()
   const { points: pts, ref_low: lo, ref_high: hi } = trend
   if (!pts.length) return null
-  const W = 240, H = 96, L = 28, R = 8, T = 8, B = 18 // ≈ rendered px, so 10px text stays 10px
+  const W = 240, H = 84, L = 6, R = 6, T = 6, B = 6 // drawing units; room for the dots only
   const x0 = t(pts[0].date), x1 = t(pts[pts.length - 1].date)
   const vals = pts.map((p) => p.value)
   let [y0, y1] = trend.axis ?? [Math.min(...vals, lo ?? Infinity), Math.max(...vals, hi ?? -Infinity)]
@@ -43,50 +44,48 @@ export function TrendChart({ trend }: { trend: Trend }) {
         )}
         {out(last) && <span className="oor">▲ mimo normu</span>}
       </figcaption>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        role="img"
-        aria-label={`${trend.label}: ${pts.map((p) => `${fmtDate(p.date)} ${num(p.value)} ${trend.unit}`).join(', ')}`}
-      >
-        {(lo != null || hi != null) && (
-          <>
-            <rect className="band" x={L} y={bandTop} width={W - L - R} height={Math.max(0, bandBottom - bandTop)} />
-            <text className="band-label" x={W - R - 2} y={bandTop + 10} textAnchor="end">
-              norma
-            </text>
-          </>
-        )}
-        <line className="grid" x1={L} x2={W - R} y1={H - B} y2={H - B} />
-        <text className="tick" x={L - 6} y={y(y1) + 4} textAnchor="end">
-          {num(y1)}
-        </text>
-        <text className="tick" x={L - 6} y={y(y0) + 4} textAnchor="end">
-          {num(y0)}
-        </text>
-        <text className="tick" x={L} y={H - 4}>
-          {fmtDate(pts[0].date)}
-        </text>
-        {pts.length > 1 && (
-          <text className="tick" x={W - R} y={H - 4} textAnchor="end">
-            {fmtDate(last.date)}
-          </text>
-        )}
-        <polyline className="line" points={pts.map((p) => `${x(p.date)},${y(p.value)}`).join(' ')} />
-        {pts.map((p) => (
-          <g
-            key={p.date}
-            className="pt"
-            role="button"
-            tabIndex={0}
-            onClick={() => show({ title: `${trend.label}: ${num(p.value)} ${trend.unit}`, sources: [p.source] })}
-            onKeyDown={(e) => e.key === 'Enter' && show({ title: `${trend.label}: ${num(p.value)} ${trend.unit}`, sources: [p.source] })}
+      <div className="plot">
+        <div className="y-axis" aria-hidden>
+          <span>{num(y1)}</span>
+          <span>{num(y0)}</span>
+        </div>
+        <div className="plot-area">
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            role="img"
+            aria-label={`${trend.label}: ${pts.map((p) => `${fmtDate(p.date)} ${num(p.value)} ${trend.unit}`).join(', ')}`}
           >
-            <title>{`${fmtDate(p.date)}: ${num(p.value)} ${trend.unit}${out(p) ? ' (mimo normu)' : ''}`}</title>
-            <circle className="hit" cx={x(p.date)} cy={y(p.value)} r={11} />
-            <circle className={`dot ${out(p) ? 'out' : ''}`} cx={x(p.date)} cy={y(p.value)} r={4.5} />
-          </g>
-        ))}
-      </svg>
+            {(lo != null || hi != null) && (
+              <rect className="band" x={L} y={bandTop} width={W - L - R} height={Math.max(0, bandBottom - bandTop)} />
+            )}
+            <line className="grid" x1={L} x2={W - R} y1={H - B} y2={H - B} />
+            <polyline className="line" points={pts.map((p) => `${x(p.date)},${y(p.value)}`).join(' ')} />
+            {pts.map((p) => (
+              <g
+                key={p.date}
+                className="pt"
+                role="button"
+                tabIndex={0}
+                onClick={() => show({ title: `${trend.label}: ${num(p.value)} ${trend.unit}`, sources: [p.source] })}
+                onKeyDown={(e) => e.key === 'Enter' && show({ title: `${trend.label}: ${num(p.value)} ${trend.unit}`, sources: [p.source] })}
+              >
+                <title>{`${fmtDate(p.date)}: ${num(p.value)} ${trend.unit}${out(p) ? ' (mimo normu)' : ''}`}</title>
+                <circle className="hit" cx={x(p.date)} cy={y(p.value)} r={11} />
+                <circle className={`dot ${out(p) ? 'out' : ''}`} cx={x(p.date)} cy={y(p.value)} r={4.5} />
+              </g>
+            ))}
+          </svg>
+          {(lo != null || hi != null) && (
+            <span className="band-label" style={{ top: `${(bandTop / H) * 100}%` }}>
+              norma
+            </span>
+          )}
+        </div>
+        <div className="x-axis" aria-hidden>
+          <span>{fmtDate(pts[0].date)}</span>
+          {pts.length > 1 && <span>{fmtDate(last.date)}</span>}
+        </div>
+      </div>
     </figure>
   )
 }

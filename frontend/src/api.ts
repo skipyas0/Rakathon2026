@@ -76,7 +76,10 @@ export type History = {
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, init)
-  const body = await r.json()
+  // a crash answers plain text, not JSON: say "server error" instead of a JSON parse error
+  const body = await r.json().catch(() => {
+    throw new Error(`Chyba serveru (HTTP ${r.status})`)
+  })
   if (!r.ok) {
     const d = body.detail
     throw new Error(typeof d === 'string' ? d : (d?.[0]?.msg?.replace(/^Value error, /, '') ?? r.statusText))
@@ -98,9 +101,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record),
     }),
+  resetRecord: (id: string) => fetch(`${caseUrl(id)}/record`, { method: 'DELETE' }),
   history: (id: string) => call<History>(`${caseUrl(id)}/history`),
   recommendation: (id: string) => call<Recommendation>(`${caseUrl(id)}/recommendation`),
   ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),
+  /** The AI's draft of the template's history fields: made on first call (~30 s), then cached. */
+  zaverDraft: (id: string) => call<{ created: string }>(`${caseUrl(id)}/zaver/draft`, { method: 'POST' }),
   intake: (kind: IntakeKind, files: { name: string; data: string }[]) =>
     call<{ case_id: string }>('/api/intake', {
       method: 'POST',

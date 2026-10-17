@@ -17,7 +17,16 @@ from pathlib import Path
 
 from mdt_backend import concepts as C
 from mdt_backend.briefing import RedFlag
-from mdt_backend.bundles import Bundle, answers, short_label, src, title_of, value_of
+from mdt_backend.bundles import (
+    Bundle,
+    answer_line,
+    answers,
+    observation_line,
+    short_label,
+    src,
+    title_of,
+    value_of,
+)
 from mdt_backend.config import settings
 from mdt_backend.knowledge import guideline_source, guidelines
 from mdt_backend.provenance import NOT_FOUND, Source, Statement
@@ -70,7 +79,7 @@ class Flags:
 
     def prom_src(self, i: int, concept: str) -> Source | None:
         link_id, text, a = self.f.qa(i).get(concept, (None, None, None))
-        return self.s(self.f.proms[i], f"{text}: {value_of(a)}", link_id) if link_id else None
+        return self.s(self.f.proms[i], answer_line(text, a), link_id) if link_id else None
 
     def severity_for_grade(self, g: int) -> str:
         sev = self.cfg["general"]["grade_severity"]
@@ -297,8 +306,8 @@ def proms_worsening(F: Flags, c: dict):
             "proms_worsening",
             c["severity"],
             f"Zhoršení v dotazníku pacienta: {items} (škála 0–10).",
-            F.s(F.f.proms[-2], "; ".join(f"{t}: {x}" for _, t, x, _ in worse)),
-            F.s(F.f.proms[-1], "; ".join(f"{t}: {y}" for _, t, _, y in worse)),
+            F.s(F.f.proms[-2], "\n".join(f"{t}: {x}" for _, t, x, _ in worse)),
+            F.s(F.f.proms[-1], "\n".join(f"{t}: {y}" for _, t, _, y in worse)),
         )
 
 
@@ -324,7 +333,7 @@ def symptom_burden(F: Flags, c: dict):
         c["severity"],
         f"Výrazná symptomová zátěž dle pacienta: {items}"
         + (f" – {'; '.join(tips)}." if tips else "."),
-        F.s(qr, "; ".join(f"{t}: {v}" for _, t, v in heavy)),
+        F.s(qr, "\n".join(f"{t}: {v}" for _, t, v in heavy)),
         guideline=c.get("guideline"),
     )
 
@@ -361,8 +370,8 @@ def ecog_discordance(F: Flags, c: dict):
         "ecog_discordance",
         "high" if pat - doc >= c["high_diff"] else "medium",
         f"ECOG dle lékaře {doc}, pacient popisuje stav odpovídající ECOG {pat} – ověřit výkonnostní stav.",
-        F.s(ecog[-1].r, f"ECOG {doc}"),
-        F.s(F.f.proms[-1], f"{own[1]} {value_of(own[2])}", own[0]),
+        F.s(ecog[-1].r, observation_line(ecog[-1].r)),
+        F.s(F.f.proms[-1], answer_line(own[1], own[2]), own[0]),
         guideline=c.get("guideline"),
     )
 
