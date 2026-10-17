@@ -2,8 +2,7 @@
 
 Pipeline (a fixed chain of tool steps and strict-JSON LLM calls, decision #16):
   1. gather      – the patient's record from the IRIS FHIR server only (Patient/$everything;
-                   ids mapped back to the dataset's via the loader's tag), or, for offline
-                   tests, from the bundle on disk (`source="file"`)
+                   ids mapped back to the dataset's via the loader's tag)
   2. diagnosis   – primary ICD-10 code → the tumour's guideline (KRC/PLI/PRS) + general MDT rules (OBC)
   3. CACC        – LLM: completeness-and-consistency checklist (decision prerequisites the record
                    should contain, symptoms expected for the diagnosis), each item tied to passages
@@ -232,36 +231,25 @@ RULES = f"""Pravidla (závazná):
 # --- 1. gather ---------------------------------------------------------------------------------
 class Record:
     """The patient's record as the agent sees it: a Bundle keyed by dataset ids, and a `fetch`
-    tool that reads one resource from where the record came from (IRIS or the bundle file)."""
+    tool that reads one resource from IRIS."""
 
-    def __init__(self, case_id: str, source: str = "iris"):
+    def __init__(self, case_id: str):
         self.case_id = case_id.lower()
         self.patient_id = case_id.upper()
-        self.source = source
-        if source == "file":
-            path = bundles.bundle_paths().get(self.case_id)
-            if not path:
-                raise SystemExit(f"{case_id}: no bundle in {settings.dataset_dir / 'pacienti'}")
-            self.bundle = bundles.load(path)
-            self.iris_ids: dict[str, str] = {}
-        else:
-            # Only the FHIR server is read. IRIS rejects "_" in ids (decision #12); the loader
-            # keeps the original id as a tag, so citations use the dataset's ids (the app's source
-            # drawer and the frontend resolve those)
-            by_ref, self.iris_ids = {}, {}
-            for r in fhir.get_patient_record(self.patient_id):
-                ref = f"{r['resourceType']}/{dataset_id(r)}"
-                self.iris_ids[ref] = f"{r['resourceType']}/{r['id']}"
-                by_ref[ref] = {**r, "id": ref.split("/", 1)[1]}
-            self.bundle = Bundle({"entry": [{"resource": r} for r in by_ref.values()]})
+        # IRIS rejects "_" in ids (decision #12); the loader keeps the original id as a tag, so
+        # citations use the dataset's ids (the app's source drawer and the frontend resolve those)
+        by_ref, self.iris_ids = {}, {}
+        for r in fhir.get_patient_record(self.patient_id):
+            ref = f"{r['resourceType']}/{dataset_id(r)}"
+            self.iris_ids[ref] = f"{r['resourceType']}/{r['id']}"
+            by_ref[ref] = {**r, "id": ref.split("/", 1)[1]}
+        self.bundle = Bundle({"entry": [{"resource": r} for r in by_ref.values()]})
 
     def fetch(self, ref: str) -> dict | None:
-        """Tool: one resource by dataset reference (read from IRIS when that's the source)."""
+        """Tool: one resource by dataset reference, read from IRIS."""
         base = ref.split("#")[0]
         if base not in self.bundle.by_ref:
             return None
-        if self.source == "file":
-            return self.bundle.by_ref[base]
         rtype, rid = self.iris_ids.get(base, base).split("/", 1)
         r = fhir.get(f"{rtype}/{rid}")
         return {**r, "id": base.split("/", 1)[1]}
@@ -706,17 +694,16 @@ def indicator_trends(b: Bundle, picks: list[dict], existing: list[Trend], cite) 
 
 
 # --- assemble ----------------------------------------------------------------------------------
-def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
+def run(case_id: str) -> tuple[Case, dict]:
     """The whole pipeline for one patient: returns the AI-augmented Case and a trace."""
     t0 = time.monotonic()
-    rec = Record(case_id, source)
+    rec = Record(case_id)
     b = rec.bundle
     case = build_case(rec.case_id, b)
     dx = diagnosis(b)
     question = case.question.text if case.question else NOT_FOUND
     trace: dict = {
         "case": rec.case_id,
-        "source": source,
         "model": model_tag(),
         "created": dt.datetime.now().isoformat(timespec="seconds"),
         "diagnosis": {k: v for k, v in dx.items() if k != "passages"},
@@ -916,21 +903,21 @@ def running_path(patient: str) -> Path:
     return OUT_DIR / f"{patient.lower()}.running"
 
 
-def run_patient(patient: str, runs: int, source: str) -> dict:
+def run_patient(patient: str, runs: int) -> dict:
     marker = running_path(patient)
     marker.parent.mkdir(parents=True, exist_ok=True)
     marker.touch()
     try:
-        return _run_patient(patient, runs, source)
+        return _run_patient(patient, runs)
     finally:
         marker.unlink(missing_ok=True)
 
 
-def _run_patient(patient: str, runs: int, source: str) -> dict:
+def _run_patient(patient: str, runs: int) -> dict:
     cases, trace = [], {}
     for n in range(1, runs + 1):
         try:
-            case, trace = run(patient, source)
+            case, trace = run(patient)
         # one patient failing (LLM/server error, malformed output) must not lose the others
         except (httpx.HTTPError, RuntimeError, ValueError, KeyError, IndexError) as e:
             print(f"{patient} run {n}: FAILED {e!r}", file=sys.stderr)
@@ -947,20 +934,17 @@ def _run_patient(patient: str, runs: int, source: str) -> dict:
 
 
 def main() -> None:
-    """CLI: uv run mdt-agent P01 [P02 …] | --all  [--runs 2] [--source iris|file]"""
+    """CLI: uv run mdt-agent P01 [P02 …] | --all  [--runs 2]"""
     ap = argparse.ArgumentParser(prog="mdt-agent", description=__doc__.splitlines()[0])
     ap.add_argument("patients", nargs="*", help="patient ids, e.g. P01 P03")
     ap.add_argument("--all", action="store_true", help="every patient nominated on the FHIR server")
-    ap.add_argument("--source", choices=["iris", "file"], default="iris")
     ap.add_argument("--runs", type=int, default=1, help="run N times and compare recommendations")
     args = ap.parse_args()
     patients = patient_ids() if args.all else args.patients
     if not patients:
         ap.error("give patient ids or --all")
     with ThreadPoolExecutor(len(patients)) as pool:  # each run waits on the LLM, not the CPU
-        results = dict(
-            zip(patients, pool.map(lambda p: run_patient(p, args.runs, args.source), patients))
-        )
+        results = dict(zip(patients, pool.map(lambda p: run_patient(p, args.runs), patients)))
     print(
         json.dumps(
             results if len(results) > 1 else results[patients[0]], ensure_ascii=False, indent=2

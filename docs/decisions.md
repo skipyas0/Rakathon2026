@@ -249,5 +249,10 @@ suggestions, inconsistencies and the verdict's guideline compliance) plus every 
 as a checklist. IRIS for Health is the only FHIR server; the app reads patient data only from it
 (no bundles from disk); the deployed app runs on a Fly machine big enough for IRIS alongside. One
 conclusion PDF, the template's. Running the app needs no test suite; checks stay light.
+Implementation: IRIS is built from `iris/` (pinned community image, endpoint created on first
+start; same namespace/endpoint as the sponsor kit, which is no longer needed); HAPI, the bundle
+fallback, the `data/stubs/` path, intake's disk copy and `mdt-agent --source file` are gone. An
+unreachable IRIS is a 503 (intake too, so an upload is never half-saved); `/api/health` stays 200
+and reports `fhir`. Tests use a fake FHIR server holding the dataset as the loader stores it.
 Why: Defined by yes-and to cut parallel paths (HAPI vs IRIS, server vs disk, two PDFs) and give
 every cleanup step one yardstick. IRIS earns the sponsor bonus.

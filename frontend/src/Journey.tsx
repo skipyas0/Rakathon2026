@@ -33,7 +33,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
           if (status === 'running') timer = window.setTimeout(() => poll(true), AI_POLL_MS)
           else if (wasRunning) void load()
         },
-        () => setAiRunning(false), // stubs have no AI status
+        () => setAiRunning(false),
       )
     void load()
     void poll(false)

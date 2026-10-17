@@ -2,9 +2,11 @@ from fastapi.testclient import TestClient
 
 from mdt_backend.app import app
 from mdt_backend.config import settings
+from mdt_backend.features import cases
 
 
 def test_shared_password(monkeypatch):
+    monkeypatch.setattr(cases, "meetings", dict)  # no FHIR server needed
     c = TestClient(app)
     assert c.get("/api/cases").status_code == 200  # no password set = open (local dev)
     monkeypatch.setattr(settings, "app_password", "tajne")

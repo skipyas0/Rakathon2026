@@ -1,22 +1,32 @@
 services:
-  fhir:
-    image: hapiproject/hapi:v8.12.0-2 # FHIR R4, base URL http://localhost:8080/fhir
+  iris: # FHIR R4 → http://localhost:52773/fhir/r4 (SuperUser / $IRIS_PASSWORD, default SYS)
+    build: iris
+    restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:52773:52773" # FHIR API + Management Portal, loopback only
     environment:
-      hapi.fhir.allow_external_references: "true"
-    # ponytail: data lives in the container (survives restart, not `down`); mock data is reloadable.
-    # Add a volume if we ever need persistence (image runs as non-root: fix ownership first).
+      ISC_DATA_DIRECTORY: /durable
+      IRIS_PASSWORD: ${IRIS_PASSWORD:-SYS}
+    volumes:
+      - iris-data:/durable
+    healthcheck: # authenticated read: up, endpoint created, password right
+      test: ["CMD-SHELL", "wget -qO- --auth-no-challenge --user SuperUser --password \"$$IRIS_PASSWORD\" 'http://localhost:52773/fhir/r4/Patient?_summary=count'"]
+      interval: 10s
+      start_period: 180s
 
   app: # whole app (frontend + API) → http://localhost:8000
     build: .
-    restart: unless-stopped # comes back after a VM reboot
+    restart: unless-stopped
     ports:
       - "8000:8000"
     environment:
-      FHIR_BASE_URL: http://fhir:8080/fhir
+      FHIR_BASE_URL: http://iris:52773/fhir/r4
+      FHIR_PASSWORD: ${IRIS_PASSWORD:-SYS}
     volumes:
       - records:/app/data/records
+    depends_on:
+      iris: { condition: service_healthy }
 
 volumes:
+  iris-data:
   records:

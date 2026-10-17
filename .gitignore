@@ -17,5 +17,5 @@ Dataset
 data/zavery/
 # AI-augmented briefings and traces written by mdt-agent
 data/ai_cases/
-# Cases uploaded through intake
+# Uploads from before intake went to the FHIR server only (decision 24); safe to delete
 data/intake/

@@ -1,14 +1,13 @@
 """Serves MDT briefings: the AI-augmented briefing when the agent has been run for the patient
 (agent.py → data/ai_cases/), otherwise the deterministic one built from the patient's record
-(from_fhir.py), or hand-made stubs in data/stubs/. All are the same `Case` shape, so the frontend
-can't tell them apart. Patient data come from the IRIS FHIR server; the bundles on disk are only
-a fallback while the server is unreachable (decision #18).
+(from_fhir.py). Both are the same `Case` shape, so the frontend can't tell them apart. Patient
+data come only from the IRIS FHIR server; while it's unreachable the API answers 503 (decision #24).
 A case is one meeting about one patient: its id is the patient plus the planned MDT date
 ("p03-2026-10-21"), so a patient's next MDT gets its own case and record."""
 
 import re
 import time
-from pathlib import Path
+from contextlib import contextmanager
 from typing import Literal
 
 import httpx
@@ -20,20 +19,18 @@ from mdt_backend.bundles import Bundle
 from mdt_backend.from_fhir import build_case, planned_date
 from mdt_backend.load_fhir import fhir_id
 
-STUBS = Path(__file__).parents[4] / "data" / "stubs"
-INTAKE = Path(__file__).parents[4] / "data" / "intake"  # <patient>/bundle.json, see intake.py
 _AUTHOR_FIELDS = ("performer", "author", "requester", "recorder")
 
 router = APIRouter(prefix="/api")
 
 
-def stub_paths() -> dict[str, Path]:
-    return {p.stem: p for p in sorted(STUBS.glob("*.json"))}
-
-
-def uploads() -> dict[str, Path]:
-    """Patient ("p03") → bundle added through intake; it replaces that patient's record."""
-    return {p.parent.name: p for p in sorted(INTAKE.glob("*/bundle.json"))}
+@contextmanager
+def fhir_server():
+    """Turns an unreachable FHIR server into 503; 4xx/5xx answers propagate as they are."""
+    try:
+        yield
+    except httpx.TransportError:
+        raise HTTPException(503, "FHIR server nedostupný") from None
 
 
 def meeting_id(patient: str, b: Bundle) -> str:
@@ -43,33 +40,24 @@ def meeting_id(patient: str, b: Bundle) -> str:
 
 
 def meetings() -> dict[str, str]:
-    """Case id → patient: the patients nominated on the FHIR server (a `Task` for them; the
-    dataset's bundles while it's unreachable), each replaced by an upload when there is one."""
-    try:
-        found = {
-            t["for"]["reference"].split("/")[-1].lower(): Bundle({"entry": [{"resource": t}]})
-            for t in (e["resource"] for e in fhir.get("Task", _count=200).get("entry", []))
-            if t.get("for", {}).get("reference", "").startswith("Patient/")
-        }
-    except httpx.HTTPError:
-        found = {p: bundles.load(path) for p, path in bundles.bundle_paths().items()}
-    found |= {p: bundles.load(path) for p, path in uploads().items()}
+    """Case id → patient: the patients nominated on the FHIR server (a `Task` for them)."""
+    with fhir_server():
+        tasks = [e["resource"] for e in fhir.get("Task", _count=200).get("entry", [])]
+    found = {
+        t["for"]["reference"].split("/")[-1].lower(): Bundle({"entry": [{"resource": t}]})
+        for t in tasks
+        if t.get("for", {}).get("reference", "").startswith("Patient/")
+    }
     return {meeting_id(p, b): p for p, b in found.items()}
 
 
 def case_ids() -> list[str]:
-    return [*meetings(), *stub_paths()]
+    return list(meetings())
 
 
 def record(patient: str) -> Bundle:
-    if path := uploads().get(patient):
-        return bundles.load(path)
-    try:
-        return agent.Record(patient, "iris").bundle
-    except httpx.HTTPError:
-        if path := bundles.bundle_paths().get(patient):
-            return bundles.load(path)
-        raise HTTPException(503, "FHIR server nedostupný") from None
+    with fhir_server():
+        return agent.Record(patient).bundle
 
 
 def ai_status(patient: str) -> Literal["running", "done"] | None:
@@ -97,8 +85,6 @@ def get_case(case_id: str) -> Case:
             case = Case.model_validate_json(ai.read_text(encoding="utf-8"))
             return case.model_copy(update={"id": case_id})
         return build_case(case_id, record(patient))
-    if path := stub_paths().get(case_id):
-        return Case.model_validate_json(path.read_text(encoding="utf-8"))
     raise HTTPException(404, f"No case {case_id!r}")
 
 
@@ -127,16 +113,12 @@ def _from_iris(resource_type: str, resource_id: str) -> tuple[Bundle, dict] | No
 @router.get("/sources/{resource_type}/{resource_id}")
 def get_source(resource_type: str, resource_id: str) -> dict:
     """The full text of a source record, for the 'whole record' view in the source drawer."""
-    ref = f"{resource_type}/{resource_id}"
     if not re.fullmatch(r"[A-Z][A-Za-z]+", resource_type) or not re.fullmatch(
         r"[\w.-]+", resource_id
     ):
         raise HTTPException(404, "Záznam není v dostupných datech")
-    found = bundles.find(ref, uploads().values()) if uploads() else None
-    try:
-        found = found or _from_iris(resource_type, resource_id)
-    except httpx.HTTPError:  # server unreachable
-        found = bundles.find(ref)
+    with fhir_server():
+        found = _from_iris(resource_type, resource_id)
     if not found:
         raise HTTPException(404, "Záznam není v dostupných datech")
     b, r = found

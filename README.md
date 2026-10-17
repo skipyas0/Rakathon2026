@@ -12,7 +12,8 @@ Quick start (put the organisers' dataset in `Dataset/` first; it's git-ignored):
 
 ```sh
 cp .env.example .env
-docker compose up -d fhir
+docker compose up -d iris        # first start ~2 min
+(cd backend && uv run mdt-load-fhir)
 (cd backend && uv sync && uv run mdt-backend) &
 (cd frontend && npm install && npm run dev)
 ```

@@ -1,4 +1,4 @@
-"""Case/source API reads patient data from the FHIR server, falling back to disk when it's down."""
+"""Case/source API reads patient data only from the FHIR server; 503 while it's unreachable."""
 
 import httpx
 from fastapi.testclient import TestClient
@@ -43,15 +43,14 @@ def test_source_not_on_server_is_404(monkeypatch):
     assert client.get("/api/sources/bad type/x").status_code == 404
 
 
-def test_case_list_falls_back_to_disk_when_server_is_down(monkeypatch):
+def test_unreachable_server_is_503_not_a_crash(monkeypatch):
     def get(path, **params):
         raise DOWN
 
     monkeypatch.setattr(fhir, "get", get)
-    monkeypatch.setattr(cases.bundles, "bundle_paths", lambda: {"p77": None})
-    monkeypatch.setattr(cases.bundles, "load", lambda path: cases.Bundle({"entry": []}))
-    monkeypatch.setattr(cases, "uploads", dict)
-    assert cases.meetings() == {"p77": "p77"}  # no Task → no planned date
+    assert client.get("/api/cases").status_code == 503
+    assert client.get("/api/sources/Observation/x").json() == {"detail": "FHIR server nedostupný"}
+    assert client.get("/api/health").json() == {"status": "ok", "fhir": False}
 
 
 def test_cases_are_the_patients_nominated_on_the_server(monkeypatch):
@@ -62,7 +61,6 @@ def test_cases_are_the_patients_nominated_on_the_server(monkeypatch):
         "restriction": {"period": {"start": "2026-10-21T14:00:00+02:00"}},
     }
     monkeypatch.setattr(fhir, "get", lambda path, **params: {"entry": [{"resource": task}]})
-    monkeypatch.setattr(cases, "uploads", dict)
     assert cases.meetings() == {"p09-2026-10-21": "p09"}  # a patient without a Task is no case
 
 
