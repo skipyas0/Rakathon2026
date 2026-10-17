@@ -6,6 +6,7 @@ import base64
 import datetime as dt
 import json
 import re
+from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
 
@@ -54,9 +55,10 @@ def _load(path: Path, _mtime: float) -> Bundle:
     return Bundle(json.loads(path.read_text("utf-8")))
 
 
-def find(ref: str) -> tuple[Bundle, dict] | None:
-    """Looks a reference up across all bundles (ids in the dataset are globally unique)."""
-    for path in bundle_paths().values():
+def find(ref: str, paths: Iterable[Path] | None = None) -> tuple[Bundle, dict] | None:
+    """Looks a reference up across bundles (default: the dataset's; its ids are globally
+    unique)."""
+    for path in paths or bundle_paths().values():
         b = load(path)
         if r := b.get(ref):
             return b, r

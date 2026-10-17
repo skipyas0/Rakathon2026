@@ -170,3 +170,62 @@ Why: The Azure endpoint rejects function tools with reasoning on `/chat/completi
 auditable than a fixed chain. Checking citations in code instead of trusting the prompt is what
 the brief's "no hallucinations, every claim sourced" rule needs. Two runs on the same patient give
 the same first-line recommendation, though wording and the set of findings vary (status.md).
+
+## 18. Agent output feeds the app as-is; the web API reads IRIS — 2026-10-17, Contributor 2
+Status: accepted (builds on #12, #17)
+Decision: The agent fills every part of the existing `Case` the UI renders, with no frontend
+change: findings → `red_flags`; executive summary written as free text, then extracted into
+`summary` (AI facts first, record facts kept after), extra `red_flags` (not repeating known ones)
+and `timeline` events (only dates not already there for that kind); each specialist's view written
+as text, then extracted into cited points + verdict + `NOT_FOUND` gaps in `sections.<id>`;
+indicators to chart → `trends`; patient preference → first items of `sections.patient` (shown as
+the patient's voice in the meeting). For `trends` the model only *chooses* which measurements form
+an indicator: every point's value, date, unit and reference range are read from the cited
+Observation / questionnaire answer, so charts (rendered as record facts) never carry a model
+number. Generation is a batch step (`mdt-agent --all`, results in `data/ai_cases/`), not triggered
+from the UI. The web API's case list, plain briefings and source drawer read the IRIS FHIR server
+(dataset ids via the loader's tag); the bundles on disk are used only while the server is down.
+Why: The user asked for the app to show the pipeline without touching the frontend, and for all
+patient data to come from IRIS. Text-then-extract keeps the narrative the model reasons in, while
+the app gets small, individually cited statements. A full run is ~2.5 min per patient alone (~9
+min each with all 6 in parallel under the APIM rate limit), too slow to run on page load.
+
+## 19. Previous MDT's board in the briefing — 2026-10-17, yes-and
+Status: accepted
+Decision: `Case.previous_board` (backend `briefing.py`, frontend `briefing.ts`) lists the members of
+the patient's latest previous MDT from the record's `CareTeam`: practitioner id (`""` when only the
+role is recorded), role text as recorded, `chair` = the practitioner's qualification says
+"předseda". The coordinator can adopt it as the board for the new meeting; it is never applied
+silently.
+Why: The board for a repeat MDT is usually the same team; the dataset already has it, so the
+coordinator starts from facts instead of typing five names.
+
+## 20. One simple journey for the coordinator — 2026-10-17, yes-and
+Status: accepted (supersedes #16)
+Decision: The frontend is one linear journey (docs/workflow-plan.md): upload → board (specialty
+bubbles) → patient → key facts → trends → léčebný záměr → závěr → potvrzení, plus a case overview.
+No role switcher, specialist views, triage, visibility or section configuration in the UI.
+Soulad s doporučenými postupy is derived: the chosen léčebný záměr equals the recommended one.
+Until the AI pipeline recommends, a hand-written example per dataset patient ("ukázka", citing a
+real guideline passage) stands in; stanoviska are examples too. Potvrdit is the board's consensus,
+no per-member consent. The full role-based version stays on branch `yes-and/meeting-records`.
+Why: The demo has to be simple and legible end to end; the role-based screens were too much.
+
+## 21. The agent recommends a léčebný záměr — 2026-10-17, yes-and
+Status: accepted (builds on #18, #20)
+Decision: Each option the agent proposes carries its léčebný záměr (`curative` / `palliative` /
+`supportive` / `surveillance` / `deferred`); the first kept option's goes to
+`DecisionSupport.intent` (backend `briefing.py`, frontend `briefing.ts`). `/recommendation` returns
+that option and intent when present, so Potvrzení compares the conclusion with real AI output; the
+"ukázka" examples remain only for cases the agent hasn't briefed.
+Why: Soulad s doporučenými postupy is derived from the léčebný záměr (#20); without one per option
+the app could only compare with the hand-written examples.
+
+## 22. The patient's preference on its own in the briefing — 2026-10-17, yes-and
+Status: accepted (builds on #18)
+Decision: `Case.preference` (backend `briefing.py`, frontend `briefing.ts`) holds the agent's
+statements of the patient's treatment wishes and goals (or one `NOT_FOUND` statement); the same
+statements still lead `sections.patient`. Empty when the agent hasn't briefed the case. Pacient
+shows them in a card under the MDT question.
+Why: The process doc (§3.1, §4.1) puts the patient's view next to the question; picking the first
+items of the patient section by position would break as soon as the section changes.

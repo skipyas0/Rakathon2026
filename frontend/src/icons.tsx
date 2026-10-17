@@ -1,7 +1,6 @@
 // Small stroke icons (16px grid, currentColor) so the visual language needs no icon library.
 import type { ReactNode } from 'react'
 import type { Intent } from './api'
-import { INTENTS } from './layout'
 
 const Icon = ({ children, label }: { children: ReactNode; label?: string }) => (
   <svg
@@ -42,33 +41,10 @@ export const Alert = () => (
     <path d="M8 6.5v3M8 11.6v.1" />
   </Icon>
 )
-export const Missing = () => (
-  <Icon>
-    <circle cx="8" cy="8" r="6" strokeDasharray="2.5 2" />
-    <path d="M8 5v3.5M8 11v.1" />
-  </Icon>
-)
 export const Doc = () => (
   <Icon>
     <path d="M4 1.5h5.5L12.5 4.5v10h-8.5z" />
     <path d="M9.5 1.5v3h3M6 8h4.5M6 10.5h4.5" />
-  </Icon>
-)
-export const Arrow = () => (
-  <Icon>
-    <path d="M3 8h10M9 4l4 4-4 4" />
-  </Icon>
-)
-export const Back = () => (
-  <Icon>
-    <path d="M13 8H3M7 4L3 8l4 4" />
-  </Icon>
-)
-export const Settings = () => (
-  <Icon>
-    <path d="M2 4.5h7M12 4.5h2M2 11.5h2M7 11.5h7" />
-    <circle cx="10.5" cy="4.5" r="1.5" />
-    <circle cx="5.5" cy="11.5" r="1.5" />
   </Icon>
 )
 export const User = () => (
@@ -77,14 +53,6 @@ export const User = () => (
     <path d="M2.5 14.5c.8-3 2.8-4.5 5.5-4.5s4.7 1.5 5.5 4.5" />
   </Icon>
 )
-export const Quote = () => (
-  <Icon>
-    <path d="M3 9.5c0-3 1.5-4.5 3.5-5M9 9.5c0-3 1.5-4.5 3.5-5" />
-    <circle cx="4.5" cy="10.5" r="1.8" />
-    <circle cx="10.5" cy="10.5" r="1.8" />
-  </Icon>
-)
-
 const INTENT_ICON: Record<Intent, ReactNode> = {
   curative: (
     <>
@@ -104,12 +72,3 @@ const INTENT_ICON: Record<Intent, ReactNode> = {
   ),
 }
 export const IntentIcon = ({ intent }: { intent: Intent }) => <Icon>{INTENT_ICON[intent]}</Icon>
-
-export const IntentChip = ({ intent }: { intent: Intent | null }) =>
-  intent ? (
-    <span className={`chip intent-${intent}`}>
-      <IntentIcon intent={intent} /> {INTENTS[intent].label}
-    </span>
-  ) : (
-    <span className="chip muted-chip">Cíl léčby: k rozhodnutí</span>
-  )

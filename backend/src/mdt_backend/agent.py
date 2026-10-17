@@ -8,10 +8,17 @@ Pipeline (a fixed chain of tool steps and strict-JSON LLM calls, decision #16):
   3. CACC        – LLM: completeness-and-consistency checklist (decision prerequisites the record
                    should contain, symptoms expected for the diagnosis), each item tied to passages
   4. findings    – LLM: record × CACC → missing data and inconsistencies, ranked RED / YELLOW
-  5. specialists – per radiology / surgery / oncology: LLM picks the relevant records, the agent
-                   fetches them (from IRIS), LLM writes the specialist's view citing passages
-  6. recommend   – LLM: 1–2 treatment options strictly from the guidelines, mentioning (not
+  5. summary     – LLM: executive summary as free text, then a second call extracts its key
+                   points, extra red flags and timeline events (each cited)
+  6. specialists – per radiology / surgery / oncology: LLM picks the relevant records, the agent
+                   fetches them (from IRIS), LLM writes the specialist's view as text, then a
+                   second call extracts cited points, a verdict and missing data
+  7. indicators  – LLM picks the measured values worth charting; the chart points are read from
+                   the record itself (the model never supplies a number)
+  8. preference  – LLM: the patient's treatment preferences and goals, cited
+  9. recommend   – LLM: 1–2 treatment options strictly from the guidelines, mentioning (not
                    following) the patient's preference, plus open questions for the board
+Steps 3–4, 7 and 8 run in parallel, then 5 and 6, then 9.
 
 Every citation the model returns is checked before it reaches a Statement: passage ids must be in
 the guidelines allowed for the diagnosis, record references must exist in the patient's record and
@@ -26,10 +33,22 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import get_args
+
+import httpx
 
 from mdt_backend import bundles, fhir
-from mdt_backend.briefing import Case, RedFlag, Section
-from mdt_backend.bundles import Bundle, category_text, date_of, src, text_of, title_of
+from mdt_backend.briefing import Case, Intent, RedFlag, Section, TimelineEvent, Trend, TrendPoint
+from mdt_backend.bundles import (
+    Bundle,
+    answers,
+    category_text,
+    date_of,
+    src,
+    text_of,
+    title_of,
+    value_of,
+)
 from mdt_backend.config import settings
 from mdt_backend.from_fhir import TUMOURS, build_case
 from mdt_backend.knowledge import guideline_source, guidelines
@@ -37,7 +56,7 @@ from mdt_backend.llm import chat_json
 from mdt_backend.load_fhir import dataset_id
 from mdt_backend.provenance import NOT_FOUND, Source, Statement
 
-PROMPT_VERSION = "mdt-agent-v1"
+PROMPT_VERSION = "mdt-agent-v2"
 OUT_DIR = Path(__file__).parents[3] / "data" / "ai_cases"
 GUIDELINE_DOCS = {"breast": "PRS", "lung": "PLI", "colorectal": "KRC"}
 GENERAL_DOC = "OBC"
@@ -69,6 +88,7 @@ SPECIALISTS = {
     ),
 }
 SEVERITY = {"RED": "high", "YELLOW": "medium"}
+SECTION_TITLES = {"pathology": "Patologie", "patient": "Pacient"}
 _DROP_KEYS = {"meta", "subject", "patient", "identifier", "system", "for"}
 
 # --- shared JSON schema pieces (strict mode: every property required, no extras) --------------
@@ -144,10 +164,56 @@ VERDICT_SCHEMA = _obj(
     missing=_arr(_STR),
 )
 RECOMMEND_SCHEMA = _obj(
-    options=_arr(_obj(rank={"type": "integer"}, text=_STR, refs=_REFS, guideline_ids=_GL)),
+    options=_arr(
+        _obj(
+            rank={"type": "integer"},
+            intent={"type": "string", "enum": list(get_args(Intent))},
+            text=_STR,
+            refs=_REFS,
+            guideline_ids=_GL,
+        )
+    ),
     preference=_obj(stated={"type": "boolean"}, text=_STR, refs=_REFS, matches_option=_STR),
     questions=_arr(_obj(text=_STR, refs=_REFS, guideline_ids=_GL)),
 )
+
+TEXT_SCHEMA = _obj(text=_STR)
+TIMELINE_KINDS = list(get_args(TimelineEvent.model_fields["kind"].annotation))
+SUMMARY_SCHEMA = _obj(
+    points=_arr(_obj(text=_STR, refs=_REFS, guideline_ids=_GL)),
+    red_flags=_arr(
+        _obj(
+            severity={"type": "string", "enum": ["high", "medium", "low"]},
+            text=_STR,
+            refs=_REFS,
+            guideline_ids=_GL,
+        )
+    ),
+    timeline=_arr(
+        _obj(
+            date={"type": "string", "description": "YYYY-MM-DD"},
+            kind={"type": "string", "enum": TIMELINE_KINDS},
+            text=_STR,
+            refs=_REFS,
+        )
+    ),
+)
+INDICATORS_SCHEMA = _obj(
+    indicators=_arr(
+        _obj(
+            id=_STR,
+            label=_STR,
+            unit=_STR,
+            why=_STR,
+            refs={
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "reference všech měření ukazatele, např. Observation/P01-lab03-hb",
+            },
+        )
+    )
+)
+PREFERENCE_SCHEMA = _obj(stated={"type": "boolean"}, points=_arr(_obj(text=_STR, refs=_REFS)))
 
 RULES = f"""Pravidla (závazná):
 - Piš česky, velmi stručně, v bodech; čísla s jednotkami a daty (YYYY-MM-DD), kde existují.
@@ -408,19 +474,7 @@ Seznam záznamů:
         if r := rec.fetch(ref):
             context[ref] = r
     trace["steps"][f"context:{key}"]["fetched"] = list(context)
-    # 5b: the specialist's view, citing guideline passages
-    verdict = _call(
-        trace,
-        f"verdict:{key}",
-        f"""Jsi {role}, člen onkologické komise (MDT). Napiš své odborné stanovisko k otázce
-komise POUZE ze své odbornosti:
-- points: 3–6 klíčových bodů (nálezy, jejich význam, co z pasáží plyne), každý s refs a
-  guideline_ids, kde pravidlo plyne z pasáže,
-- verdict: tvůj závěr k otázce komise v 1–2 větách, opřený o konkrétní pasáže (guideline_ids)
-  a záznamy (refs),
-- missing: údaje z tvé odbornosti, které pro rozhodnutí chybějí (krátké názvy, bez věty o chybění).
-{RULES}""",
-        f"""Otázka pro komisi: {question}
+    material = f"""Otázka pro komisi: {question}
 Diagnózy: {"; ".join(dx["conditions"])}
 Kontrolní seznam a nálezy pro tvou odbornost: {json.dumps(focus, ensure_ascii=False)}
 
@@ -428,10 +482,140 @@ Pasáže doporučených postupů:
 {passages_text(dx["passages"])}
 
 Vybrané záznamy pacienta:
-{digest(context)}""",
+{digest(context)}"""
+    # 5b: the specialist's view as free text (reference in brackets after each claim)
+    text = _call(
+        trace,
+        f"opinion:{key}",
+        f"""Jsi {role}, člen onkologické komise (MDT). Napiš své odborné stanovisko k otázce
+komise POUZE ze své odbornosti (≤ 150 slov, souvislý text): klíčové nálezy a jejich význam, co
+z nich podle pasáží plyne, tvůj závěr a co pro rozhodnutí chybí. Za každé tvrzení dej do
+hranatých závorek referenci záznamu nebo id pasáže, např. [Observation/P01-lab03-hb] [KRC-2.3].
+{RULES}""",
+        material,
+        TEXT_SCHEMA,
+    )["text"]
+    # 5c: structured points extracted from that text, with verifiable citations
+    verdict = _call(
+        trace,
+        f"verdict:{key}",
+        f"""Jsi {role}, člen onkologické komise (MDT). Ze svého stanoviska (níže) vytáhni:
+- points: 3–6 klíčových bodů (≤ 1 věta, čísla s jednotkami a daty), každý s refs a
+  guideline_ids, kde pravidlo plyne z pasáže,
+- verdict: závěr k otázce komise v 1–2 větách, opřený o pasáže (guideline_ids) a záznamy (refs),
+- missing: údaje z tvé odbornosti, které pro rozhodnutí chybějí (krátké názvy, bez věty o chybění).
+Nic nepřidávej, co ve stanovisku není.
+{RULES}""",
+        f"Stanovisko:\n{text}\n\n{material}",
         VERDICT_SCHEMA,
     )
-    return {"key": key, "title": title, "context": list(context), **verdict}
+    return {"key": key, "title": title, "context": list(context), "text": text, **verdict}
+
+
+def executive_summary(
+    dx: dict, record_text: str, question: str, known_flags: list[str], trace: dict
+) -> dict:
+    """Free-text summary of the whole record, then its points / extra flags / timeline."""
+    material = f"""Otázka pro komisi: {question}
+Diagnózy: {"; ".join(dx["conditions"])}
+
+Záznam pacienta (jeden záznam na řádek, reference v hranatých závorkách):
+{record_text}"""
+    text = _call(
+        trace,
+        "summary_text",
+        f"""Jsi koordinátor onkologické komise (MDT). Napiš exekutivní souhrn případu pro
+komisi (≤ 200 slov, souvislý text): diagnóza a stadium, histologie a biomarkery, průběh léčby
+s daty, aktuální stav (výkonnostní stav, příznaky, klíčové laboratorní hodnoty a jejich vývoj),
+varovné signály a otevřené problémy. Za každé tvrzení dej do hranatých závorek referenci
+záznamu, např. [Observation/P01-lab03-hb].
+{RULES}""",
+        material,
+        TEXT_SCHEMA,
+    )["text"]
+    out = _call(
+        trace,
+        "summary_extract",
+        f"""Z exekutivního souhrnu (níže) a záznamu pacienta vytáhni strukturovaná data:
+- points: 4–8 klíčových faktů pro komisi (≤ 1 věta, čísla s jednotkami a daty), každý s refs,
+- red_flags: varovné signály ze souhrnu, které NEJSOU mezi již známými upozorněními (níže);
+  severity high = ohrožuje pacienta nebo brání rozhodnutí, medium = nutno ověřit, low = na vědomí;
+  u rozporu cituj oba zdroje,
+- timeline: klíčové události průběhu nemoci a léčby s datem ze záznamu (YYYY-MM-DD; jen datum,
+  které záznam uvádí), kind podle výčtu (progression = progrese/relaps/nové metastázy),
+  text ≤ 12 slov, refs.
+Nic nepřidávej, co v souhrnu ani záznamu není.
+{RULES}""",
+        f"""Exekutivní souhrn:
+{text}
+
+Již známá upozornění:
+{chr(10).join(f"- {t}" for t in known_flags) or "(žádná)"}
+
+{material}""",
+        SUMMARY_SCHEMA,
+    )
+    return {"text": text, **out}
+
+
+def numeric_lines(b: Bundle) -> str:
+    """Every measured value in the record (labs, vitals, 0–10 PROMs answers), one per line."""
+    lines = []
+    for o in bundles.by_date(b.all("Observation")):
+        if "valueQuantity" in o:
+            lines.append(f"[Observation/{o['id']}] {date_of(o)} {title_of(o)}: {value_of(o)}")
+    for qr in bundles.by_date(b.all("QuestionnaireResponse")):
+        for link, (q, a) in answers(qr).items():
+            if numeric(qr, link) is not None:
+                lines.append(
+                    f"[QuestionnaireResponse/{qr['id']}#{link}] {date_of(qr)} {q}: {value_of(a)}"
+                )
+    return "\n".join(lines)
+
+
+def numeric(r: dict, item: str | None = None) -> float | None:
+    if item:
+        a = answers(r).get(item, (None, {}))[1]
+        v = a.get("valueInteger", a.get("valueDecimal"))
+    else:
+        v = (r.get("valueQuantity") or {}).get("value")
+    return v if isinstance(v, int | float) and not isinstance(v, bool) else None
+
+
+def pick_indicators(dx: dict, b: Bundle, question: str, trace: dict) -> dict:
+    return _call(
+        trace,
+        "indicators",
+        """Jsi klinický onkolog. Z měřených hodnot pacienta vyber 3–6 číselných ukazatelů, jejichž
+vývoj v čase je pro komisi nejdůležitější (nádorové markery, krevní obraz, funkce orgánů
+relevantní pro léčbu, hmotnost, příznaky hlášené pacientem 0–10…). Ukazatel = stejné měření
+v různých datech (alespoň 2 měření). id = krátký identifikátor (např. cea, hb, proms-unava),
+label = český název, unit = jednotka (u dotazníku „/10“), why = proč je důležitý (≤ 10 slov),
+refs = reference VŠECH měření ukazatele přesně tak, jak jsou v hranatých závorkách.
+Hodnoty neopisuj – načtou se ze záznamu.""",
+        f"""Otázka pro komisi: {question}
+Diagnózy: {"; ".join(dx["conditions"])}
+
+Měřené hodnoty:
+{numeric_lines(b)}""",
+        INDICATORS_SCHEMA,
+    )
+
+
+def extract_preference(b: Bundle, trace: dict) -> dict:
+    keep = ("ServiceRequest", "QuestionnaireResponse", "DocumentReference", "Composition")
+    records = {ref: r for ref, r in b.by_ref.items() if ref.startswith(keep)}
+    return _call(
+        trace,
+        "preference",
+        f"""Vytáhni z dokumentace preference pacienta týkající se léčby a cílů péče: co si přeje
+nebo odmítá, priority, obavy a okolnosti, které podle pacienta ovlivňují volbu léčby.
+stated = zda pacient nějakou preferenci léčby vyjádřil. points: nejvýše 4 body, každý ≤ 1 věta
+začínající „Pacient/ka …“ (vlastními slovy pacienta, kde je to možné), s refs. Nic nedomýšlej.
+{RULES}""",
+        f"Záznamy pacienta:\n{digest(records)}",
+        PREFERENCE_SCHEMA,
+    )
 
 
 def recommend(
@@ -442,6 +626,10 @@ radiologa, chirurga a klinického onkologa navrhni 1 až 2 možnosti léčby (op
 volba) PŘÍSNĚ podle dodaných pasáží doporučených postupů:
 - každá možnost musí odpovídat konkrétní pasáži (guideline_ids, alespoň jedna) a stavu pacienta
   (refs); text ≤ 2 věty, uveď podmínky (např. co je třeba nejprve doplnit),
+- intent = léčebný záměr, ke kterému možnost vede, i když má podmínky (např. nejprve doplnit
+  vyšetření): curative (kurativní), palliative (paliativní), supportive (podpůrná péče),
+  surveillance (sledování); deferred jen tehdy, když možnost sama spočívá v odložení rozhodnutí
+  a cíl léčby z dokumentace nelze určit,
 - pokud podle pasáží nelze rozhodnout bez chybějících údajů, uveď to jako podmínku možnosti,
 - preference: stated = zda pacient uvedl preferenci léčby; text = preference stručně a zda ji
   možnosti respektují; matches_option = rank možnosti, která jí odpovídá, nebo „žádná“.
@@ -477,6 +665,46 @@ def patient_preference(b: Bundle) -> str:
     return "\n".join(out) or NOT_FOUND
 
 
+def indicator_trends(b: Bundle, picks: list[dict], existing: list[Trend], cite) -> list[Trend]:
+    """The model's chosen indicators as Trends, every point read from the cited record (a
+    reference without a numeric value there is dropped), followed by the deterministic trends
+    the model didn't cover."""
+    out: list[Trend] = []
+    for i, ind in enumerate(picks):
+        points: dict[dt.date, TrendPoint] = {}
+        last: dict | None = None
+        for raw in ind["refs"]:
+            ref = raw.strip().strip("[]")
+            base, _, item = ref.partition("#")
+            r = b.get(base)
+            v = numeric(r, item or None) if r else None
+            if v is None or not (day := date_of(r)):
+                cite.rejected.append({"where": f"indicators.{i}", "ref": ref, "reason": "no value"})
+                continue
+            excerpt = f"{answers(r)[item][0]}: {v:g}" if item else value_of(r)
+            points[day] = TrendPoint(date=day, value=v, source=src(b, r, excerpt, item or None))
+            last = None if item else r
+        if len(points) < 2:
+            continue
+        rng = ((last or {}).get("referenceRange") or [{}])[0]
+        values = [p.value for p in points.values()]
+        scale = last is None and 0 <= min(values) and max(values) <= 10
+        unit = last["valueQuantity"].get("unit", "") if last else ("/10" if scale else "")
+        out.append(
+            Trend(
+                id=f"ai-{re.sub(r'[^a-z0-9-]', '-', ind['id'].lower())}-{i}",
+                label=ind["label"].strip(),
+                unit=unit or ind["unit"].strip(),
+                ref_low=rng.get("low", {}).get("value"),
+                ref_high=rng.get("high", {}).get("value"),
+                axis=(0, 10) if scale else None,
+                points=sorted(points.values(), key=lambda p: p.date),
+            )
+        )
+    covered = {p.source.reference for t in out for p in t.points}
+    return out + [t for t in existing if not {p.source.reference for p in t.points} <= covered]
+
+
 # --- assemble ----------------------------------------------------------------------------------
 def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
     """The whole pipeline for one patient: returns the AI-augmented Case and a trace."""
@@ -497,13 +725,51 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
     cite = Citations(rec, dx["passages"])
     record_text = digest({ref: b.by_ref[ref] for ref in rec.refs()})
 
-    cacc = build_cacc(dx, question, trace)
-    issues = find_issues(dx, cacc, record_text, case.mdt_date, trace)
-    with ThreadPoolExecutor(len(SPECIALISTS)) as pool:
+    with ThreadPoolExecutor(2) as pool:
+        f_ind = pool.submit(pick_indicators, dx, b, question, trace)
+        f_pref = pool.submit(extract_preference, b, trace)
+        cacc = build_cacc(dx, question, trace)
+        issues = find_issues(dx, cacc, record_text, case.mdt_date, trace)
+        indicators, pref_out = f_ind.result(), f_pref.result()
+    known_flags = [f.statement.text for f in case.red_flags] + [
+        f["text"] for f in issues["findings"]
+    ]
+    with ThreadPoolExecutor(len(SPECIALISTS) + 1) as pool:
+        f_sum = pool.submit(executive_summary, dx, record_text, question, known_flags, trace)
         views = list(
             pool.map(lambda k: specialist(k, rec, dx, cacc, issues, question, trace), SPECIALISTS)
         )
-    rec_out = recommend(dx, issues, views, patient_preference(b), question, trace)
+        exec_sum = f_sum.result()
+    pref_items = [
+        s
+        for i, p in enumerate(pref_out["points"])
+        if (s := cite.statement(p["text"], p["refs"], [], f"preference.{i}"))
+    ]
+    pref_text = "\n".join(
+        f"{s.text} [{', '.join(x.reference for x in s.sources)}]" for s in pref_items
+    ) or patient_preference(b)
+    rec_out = recommend(dx, issues, views, pref_text, question, trace)
+
+    # executive summary → key facts (AI points first, then the record facts), extra flags, timeline
+    case.summary = [
+        s
+        for i, p in enumerate(exec_sum["points"])
+        if (s := cite.statement(p["text"], p["refs"], p["guideline_ids"], f"summary.{i}"))
+    ] + case.summary
+    have = {(e.date, e.kind) for e in case.timeline}
+    for i, e in enumerate(exec_sum["timeline"]):
+        try:
+            day = dt.date.fromisoformat(e["date"].strip())
+        except ValueError:
+            cite.rejected.append({"where": f"timeline.{i}", "date": e["date"], "reason": "date"})
+            continue
+        if (day, e["kind"]) in have or e["kind"] not in TIMELINE_KINDS:
+            continue
+        if s := cite.statement(e["text"], e["refs"], [], f"timeline.{i}"):
+            have.add((day, e["kind"]))
+            case.timeline.append(TimelineEvent(date=day, kind=e["kind"], statement=s))
+    case.timeline.sort(key=lambda e: e.date)
+    case.trends = indicator_trends(b, indicators["indicators"], case.trends, cite)
 
     # missing checklist items and specialist views → the specialist's section
     sections = {s.id: s for s in case.sections}
@@ -517,10 +783,19 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
             case.red_flags.append(RedFlag(severity=SEVERITY[f["severity"]], statement=s))
         elif f["kind"] == "chybejici_udaj":
             gaps.setdefault(f["area"], set()).add(f["text"])
+    # extra flags from the executive summary (ones the checks above didn't raise)
+    flagged = {_norm(t) for t in known_flags}
+    for i, f in enumerate(exec_sum["red_flags"]):
+        s = cite.statement(f["text"], f["refs"], f["guideline_ids"], f"summary.red_flags.{i}")
+        if s and _norm(s.text) not in flagged:
+            flagged.add(_norm(s.text))
+            case.red_flags.append(RedFlag(severity=f["severity"], statement=s))
 
     def section(area: str) -> Section:
         if area not in sections:
-            title = SPECIALISTS.get(area, (area.capitalize(),))[0]
+            title = {**{k: v[0] for k, v in SPECIALISTS.items()}, **SECTION_TITLES}.get(
+                area, area.capitalize()
+            )
             sections[area] = Section(id=area, title=title, items=[])
             case.sections.append(sections[area])
         return sections[area]
@@ -550,6 +825,9 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
             if _norm(item) not in known:
                 known.add(_norm(item))
                 section(area).items.append(missing(item))
+    # the patient's own preference leads the patient section (the meeting shows its first items)
+    case.preference = pref_items or [missing("Preference pacienta ohledně léčby")]
+    section("patient").items[:0] = case.preference
 
     # options (max 2, each must keep a guideline citation) + preference + questions
     pref = rec_out["preference"]
@@ -566,6 +844,7 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
             match = str(o["rank"]) == pref["matches_option"].strip()
             text += f" Preference pacienta: {pref['text'].strip()}" if i == 0 or match else ""
             sources += pref_sources if (i == 0 or match) else []
+        case.decision_support.intent = case.decision_support.intent or o["intent"]
         case.decision_support.options.append(
             Statement(text=text, origin="ai", sources=sources, model=model_tag())
         )
@@ -624,26 +903,66 @@ def save(case: Case, trace: dict, out_dir: Path = OUT_DIR, suffix: str = "") -> 
     return path
 
 
-def main() -> None:
-    """CLI: uv run mdt-agent P01 [--runs 2] [--source iris|file]"""
-    ap = argparse.ArgumentParser(prog="mdt-agent", description=__doc__.splitlines()[0])
-    ap.add_argument("patient", help="patient id, e.g. P01")
-    ap.add_argument("--source", choices=["iris", "file"], default="iris")
-    ap.add_argument("--runs", type=int, default=1, help="run N times and compare recommendations")
-    args = ap.parse_args()
-    cases = []
-    for n in range(1, args.runs + 1):
-        case, trace = run(args.patient, args.source)
-        suffix = f".run{n}" if args.runs > 1 else ""
-        path = save(case, trace, suffix=suffix)
+def patient_ids() -> list[str]:
+    """Every patient nominated for an MDT on the FHIR server (a Task for them), as dataset ids
+    (P01…); a patient without a nomination has no briefing to build."""
+    found = fhir.get("Task", _count=200).get("entry", [])
+    refs = (e["resource"].get("for", {}).get("reference", "") for e in found)
+    return sorted({r.split("/", 1)[1] for r in refs if r.startswith("Patient/")})
+
+
+def running_path(patient: str) -> Path:
+    """Exists while the agent works on the patient, so the app can say the briefing is coming."""
+    return OUT_DIR / f"{patient.lower()}.running"
+
+
+def run_patient(patient: str, runs: int, source: str) -> dict:
+    marker = running_path(patient)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.touch()
+    try:
+        return _run_patient(patient, runs, source)
+    finally:
+        marker.unlink(missing_ok=True)
+
+
+def _run_patient(patient: str, runs: int, source: str) -> dict:
+    cases, trace = [], {}
+    for n in range(1, runs + 1):
+        try:
+            case, trace = run(patient, source)
+        # one patient failing (LLM/server error, malformed output) must not lose the others
+        except (httpx.HTTPError, RuntimeError, ValueError, KeyError, IndexError) as e:
+            print(f"{patient} run {n}: FAILED {e!r}", file=sys.stderr)
+            return {"error": repr(e)}
+        path = save(case, trace, suffix=f".run{n}" if runs > 1 else "")
         print(
-            f"run {n}: {path} ({trace['seconds']} s, "
+            f"{patient} run {n}: {path} ({trace['seconds']} s, "
             f"{len(trace['rejected_citations'])} citations rejected)",
             file=sys.stderr,
         )
         cases.append(case)
     save(cases[-1], trace)  # the latest run is what the app serves
-    if len(cases) > 1:
-        print(json.dumps(compare(cases[0], cases[1]), ensure_ascii=False, indent=2))
-    else:
-        print(json.dumps(summary(cases[0]), ensure_ascii=False, indent=2))
+    return compare(cases[0], cases[1]) if runs > 1 else summary(cases[0])
+
+
+def main() -> None:
+    """CLI: uv run mdt-agent P01 [P02 …] | --all  [--runs 2] [--source iris|file]"""
+    ap = argparse.ArgumentParser(prog="mdt-agent", description=__doc__.splitlines()[0])
+    ap.add_argument("patients", nargs="*", help="patient ids, e.g. P01 P03")
+    ap.add_argument("--all", action="store_true", help="every patient nominated on the FHIR server")
+    ap.add_argument("--source", choices=["iris", "file"], default="iris")
+    ap.add_argument("--runs", type=int, default=1, help="run N times and compare recommendations")
+    args = ap.parse_args()
+    patients = patient_ids() if args.all else args.patients
+    if not patients:
+        ap.error("give patient ids or --all")
+    with ThreadPoolExecutor(len(patients)) as pool:  # each run waits on the LLM, not the CPU
+        results = dict(
+            zip(patients, pool.map(lambda p: run_patient(p, args.runs, args.source), patients))
+        )
+    print(
+        json.dumps(
+            results if len(results) > 1 else results[patients[0]], ensure_ascii=False, indent=2
+        )
+    )

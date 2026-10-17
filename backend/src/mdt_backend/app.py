@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from mdt_backend import fhir
 from mdt_backend.config import settings
-from mdt_backend.features import cases, records
+from mdt_backend.features import cases, export, history, intake, recommendation, records
 
 app = FastAPI(title="MDT Copilot")
 
@@ -34,6 +34,10 @@ async def shared_password(request: Request, call_next):
 # Register them here; removing a feature = delete its file + its line below.
 app.include_router(cases.router)
 app.include_router(records.router)
+app.include_router(intake.router)
+app.include_router(history.router)
+app.include_router(recommendation.router)
+app.include_router(export.router)
 
 
 @app.get("/api/health")

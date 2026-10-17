@@ -84,12 +84,13 @@ cd backend && uv run mdt-load-fhir                     # load Dataset/fhir/bundl
 cd backend && uv run mdt-patient P01                   # pretty-print one patient's full record from the server
 cd backend && uv run mdt-zaver P01                     # MDT conclusion PDF → data/zavery/ (needs FHIR server + AZURE_API_KEY)
 cd backend && uv run mdt-agent P01 --runs 2            # MDT agent → data/ai_cases/ (IRIS + AZURE_API_KEY; --source file = no server)
+cd backend && uv run mdt-agent --all                   # refresh the AI briefings of every nominated patient (what the app shows)
 cd backend && uv sync && uv run mdt-backend            # API → http://localhost:8000 (docs at /docs)
 cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check .
 cd frontend && npm install && npm run dev              # UI → http://localhost:5173, /api proxied to :8000
 cd frontend && npm run lint && npm run build
 docker compose up -d --build app                       # whole app in one container → http://localhost:8000
-fly deploy                                             # redeploy https://mdt-copilot-rakathon.fly.dev (needs Dataset/)
+fly deploy                                             # redeploy https://mdt-copilot-rakathon.fly.dev (needs Dataset/ + data/ai_cases/)
 ```
 
 Run the relevant checks before every commit; CI runs the same ones on each PR.

@@ -1,5 +1,6 @@
 // Mirror of backend/src/mdt_backend/briefing.py. Keep both in sync (see AGENTS.md).
 // GET /api/cases/:id → Case (the agenda list lives in api.ts)
+import type { Intent } from './api'
 import type { Source, Statement } from './provenance'
 
 export type TimelineEvent = {
@@ -18,7 +19,12 @@ export type TrialMatch = {
   criteria: Statement[]
 }
 
-export type DecisionSupport = { options: Statement[]; trials: TrialMatch[]; questions: Statement[] }
+export type DecisionSupport = {
+  options: Statement[]
+  trials: TrialMatch[]
+  questions: Statement[]
+  intent?: Intent | null // léčebný záměr of the first option, compared with the conclusion
+}
 
 export type Case = {
   id: string
@@ -34,7 +40,12 @@ export type Case = {
   sections: Section[]
   decision_support: DecisionSupport
   trends: Trend[]
+  previous_board: BoardMember[] // who sat on the patient's last MDT (record's CareTeam)
+  preference?: Statement[] // the patient's treatment wishes and goals (agent); empty = not briefed
 }
+
+/** name = practitioner id, '' when the record names only the role. */
+export type BoardMember = { name: string; role: string; chair: boolean }
 
 export type TrendPoint = { date: string; value: number; source: Source }
 export type Trend = {
