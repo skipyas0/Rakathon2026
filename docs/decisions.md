@@ -170,3 +170,22 @@ Why: The Azure endpoint rejects function tools with reasoning on `/chat/completi
 auditable than a fixed chain. Checking citations in code instead of trusting the prompt is what
 the brief's "no hallucinations, every claim sourced" rule needs. Two runs on the same patient give
 the same first-line recommendation, though wording and the set of findings vary (status.md).
+
+## 18. Agent output feeds the app as-is; the web API reads IRIS — 2026-10-17, Contributor 2
+Status: accepted (builds on #12, #17)
+Decision: The agent fills every part of the existing `Case` the UI renders, with no frontend
+change: findings → `red_flags`; executive summary written as free text, then extracted into
+`summary` (AI facts first, record facts kept after), extra `red_flags` (not repeating known ones)
+and `timeline` events (only dates not already there for that kind); each specialist's view written
+as text, then extracted into cited points + verdict + `NOT_FOUND` gaps in `sections.<id>`;
+indicators to chart → `trends`; patient preference → first items of `sections.patient` (shown as
+the patient's voice in the meeting). For `trends` the model only *chooses* which measurements form
+an indicator: every point's value, date, unit and reference range are read from the cited
+Observation / questionnaire answer, so charts (rendered as record facts) never carry a model
+number. Generation is a batch step (`mdt-agent --all`, results in `data/ai_cases/`), not triggered
+from the UI. The web API's case list, plain briefings and source drawer read the IRIS FHIR server
+(dataset ids via the loader's tag); the bundles on disk are used only while the server is down.
+Why: The user asked for the app to show the pipeline without touching the frontend, and for all
+patient data to come from IRIS. Text-then-extract keeps the narrative the model reasons in, while
+the app gets small, individually cited statements. A full run is ~2.5 min per patient alone (~9
+min each with all 6 in parallel under the APIM rate limit), too slow to run on page load.

@@ -33,14 +33,21 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 
 - IRIS for Health running from `FHIR-AI-Kit/docker-iris-fhir` with the full dataset loaded
   (`uv run mdt-load-fhir`, decision 12). `uv run mdt-patient P01` pretty-prints one patient's
-  complete record from the server. The app itself still reads bundles from disk (`bundles.py`).
+  complete record from the server. The web API reads it too (case list, briefings, source drawer;
+  decision 18), falling back to the bundles on disk only when the server is unreachable.
 - `uv run mdt-zaver P01`: MDT conclusion (form.md) as PDF, two gpt-6-luna calls (decision 13).
   CLI only — not wired into the API/UI yet; ~40 s per patient.
 - `uv run mdt-agent P01 [--runs 2]`: MDT agent over IRIS (decision 17): CACC → RED/YELLOW findings
   → radiology/surgery/oncology views → 1–2 guideline options, every citation checked in code.
   Writes `data/ai_cases/<id>.json`, which `/api/cases/{id}` then serves (delete it to get the plain
   build back). Patient data comes only from IRIS (verified: no bundle file read, all reads are
-  `localhost:52773/fhir/r4`). ~2–2.5 min per run (8 LLM calls, 3 in parallel). Not triggered from the UI yet.
+  `localhost:52773/fhir/r4`). Not triggered from the UI; run `uv run mdt-agent --all` to refresh.
+- App integration (decision 18, no frontend change): the agent now also writes the executive
+  summary (text → key facts, extra red flags, timeline), each specialist's view as text → cited
+  points, the indicators to chart (values read from the record) and the patient's preference
+  (leads the patient section). 15 LLM calls per patient, ≤ 4 at once (429/5xx retried). All 6
+  patients generated on 2026-10-17 (`mdt-agent --all`, ~9 min each in parallel, 1–4 rejected
+  citations per patient).
 - Reproducibility (2 runs each, 2026-10-16): P01 — same first option (biomarker-guided endocrine
   line after ESR1/PIK3CA/BRCA + restaging, PRS-1.3/2.2, OBC-1.2; patient's no-chemo wish mentioned)
   and same second option (chemo/T-DXd only if conditions, identical passages); all-option passage
@@ -54,3 +61,12 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 ## Contributor 3
 
 -
+
+## Copilot - synthetic holdout fixture
+
+- Created isolated root-level `secret_bundles.ndjson` (P07) and evaluator-only
+  `secret_ground_truth.md`. Original Dataset files and application import paths are unchanged.
+- Keep the answer key out of LLM/RAG inputs. Neither artifact has been imported into a FHIR
+  server or evaluated by the LLM pipeline.
+- Passed official FHIR R4 JSON-schema validation and local checks for composition/size,
+  references, attachments, PROM answer types, chronology, citations and label leakage.

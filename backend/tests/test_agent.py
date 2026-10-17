@@ -70,16 +70,72 @@ def fake_llm(system, user, schema, name):
                 },
             ],
         }
+    if name in ("summary_text", "opinion"):  # executive summary / specialist opinion as free text
+        return {"text": "Hb klesá na 104 g/l [Observation/P01-lab06-hb_f]."}
+    if name == "summary_extract":
+        assert "Hb klesá" in user and "Chybí ESR1." in user  # known flags are passed on
+        return {
+            "points": [
+                {"text": "Hb 104 g/l (2026-10-06).", "refs": [HB], "guideline_ids": []},
+                {"text": "Bez zdroje.", "refs": [BAD_REF], "guideline_ids": []},
+            ],
+            "red_flags": [
+                {"severity": "medium", "text": "Pokles Hb.", "refs": [HB], "guideline_ids": []},
+                {"severity": "high", "text": "Chybí ESR1.", "refs": [HB], "guideline_ids": []},
+            ],
+            "timeline": [
+                {"date": "2026-10-06", "kind": "systemic", "text": "Anémie.", "refs": [HB]},
+                {"date": "2026-13-01", "kind": "systemic", "text": "Špatné datum.", "refs": [HB]},
+            ],
+        }
+    if name == "indicators":
+        assert "[QuestionnaireResponse/P01-prom02#unava]" in user
+        return {
+            "indicators": [
+                {
+                    "id": "HB",
+                    "label": "Hemoglobin",
+                    "unit": "g/l",
+                    "why": "anémie",
+                    "refs": [f"Observation/P01-lab0{i}-hb_f" for i in (1, 5, 6)] + ["X/1"],
+                },
+                {
+                    "id": "unava",
+                    "label": "Únava",
+                    "unit": "",
+                    "why": "",
+                    "refs": [f"QuestionnaireResponse/P01-prom0{i}#unava" for i in (1, 2)],
+                },
+                {"id": "one", "label": "Jen jedno", "unit": "", "why": "", "refs": ["X/2"]},
+            ]
+        }
+    if name == "preference":
+        return {
+            "stated": True,
+            "points": [
+                {
+                    "text": "Pacientka si nepřeje chemoterapii.",
+                    "refs": [
+                        {
+                            "ref": "ServiceRequest/P01-zad01",
+                            "excerpt": "Nepřeje si znovu chemoterapii",
+                        }
+                    ],
+                }
+            ],
+        }
     if name == "context":
         return {"refs": ["[Observation/P01-lab06-hb_f]", "Observation/NOPE"], "reason": ""}
     if name == "verdict":
         assert "[Observation/P01-lab06-hb_f]" in user and "[Observation/NOPE]" not in user
+        assert user.startswith("Stanovisko:\nHb klesá")  # extracted from the free-text opinion
         return {
             "points": [{"text": "Hb 104 g/l.", "refs": [HB, INVENTED], "guideline_ids": []}],
             "verdict": {"text": "Bez námitek.", "refs": [], "guideline_ids": ["PRS-2.2"]},
             "missing": ["PET/CT"],
         }
     assert name == "recommend"
+    assert "Pacientka si nepřeje chemoterapii. [ServiceRequest/P01-zad01]" in user
     return {
         "options": [
             {"rank": 2, "text": "Druhá.", "refs": [], "guideline_ids": ["PRS-2.3"]},
@@ -108,7 +164,11 @@ def test_output_is_a_valid_case_with_ai_statements(result):
     case, trace = result
     assert case.id == "p01" and case.patient == "Patient/P01"
     ai = [f for f in case.red_flags if f.statement.model == agent.model_tag()]
-    assert [f.severity for f in ai] == ["high"]  # YELLOW finding had no valid source → dropped
+    # YELLOW finding had no valid source → dropped; then the summary's extra flag
+    assert [(f.severity, f.statement.text) for f in ai] == [
+        ("high", "Chybí ESR1."),
+        ("medium", "Pokles Hb."),
+    ]
     assert {s.reference for s in ai[0].statement.sources} == {
         "Observation/P01-lab06-hb_f",
         "guideline:PRS-1.3",
@@ -117,7 +177,11 @@ def test_output_is_a_valid_case_with_ai_statements(result):
         "cacc",
         "findings",
         "recommend",
-        *(f"{k}:{s}" for k in ("context", "verdict") for s in agent.SPECIALISTS),
+        "summary_text",
+        "summary_extract",
+        "indicators",
+        "preference",
+        *(f"{k}:{s}" for k in ("context", "opinion", "verdict") for s in agent.SPECIALISTS),
     }
 
 
@@ -160,3 +224,41 @@ def test_compare_runs(result):
     cmp = agent.compare(case, case)
     assert cmp["first_option_passages_jaccard"] == 1.0
     assert cmp["option_counts"] == [2, 2]
+
+
+def test_executive_summary_feeds_summary_flags_and_timeline(result):
+    case, trace = result
+    assert case.summary[0].text == "Hb 104 g/l (2026-10-06)." and case.summary[0].origin == "ai"
+    assert case.summary[1].origin == "record"  # the record facts follow the AI points
+    ai_flags = [f.statement.text for f in case.red_flags if f.statement.model]
+    assert ai_flags.count("Chybí ESR1.") == 1 and "Pokles Hb." in ai_flags  # no duplicates
+    anaemia = [e for e in case.timeline if e.statement.text == "Anémie."]
+    assert len(anaemia) == 1 and anaemia[0].statement.origin == "ai"
+    assert [e.date for e in case.timeline] == sorted(e.date for e in case.timeline)
+    assert any(r.get("reason") == "date" for r in trace["rejected_citations"])
+
+
+def test_indicator_values_come_from_the_record(result):
+    case, trace = result
+    hb, fatigue = case.trends[:2]
+    assert [p.value for p in hb.points] == [128, 116, 104] and hb.unit == "g/l"
+    assert hb.ref_low is not None  # reference range from the record, not the model
+    assert [p.source.reference for p in fatigue.points] == [
+        "QuestionnaireResponse/P01-prom01#unava",
+        "QuestionnaireResponse/P01-prom02#unava",
+    ]
+    assert fatigue.unit == "/10" and fatigue.axis == (0, 10)
+    assert not any(t.label == "Jen jedno" for t in case.trends)  # < 2 points
+    ids = [t.id for t in case.trends]
+    assert len(ids) == len(set(ids))
+    assert not any(t.id == "proms-unava" for t in case.trends)  # covered by the AI series
+    assert {"ref": "X/1", "reason": "no value", "where": "indicators.0"} in trace[
+        "rejected_citations"
+    ]
+
+
+def test_preference_leads_patient_section(result):
+    case, _ = result
+    patient = next(s for s in case.sections if s.id == "patient")
+    assert patient.items[0].text == "Pacientka si nepřeje chemoterapii."
+    assert patient.items[0].sources[0].reference == "ServiceRequest/P01-zad01"
