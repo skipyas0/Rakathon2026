@@ -12,8 +12,8 @@ no descriptions, no extra buttons, one **Další** per screen.
 | 4 | Klíčové informace | Critical (high) and important (medium) red flags unrolled; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
 | 5 | Vývoj | Two charts per screen, no scrolling; Další pages through further series |
 | 6 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
-| 7 | Závěr | Zvolený postup, Zdůvodnění |
-| 8 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); a name field appears when none is set. Stanoviska per role open in a pop-up (that role's facts + opinion). Potvrdit leads on to Export |
+| 7 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
+| 8 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); a name field appears when none is set. Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
 | 9 | Export | Two rectangles: PDF (downloads the official record, rendered by the backend: question, board, záměr, postup, zdůvodnění, soulad, who confirmed) or FHIR (greyed out, "Připravujeme") |
 
 Plus **Přehled** (`#/`): case cards with a coloured status (Potvrzeno / Rozpracováno / Nový); a

@@ -45,6 +45,7 @@ class Member(BaseModel):
     name: str
     specialty: str  # section id, e.g. "surgery" (frontend SPECIALTIES)
     chair: bool = False
+    supports: bool = True  # their stance on the proposed postup; consensus = everyone supports
 
 
 class Triage(BaseModel):
@@ -199,6 +200,9 @@ def put_record(case_id: str, record: CaseRecord) -> CaseRecord:
         raise HTTPException(409, "Závěr je potvrzen a uzamčen")
     if record.prep.prepared_by and not (record.prep.question.strip() or get_case(case_id).question):
         raise HTTPException(422, "Případ nelze připravit bez otázky pro komisi")
+    against = [m.specialty for m in record.board if not m.supports]
+    if record.decision.confirmed_by and not old.decision.confirmed_by and against:
+        raise HTTPException(422, f"Komise nemá konsenzus (nesouhlasí: {', '.join(against)})")
     if record.prep.prepared_by and len({m.specialty for m in record.board}) < MIN_SPECIALTIES:
         raise HTTPException(422, f"Komise musí mít alespoň {MIN_SPECIALTIES} odbornosti")
     RECORDS.mkdir(parents=True, exist_ok=True)

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api, type CaseRecord, type Decision, type Intent, type Recommendation } from './api'
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
@@ -6,6 +6,7 @@ import { TrendChart } from './Charts'
 import { Alert, Check, Doc, IntentIcon } from './icons'
 import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
+import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
@@ -69,7 +70,7 @@ function BoardStep({ record, save, next }: StepProps) {
   const [chosen, setChosen] = useState(() => record.board.map((m) => m.specialty))
   const toggle = (s: string) => setChosen(chosen.includes(s) ? chosen.filter((x) => x !== s) : [...chosen, s])
   const submit = async () => {
-    const board = chosen.map((s) => record.board.find((m) => m.specialty === s) ?? { name: '', specialty: s, chair: false })
+    const board = chosen.map((s) => record.board.find((m) => m.specialty === s) ?? { name: '', specialty: s, chair: false, supports: true })
     if (await save({ ...record, board })) next()
   }
   return (
@@ -258,7 +259,7 @@ function IntentStep({ record, save, next }: StepProps) {
   )
 }
 
-function PlanStep({ record, save, next }: StepProps) {
+function PlanStep({ c, record, save, next }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [plan, setPlan] = useState(record.decision.plan)
   const [rationale, setRationale] = useState(record.decision.rationale)
@@ -277,6 +278,7 @@ function PlanStep({ record, save, next }: StepProps) {
           Zdůvodnění
           <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
         </label>
+        <Stanoviska c={c} record={record} save={save} />
         <Next onClick={submit} disabled={!plan.trim() || !rationale.trim()} />
       </section>
     </>
@@ -293,8 +295,7 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState(d.deviation_reason)
   const [signer, setSigner] = useState(user) // the top-bar name, or typed here when it's empty
-  const [role, setRole] = useState<string | null>(null)
-  const dialog = useRef<HTMLDialogElement>(null)
+  const against = record.board.filter((m) => !m.supports) // consensus = everyone supports
 
   const confirm = async () => {
     if (compliant === false && !reason.trim()) return setAsking(true)
@@ -347,44 +348,12 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
         </div>
       )}
 
-      <div className="bubbles small-bubbles stanoviska">
-        <span className="muted">Stanoviska:</span>
-        {record.board.map((m) => (
-          <button
-            key={m.specialty}
-            className="bubble"
-            onClick={() => {
-              setRole(m.specialty)
-              dialog.current?.showModal()
-            }}
-          >
-            {SPECIALTIES[m.specialty] ?? m.specialty}
-          </button>
-        ))}
-      </div>
-      <dialog ref={dialog} className="dialog" onClick={(e) => e.target === dialog.current && dialog.current.close()}>
-        {role && (
-          <div className="dialog-body">
-            <header>
-              <h3>Stanovisko · {SPECIALTIES[role] ?? role}</h3>
-              <button className="icon-btn" onClick={() => dialog.current?.close()} aria-label="Zavřít">
-                ×
-              </button>
-            </header>
-            <p>
-              <span className="chip muted-chip">ukázka</span> Z pohledu odbornosti {SPECIALTIES[role] ?? role} bez námitek k
-              navrženému postupu.
-            </p>
-            <ul className="plain">
-              {c.sections
-                .find((s) => s.id === role)
-                ?.items.map((s, i) => (
-                  <li key={i}>{S(`sections.${role}.${i}`, s, 'inline')}</li>
-                ))}
-            </ul>
-          </div>
-        )}
-      </dialog>
+      <Stanoviska c={c} record={record} save={save} />
+      {against.length > 0 && !locked && (
+        <p className="verdict warn">
+          <Alert /> Komise nemá konsenzus: nesouhlasí {against.map((m) => SPECIALTIES[m.specialty] ?? m.specialty).join(', ')}
+        </p>
+      )}
 
       {locked ? (
         <div className="confirm-row">
@@ -405,7 +374,7 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
             {!user && (
               <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Vaše jméno" aria-label="Kdo potvrzuje" />
             )}
-            <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || (asking && !reason.trim())}>
+            <button className="primary next" onClick={confirm} disabled={!signer.trim() || compliant === null || against.length > 0 || (asking && !reason.trim())}>
               {asking ? 'Potvrdit s odchylkou' : 'Potvrdit'}
             </button>
           </div>

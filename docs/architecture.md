@@ -60,7 +60,8 @@ Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =
 `prep`/`meeting`/`followup`/`closed`, board `specialties`; specialists see only their cases), `GET /api/cases/{id}` (`Case`),
 `GET /api/cases/{id}/history` (patient's MDT history), `GET /api/cases/{id}/recommendation`, `GET /api/cases/{id}/zaver.pdf`, `GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
-case prepared without an MDT question or with fewer than 3 specialties on the board), `GET /api/sources/{type}/{id}` (title, date, author, full
+case prepared without an MDT question or with fewer than 3 specialties on the board, or locking
+the decision while a board member doesn't support it), `GET /api/sources/{type}/{id}` (title, date, author, full
 text of one record — for the source drawer; searches intake bundles too), `POST /api/intake` (upload a
 case).
 
@@ -81,6 +82,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
 | `Journey.tsx`       | Steps 2–8 for one case: board bubbles, patient, key facts (urgent red flags first), up to 3 trends, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (PDF = download of `GET /api/cases/{id}/zaver.pdf`, FHIR greyed out) |
 | `Steps.tsx`         | Progress through the journey; finished steps link back        |
+| `Stanoviska.tsx`    | Stance bubbles per board specialty (green supports / red doesn't, `Member.supports`), pop-up with the stanovisko (example text) and the specialty's facts; used on Závěr and Potvrzení |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band; every point opens its source) |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
 | `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records; `useSources()` opens it |

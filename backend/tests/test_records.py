@@ -124,3 +124,10 @@ def test_confirmed_conclusion_downloads_as_pdf(client):
     r = client.get("/api/cases/example/zaver.pdf")
     assert r.status_code == 200 and r.content.startswith(b"%PDF")
     assert "attachment" in r.headers["content-disposition"]
+
+
+def test_no_lock_without_consensus(client):
+    against = [{**BOARD[0], "supports": False}, *BOARD[1:]]
+    body = {"board": against, "decision": FINAL}
+    assert client.put("/api/cases/example/record", json=body).status_code == 422
+    assert client.put("/api/cases/example/record", json={**body, "board": BOARD}).status_code == 200

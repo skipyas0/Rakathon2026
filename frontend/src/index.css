@@ -1151,6 +1151,35 @@ button.next {
   align-items: center;
   margin: 1rem 0 0;
 }
+.bubble.yes {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+}
+.bubble.yes .icon {
+  color: var(--ok);
+}
+.bubble.no {
+  border-color: var(--crit);
+  background: var(--crit-soft);
+}
+.bubble.no .icon {
+  color: var(--crit);
+}
+.segmented-stance {
+  display: flex;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.segmented-stance button.yes.on {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.segmented-stance button.no.on {
+  border-color: var(--crit);
+  background: var(--crit-soft);
+  color: var(--crit);
+}
 .dialog {
   border: 0;
   border-radius: var(--radius);
