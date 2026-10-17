@@ -15,7 +15,7 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
   yes-and's personal account).
 - Branch `yes-and/meeting-records` (pushed, not merged): the full role-based workflow (#16).
-- Branch `yes-and/journey-meets-pipeline`: the simple coordinator journey (#18,
+- Branch `yes-and/journey-meets-pipeline`: the simple coordinator journey (#20,
   docs/workflow-plan.md), built; old screens removed (still on `yes-and/meeting-records`). Next:
   rebase onto `main` to join it with the LLM pipeline.
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via

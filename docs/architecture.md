@@ -21,7 +21,7 @@ https://mdt-copilot-rakathon.fly.dev (`fly.toml`, region `fra`, volume `records`
 
 ## Workflow (what the UI is built around)
 
-One linear journey for the coordinator (decision #18, [workflow-plan.md](workflow-plan.md)), one
+One linear journey for the coordinator (decision #20, [workflow-plan.md](workflow-plan.md)), one
 screen per step and one **Další** each: Nahrání (`#/new`) → Komise → Pacient → Klíčové informace →
 Vývoj → Léčebný záměr → Závěr → Potvrzení (`#/case/<id>/<step>`), plus Přehled (`#/`). Soulad s
 doporučenými postupy is derived on the last screen (chosen léčebný záměr = recommended); on a

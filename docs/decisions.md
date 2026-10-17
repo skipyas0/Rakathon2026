@@ -200,7 +200,7 @@ silently.
 Why: The board for a repeat MDT is usually the same team; the dataset already has it, so the
 coordinator starts from facts instead of typing five names.
 
-## 18. One simple journey for the coordinator — 2026-10-17, yes-and
+## 20. One simple journey for the coordinator — 2026-10-17, yes-and
 Status: accepted (supersedes #16)
 Decision: The frontend is one linear journey (docs/workflow-plan.md): upload → board (specialty
 bubbles) → patient → key facts → trends → léčebný záměr → závěr → potvrzení, plus a case overview.

@@ -1,6 +1,6 @@
 # MDT workflow: the simple journey
 
-**Audience:** the team and their coding agents. Agreed target for the frontend (decision #18,
+**Audience:** the team and their coding agents. Agreed target for the frontend (decision #20,
 replacing the role-based plan of #16). One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, one **Další** per screen.
 
