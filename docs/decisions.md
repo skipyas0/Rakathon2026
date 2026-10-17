@@ -231,6 +231,8 @@ A stanovisko is signed with the specialty's name (e.g. "Chirurgie") and the time
 coordinator's Potvrdit with "Koordinátor/ka" (no name field; the export prints "Koordinátor/ka
 onkologické péče: přítomen/a"): for now each role is one person, so the role answers "who" (ground
 rule 4). Once a role can have several people, ask for a name again (once per browser) and sign
-with it.
+with it. Vygenerovat runs the agent's specialist step live in a quick mode (`specialist(…,
+quick=True)`: reasoning effort "low", only the verdict extracted, ~20 s instead of 40–55 s); the
+batch `mdt-agent` keeps the default effort and its full output.
 Why: The board members prepare their part before the meeting (process doc §3); one shared record
 written from two screens must not lose a specialist's input to the coordinator's stale copy.

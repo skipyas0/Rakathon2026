@@ -6,12 +6,13 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 ## yes-and (Claude Code)
 
 - `yes-and/specialist-roles` (decision #27): role picker, the specialist's journey (Pacient →
-  Klíčové informace → Stanovisko), their stanovisko generated live or written, their stance.
+  Klíčové informace → Stanovisko), their stanovisko generated live (~20 s) or written, their
+  stance; also chevrons that remember the furthest step, "Uložit a další/zavřít", an unsaved-input
+  warning, signing by role (no name fields), gender-neutral export wording.
   After merging, rerun `mdt-agent --all`: red flags then carry `area` (until then a specialist
   sees all of them) and the batch adds a pathology view.
-- Fly: IRIS runs as the private app `mdt-copilot-iris` (#14). The web app
-  (https://mdt-copilot-rakathon.fly.dev, yes-and's account) still runs the pre-IRIS build until
-  redeployed with the `FHIR_PASSWORD` secret.
+- Fly: the web app (https://mdt-copilot-rakathon.fly.dev, yes-and's account) runs the IRIS build
+  against the private app `mdt-copilot-iris` (#14); `/api/health` reports `fhir: true`.
 - Next, by the scope (`problem_statement.md`): trial screening (POVINNÉ, empty); section
   order/detail configuration (POVINNÉ, 20 % of the score); PDF intake and FHIR export (CORE);
   running the agent from the app; LLM red flags and an LLM guideline-compliance check instead of
