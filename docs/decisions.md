@@ -359,3 +359,15 @@ overview's `intents`, kept in the tiles' order. Records saved with the single `i
 combination may be chosen; the app doesn't judge which ones go together.
 Why: A plan often has more than one aim (e.g. paliativní + podpůrná péče); the board decides.
 
+## 32. Quick picks per specialty on Plán, saved beside the free text — 2026-10-17, yes-and
+Status: accepted
+Decision: Záměr is renamed Plán (step id stays `intent`). Under the léčebný záměr tiles, one row
+of bubbles per specialty (Onkologie, Chirurgie, Radiologie, Patologie, Ostatní) offers common
+postupy; several may be picked, sub-options appear once their option is picked, "Chirurgicky
+řešitelné / neřešitelné" and the two radiology verdicts are either/or, and "Jiné" (free text) is
+last in each row. Picks are saved as `Decision.choices` (row → `{option, sub, text}`, labels, not
+ids), separately from Zvolený postup, and exported as one line "Postup podle odborností" in the
+PDF/DOCX and the report. Each specialist sees their row's picks under Navržený postup. The
+options live only in `frontend/src/features/choices/choices.ts`.
+Why: Most conclusions repeat the same few postupy; picking is faster than typing and reads the
+same in every record, while the free text keeps the board's own wording.

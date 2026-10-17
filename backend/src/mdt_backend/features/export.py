@@ -323,6 +323,7 @@ def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
     sections["RESPONSE"] = [
         Field("Závěr MDT", 0, "", True, "Závěr MDT"),
         line("Léčebný záměr", ", ".join(INTENTS[i] for i in d.intents)),
+        line("Postup podle odborností", records.choices_text(d)),
         line("Zvolený postup", d.plan),
         line("Zdůvodnění", d.rationale),
         line("Zvažované možnosti", d.options_considered),

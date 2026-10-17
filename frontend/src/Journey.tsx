@@ -11,6 +11,8 @@ import { Steps } from './Steps'
 import { useSources } from './sources'
 import { setUnsaved, useUnsaved } from './unsaved'
 import { ReportReview } from './features/report/ReportReview'
+import { ChoiceRows } from './features/choices/ChoiceRows'
+import { cleanChoices } from './features/choices/choices'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 
@@ -426,16 +428,18 @@ function QuestionsStep({ c, record, next, prev }: StepProps) {
 function IntentStep({ record, rec, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [intents, setIntents] = useState(record.decision.intents)
+  const [choices, setChoices] = useState(record.decision.choices)
   // several may apply at once; kept in the tiles' order so the record reads the same either way
   const toggle = (k: Intent) =>
     setIntents(intents.includes(k) ? intents.filter((x) => x !== k) : (Object.keys(INTENTS) as Intent[]).filter((x) => x === k || intents.includes(x)))
-  useUnsaved(!locked && intents.join() !== record.decision.intents.join())
+  const changed = intents.join() !== record.decision.intents.join() || JSON.stringify(cleanChoices(choices)) !== JSON.stringify(cleanChoices(record.decision.choices))
+  useUnsaved(!locked && changed)
   const keep = async (go: () => void) => {
-    if (locked || !intents.length || (await save({ ...record, decision: { ...record.decision, intents } }))) go()
+    if (locked || !intents.length || (await save({ ...record, decision: { ...record.decision, intents, choices: cleanChoices(choices) } }))) go()
   }
   return (
     <>
-      <h1>Léčebný záměr</h1>
+      <h1>Léčebný plán</h1>
       {locked && <Locked />}
       {rec && <RecommendedPopup rec={rec} record={record} />}
       <div className="tiles">
@@ -446,6 +450,7 @@ function IntentStep({ record, rec, save, next, prev }: StepProps) {
           </button>
         ))}
       </div>
+      <ChoiceRows value={choices} onChange={setChoices} disabled={locked} />
       <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intents.length} saves={!locked} />
     </>
   )

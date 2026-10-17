@@ -195,6 +195,7 @@ def _sections(case: Case, record: records.CaseRecord, resources: list[dict]) -> 
     for label, value in (
         ("Otázka pro MDT", record.prep.question or (case.question.text if case.question else "")),
         ("Léčebný záměr", ", ".join(d.intents)),
+        ("Postup podle odborností", records.choices_text(d)),
         ("Zvolený postup", d.plan),
         ("Zdůvodnění", d.rationale),
         ("Zvažované možnosti", d.options_considered),

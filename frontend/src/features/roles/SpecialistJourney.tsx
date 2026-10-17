@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, type CaseRecord } from '../../api'
+import { api, type CaseRecord, type ChoiceRow } from '../../api'
 import type { Case } from '../../briefing'
 import { Alert, Check, Robot } from '../../icons'
 import { FactsStep, Locked, Nav, PatientStep, Working } from '../../Journey'
@@ -9,6 +9,7 @@ import { now, renderer } from '../../render'
 import { Steps } from '../../Steps'
 import { setUnsaved, useUnsaved } from '../../unsaved'
 import { SPECIALIST_STEPS, type SpecialistStep } from './role'
+import { choiceText } from '../choices/choices'
 
 type Data = { c: Case; record: CaseRecord }
 
@@ -60,6 +61,7 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const member = record.board.find((m) => m.specialty === role)
   const own = record.stanoviska[role]
+  const picks = record.decision.choices[role as ChoiceRow] ?? [] // what the board picked for the specialty on Plán
   const [text, setText] = useState<string | null>(null) // null = not editing
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -99,10 +101,19 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
       <h1>Stanovisko · {SPECIALTIES[role]}</h1>
       {locked && <Locked />}
       {error && <div className="banner bad">{error}</div>}
-      {record.decision.plan && (
+      {(record.decision.plan || picks.length > 0) && (
         <section className="question-card">
           <p className="eyebrow">Navržený postup</p>
-          <p>{record.decision.plan}</p>
+          {record.decision.plan && <p>{record.decision.plan}</p>}
+          {picks.length > 0 && (
+            <ul className="picked" aria-label={`Volba · ${SPECIALTIES[role]}`}>
+              {picks.map((p) => (
+                <li key={p.option}>
+                  <Check /> {choiceText(p)}
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
       <div className="segmented-stance" role="group" aria-label="Postoj k navrženému postupu">

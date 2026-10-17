@@ -60,7 +60,7 @@ export const STEPS = [
   { id: 'course', label: 'Průběh' },
   { id: 'facts', label: 'Klíčové informace' },
   { id: 'questions', label: 'Otázky' }, // short labels: all 10 chevrons fit the journey column
-  { id: 'intent', label: 'Záměr' },
+  { id: 'intent', label: 'Plán' }, // léčebný záměr + the specialties' quick picks
   { id: 'plan', label: 'Závěr' },
   { id: 'confirm', label: 'Potvrzení' },
   { id: 'export', label: 'Export' },

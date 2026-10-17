@@ -109,9 +109,35 @@ class GuidelineAssessment(BaseModel):
         return _one_intent(data, "compared_intent", "compared_intents")
 
 
+# Plán's quick picks, one row per specialty (+ "other"); the options live in the frontend
+# (features/choices), the record keeps their labels
+CHOICE_ROWS = {
+    "oncology": "Onkologie",
+    "surgery": "Chirurgie",
+    "radiology": "Radiologie",
+    "pathology": "Patologie",
+    "other": "Ostatní",
+}
+
+
+class Choice(BaseModel):
+    """One quick pick: the option, its picked sub-options and its free text."""
+
+    option: str
+    sub: list[str] = []
+    text: str = ""
+
+    def __str__(self) -> str:
+        s = self.option + (f" ({', '.join(self.sub)})" if self.sub else "")
+        return f"{s}: {self.text}" if self.text else s
+
+
 class Decision(BaseModel):
     attendees: list[Attendee] = []
     intents: list[Intent] = []  # léčebný záměr: one or more
+    choices: dict[
+        Literal["oncology", "surgery", "radiology", "pathology", "other"], list[Choice]
+    ] = {}
     options_considered: str = ""
     plan: str = ""
     rationale: str = ""
@@ -147,6 +173,15 @@ class Decision(BaseModel):
                     "a soulad s postupy"
                 )
         return self
+
+
+def choices_text(d: Decision) -> str:
+    """The quick picks as one line, rows in Plán's order: "Onkologie: A, B (x); Chirurgie: C"."""
+    return "; ".join(
+        f"{label}: {', '.join(map(str, d.choices[row]))}"
+        for row, label in CHOICE_ROWS.items()
+        if d.choices.get(row)
+    )
 
 
 class Task(BaseModel):

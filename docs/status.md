@@ -18,6 +18,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   Záměr takes one or more léčebné záměry (decision #31): the record's `intent` became
   `intents` (old records still load), shown and exported comma-separated. Záměr also shows the
   doporučený postup as a folded AI row (robot icon) that opens a pop-up with its sources.
+  Záměr is now Plán, with quick picks per specialty (decision #32), exported as "Postup podle
+  odborností" and shown to each specialist. Not yet in the guideline check or FHIR CarePlan.
 - Next, by the scope (`problem_statement.md`): trial screening (POVINNÉ, empty); section
   order/detail configuration (POVINNÉ, 20 % of the score); PDF intake and FHIR export (CORE);
   running the agent from the app; LLM red flags and an LLM guideline-compliance check instead of

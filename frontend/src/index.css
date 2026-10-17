@@ -332,6 +332,58 @@ legend {
 .recommended-row:hover .row-link {
   text-decoration-style: solid;
 }
+/* Plán: one row of quick picks per specialty, scrolling sideways when it doesn't fit */
+.choice-rows {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+.choice-row {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+.choice-scroll {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 2px; /* room for the focus ring */
+  scrollbar-width: thin;
+}
+.choice-scroll .bubble {
+  flex: none;
+  white-space: nowrap;
+}
+.choice-scroll .bubble.sub {
+  border-style: dashed; /* a sub-option of the pick before it */
+}
+.choice-scroll .bubble.sub.on {
+  border-style: solid;
+}
+.choice-text {
+  flex: none;
+  width: 14rem;
+  font-size: var(--fs-s);
+}
+@media (max-width: 640px) {
+  .choice-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.2rem;
+  }
+}
+/* a specialist's own picks under Navržený postup */
+.picked {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+}
+.picked .icon {
+  color: var(--ok);
+}
 .recommended-dialog .intent-label {
   margin-top: 0.75rem;
 }

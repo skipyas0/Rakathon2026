@@ -236,3 +236,22 @@ def test_specialist_stanovisko_and_stance(client, monkeypatch):
     body = reviewed(client, {**r, "decision": FINAL})
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     assert client.patch(url, json={"supports": False}).status_code == 409
+
+
+def test_quick_picks_read_as_one_line_in_plans_order():
+    d = Decision(
+        choices={
+            "surgery": [{"option": "Chirurgicky řešitelné", "text": "pravostranná hemikolektomie"}],
+            "oncology": [
+                {"option": "Neoadjuvantní léčba", "sub": ["Chemoterapie", "Radioterapie"]},
+                {"option": "Symptomatická péče"},
+            ],
+        }
+    )
+    assert records.choices_text(d) == (
+        "Onkologie: Neoadjuvantní léčba (Chemoterapie, Radioterapie), Symptomatická péče; "
+        "Chirurgie: Chirurgicky řešitelné: pravostranná hemikolektomie"
+    )
+    assert records.choices_text(Decision()) == ""
+    with pytest.raises(ValidationError):  # rows are Plán's, nothing else
+        Decision(choices={"cardiology": [{"option": "x"}]})

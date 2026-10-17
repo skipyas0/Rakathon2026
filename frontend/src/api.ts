@@ -25,9 +25,13 @@ export type Confirmation = { by: string; at: string }
 export type Note = { text: string; by: string; at: string }
 export type Prep = { question: string; questions: string[]; prepared_by: string | null; prepared_at: string | null }
 export type Attendee = { name: string; specialty: string }
+/** Plán's quick picks (features/choices): the option, its picked sub-options, its free text. */
+export type Choice = { option: string; sub: string[]; text: string }
+export type ChoiceRow = 'oncology' | 'surgery' | 'radiology' | 'pathology' | 'other'
 export type Decision = {
   attendees: Attendee[]
   intents: Intent[] // léčebný záměr: one or more
+  choices: Partial<Record<ChoiceRow, Choice[]>>
   options_considered: string
   plan: string
   rationale: string
