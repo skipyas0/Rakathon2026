@@ -902,9 +902,11 @@ def save(case: Case, trace: dict, out_dir: Path = OUT_DIR, suffix: str = "") -> 
 
 
 def patient_ids() -> list[str]:
-    """Every patient on the IRIS FHIR server, as dataset ids (P01…)."""
-    found = fhir.get("Patient", _count=200).get("entry", [])
-    return sorted(dataset_id(e["resource"]) for e in found)
+    """Every patient nominated for an MDT on the FHIR server (a Task for them), as dataset ids
+    (P01…); a patient without a nomination has no briefing to build."""
+    found = fhir.get("Task", _count=200).get("entry", [])
+    refs = (e["resource"].get("for", {}).get("reference", "") for e in found)
+    return sorted({r.split("/", 1)[1] for r in refs if r.startswith("Patient/")})
 
 
 def run_patient(patient: str, runs: int, source: str) -> dict:
@@ -913,7 +915,7 @@ def run_patient(patient: str, runs: int, source: str) -> dict:
         try:
             case, trace = run(patient, source)
         # one patient failing (LLM/server error, malformed output) must not lose the others
-        except (httpx.HTTPError, RuntimeError, ValueError, KeyError) as e:
+        except (httpx.HTTPError, RuntimeError, ValueError, KeyError, IndexError) as e:
             print(f"{patient} run {n}: FAILED {e!r}", file=sys.stderr)
             return {"error": repr(e)}
         path = save(case, trace, suffix=f".run{n}" if runs > 1 else "")
@@ -931,7 +933,7 @@ def main() -> None:
     """CLI: uv run mdt-agent P01 [P02 …] | --all  [--runs 2] [--source iris|file]"""
     ap = argparse.ArgumentParser(prog="mdt-agent", description=__doc__.splitlines()[0])
     ap.add_argument("patients", nargs="*", help="patient ids, e.g. P01 P03")
-    ap.add_argument("--all", action="store_true", help="every patient on the FHIR server")
+    ap.add_argument("--all", action="store_true", help="every patient nominated on the FHIR server")
     ap.add_argument("--source", choices=["iris", "file"], default="iris")
     ap.add_argument("--runs", type=int, default=1, help="run N times and compare recommendations")
     args = ap.parse_args()
