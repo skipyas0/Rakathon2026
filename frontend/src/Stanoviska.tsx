@@ -26,7 +26,7 @@ export function Stanoviska({ c, record, save }: Props) {
   return (
     <>
       <div className="bubbles small-bubbles stanoviska">
-        <span className="muted">Stanoviska:</span>
+        <span className="eyebrow">Stanoviska</span>
         {record.board.map((m) => (
           <button
             key={m.specialty}

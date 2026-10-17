@@ -466,12 +466,12 @@ function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
     <>
       <h1>Potvrzení</h1>
       <div className="compare">
-        <section>
+        <section className="chosen">
           <p className="eyebrow">Zvolený postup</p>
           {d.intent && <IntentLabel intent={d.intent} />}
           <p className="big">{d.plan}</p>
         </section>
-        <section>
+        <section className="recommended">
           <p className="eyebrow">
             Doporučený postup{' '}
             {rec?.statement.model === 'ukázka' && <span className="chip muted-chip">ukázka</span>}

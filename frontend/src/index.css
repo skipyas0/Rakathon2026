@@ -1082,8 +1082,8 @@ a.chevron.done:hover {
   color: var(--ink);
 }
 .small-bubbles .bubble {
-  font-size: var(--fs-m);
-  padding: 0.45rem 1rem;
+  font-size: var(--fs-s);
+  padding: 0.3rem 0.85rem;
 }
 .upload {
   display: flex;
@@ -1133,8 +1133,8 @@ a.chevron.done:hover {
 .export {
   display: flex;
   gap: 1.25rem;
-  height: calc(100vh - 17rem);
-  min-height: 22rem;
+  height: calc(100vh - 22.5rem); /* top bar, chevrons, heading, status card, buttons */
+  min-height: 20rem;
 }
 .export .preview {
   flex: 1;
@@ -1366,17 +1366,24 @@ button.back {
 .tile.intent-deferred .icon {
   color: var(--deferred);
 }
+/* Potvrzení: the board's choice (teal edge) beside the AI's recommendation (blue edge), in the
+   same card style as the question card; each only as tall as its content */
 .compare {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  align-items: start;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 .compare section {
-  padding: 1rem;
-  border: 1px solid var(--line);
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--teal);
   border-radius: var(--radius);
   background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.compare section.recommended {
+  border-left-color: var(--ai);
 }
 .compare .big {
   font-size: var(--fs-m); /* chosen vs recommended side by side: body size, so Potvrdit fits */
@@ -1388,22 +1395,29 @@ button.back {
   gap: 0.4rem;
   font-weight: 700;
 }
+/* status lines (soulad, potvrzeno) as cards like the findings: tinted, with a coloured edge */
 .verdict {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: var(--fs-l);
+  gap: 0.45rem;
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.9rem;
+  border-left: 4px solid currentColor;
+  border-radius: 8px;
+  font-size: var(--fs-m);
   font-weight: 600;
 }
 .verdict.ok {
   color: var(--ok);
+  background: var(--ok-soft);
 }
 .verdict.warn {
   color: var(--warn);
+  background: var(--warn-soft);
 }
 .stanoviska {
   align-items: center;
-  margin: 1rem 0 0;
+  margin: 0.5rem 0 0;
 }
 .bubble.yes {
   border-color: var(--ok);
