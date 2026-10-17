@@ -3,7 +3,7 @@
 **Audience:** the team and their coding agents. Agreed target for the frontend (decision #20).
 One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, **Další** per screen and a grey **Předchozí** to the previous
-tab (screens with input save first, either way).
+tab (Vývoj: previous chart page first; screens with input save first, either way).
 
 | # | Screen | What's on it |
 |---|--------|--------------|
@@ -12,7 +12,7 @@ tab (screens with input save first, either way).
 | 3 | Pacient | Labelled facts (patient, diagnosis, board, MDT date), up to 2 critical findings (else the 2 most important) as red/amber cards, the MDT question in a highlighted card (red when missing), the patient's wishes right under it (AI, when the agent briefed the case; 2 shown) |
 | 4 | Průběh | Diagnoses (4 facts shown) + výkonnostní stav (ECOG), course of the disease (4 latest events); the rest of each one click away |
 | 5 | Klíčové informace | Critical (high) and important (medium) red flags unrolled as red / amber cards; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
-| 6 | Vývoj | Four charts per screen (2×2) when the window is at least 981 × 820 px, else two; no scrolling; Další pages through further series, Předchozí goes to the previous tab |
+| 6 | Vývoj | Four charts per screen (2×2) when the window is at least 981 × 820 px, else two; no scrolling; Další and Předchozí page through the series first, then leave the tab |
 | 7 | Otázky k diskusi | The agent's 2–3 questions for the board, numbered, each with its source (AI); "not available" until the agent has briefed the case |
 | 8 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
 | 9 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |

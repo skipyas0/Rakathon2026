@@ -84,7 +84,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
 
 type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void; user: string }
 
-/** Předchozí (grey: the previous tab, never a page within one) and Další. Steps with input pass
+/** Předchozí (grey: the previous tab, or page on Vývoj) and Další. Steps with input pass
  * their own handlers, which save first, so going either way never loses what was entered. */
 const Nav = ({ next, prev, disabled }: { next?: () => void; prev?: () => void; disabled?: boolean }) => (
   <div className="nav-row">
@@ -376,7 +376,8 @@ function TrendsStep({ c, next, prev }: StepProps) {
         ))}
         {!c.trends.length && <p className="muted">Bez měřených hodnot.</p>}
       </div>
-      <Nav next={() => (page + 1 < pages ? setFirst((page + 1) * perPage) : next())} prev={prev} />
+      {/* both buttons page through the charts first, then leave the tab */}
+      <Nav next={() => (page + 1 < pages ? setFirst((page + 1) * perPage) : next())} prev={page > 0 ? () => setFirst((page - 1) * perPage) : prev} />
     </>
   )
 }
