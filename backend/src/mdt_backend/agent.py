@@ -626,8 +626,10 @@ radiologa, chirurga a klinického onkologa navrhni 1 až 2 možnosti léčby (op
 volba) PŘÍSNĚ podle dodaných pasáží doporučených postupů:
 - každá možnost musí odpovídat konkrétní pasáži (guideline_ids, alespoň jedna) a stavu pacienta
   (refs); text ≤ 2 věty, uveď podmínky (např. co je třeba nejprve doplnit),
-- intent = léčebný záměr možnosti: curative (kurativní), palliative (paliativní), supportive
-  (podpůrná péče), surveillance (sledování), deferred (rozhodnutí odloženo do doplnění údajů),
+- intent = léčebný záměr, ke kterému možnost vede, i když má podmínky (např. nejprve doplnit
+  vyšetření): curative (kurativní), palliative (paliativní), supportive (podpůrná péče),
+  surveillance (sledování); deferred jen tehdy, když možnost sama spočívá v odložení rozhodnutí
+  a cíl léčby z dokumentace nelze určit,
 - pokud podle pasáží nelze rozhodnout bez chybějících údajů, uveď to jako podmínku možnosti,
 - preference: stated = zda pacient uvedl preferenci léčby; text = preference stručně a zda ji
   možnosti respektují; matches_option = rank možnosti, která jí odpovídá, nebo „žádná“.
