@@ -108,10 +108,22 @@ function PatientStep({ c, record, next }: StepProps) {
   )
   const question = record.prep.question || c.question?.text
   const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
+  // what must not be missed: critical findings, else the most important ones
+  const critical = [...c.red_flags.entries()].filter(([, f]) => f.severity === 'high')
+  const alerts = (critical.length ? critical : [...c.red_flags.entries()].filter(([, f]) => f.severity === 'medium')).slice(0, 2)
   return (
     <>
       <h1 className="huge">{c.label}</h1>
       <p className="muted">{[TUMOURS[c.tumour], c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
+      {alerts.length > 0 && (
+        <ul className={`key-facts compact ${critical.length ? 'crit' : 'warn'}`}>
+          {alerts.map(([i, f]) => (
+            <li key={i}>
+              <Alert /> {S(`red_flags.${i}`, f.statement, 'inline')}
+            </li>
+          ))}
+        </ul>
+      )}
       <section className={`question-card ${question ? '' : 'missing'}`}>
         <p className="eyebrow">Otázka pro komisi</p>
         <p className="question">{question ?? 'Chybí otázka pro komisi'}</p>

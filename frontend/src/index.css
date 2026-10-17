@@ -991,6 +991,32 @@ button.next {
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--line);
 }
+.key-facts li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+.key-facts.crit li,
+.key-facts.warn li {
+  margin-bottom: 0.5rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-left: 5px solid;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.key-facts.crit li {
+  border-left-color: var(--crit);
+  background: var(--crit-soft);
+}
+.key-facts.warn li {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+.key-facts.compact {
+  font-size: 1.05rem;
+  margin: 1rem 0 0;
+}
 .key-facts.crit .icon,
 .crit-text {
   color: var(--crit);

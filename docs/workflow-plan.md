@@ -8,8 +8,8 @@ no descriptions, no extra buttons, one **Další** per screen.
 |---|--------|--------------|
 | 1 | Nahrání | Two rectangles with "nebo" between: FHIR (pick or drop a file → uploads at once) and PDF (greyed out, "Připravujeme") |
 | 2 | Komise | Specialty bubbles; a tap adds it (green outline). At least 3 |
-| 3 | Pacient | Patient and board, the MDT question in a highlighted card (red when missing), diagnoses + ECOG, course of the disease |
-| 4 | Klíčové informace | Critical (high) and important (medium) red flags unrolled; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
+| 3 | Pacient | Patient and board, up to 2 critical findings (else the 2 most important) as red/amber cards, the MDT question in a highlighted card (red when missing), diagnoses + ECOG, course of the disease |
+| 4 | Klíčové informace | Critical (high) and important (medium) red flags unrolled as red / amber cards; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
 | 5 | Vývoj | Two charts per screen, no scrolling; Další pages through further series |
 | 6 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
 | 7 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
