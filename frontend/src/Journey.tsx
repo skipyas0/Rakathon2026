@@ -772,7 +772,7 @@ function RecommendedPopup({ rec, record }: { rec: NonNullable<Recommendation>; r
   return (
     <>
       <button className="recommended-row" onClick={() => dialog.current?.showModal()}>
-        <Robot label="AI" /> Doporučený postup {example}
+        <Robot label="AI" /> <span className="row-link">Doporučený postup</span> {example}
       </button>
       <dialog ref={dialog} className="dialog recommended-dialog" onClick={(e) => e.target === dialog.current && dialog.current.close()}>
         <div className="dialog-body">

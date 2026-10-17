@@ -324,6 +324,14 @@ legend {
   border-color: var(--ai-line);
   color: var(--ai);
 }
+.recommended-row .row-link {
+  text-decoration: underline dotted var(--ai); /* opens like a statement does */
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+.recommended-row:hover .row-link {
+  text-decoration-style: solid;
+}
 .recommended-dialog .intent-label {
   margin-top: 0.75rem;
 }
