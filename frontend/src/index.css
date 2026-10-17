@@ -1176,8 +1176,9 @@ a.chevron.done:hover {
 button.next,
 button.back {
   display: flex;
-  font-size: var(--fs-l);
-  padding: 0.7rem 2rem;
+  font-size: var(--fs-m);
+  font-weight: 600;
+  padding: 0.55rem 1.5rem;
 }
 /* Předchozí (grey) right next to Další, both at the right under every journey screen */
 .nav-row {
