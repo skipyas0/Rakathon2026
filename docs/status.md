@@ -9,6 +9,9 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   Klíčové informace → Stanovisko), their stanovisko generated live (~20 s) or written, their
   stance; also chevrons that remember the furthest step, "Uložit a další/zavřít", an unsaved-input
   warning, signing by role (no name fields), gender-neutral export wording.
+- `yes-and/font-sizes` (on top of specialist-roles): one font size per kind of text on every
+  screen (decision #26). Pacient, Průběh and Klíčové informace still scroll with P01's amount of
+  data at some widths; that needs fewer items or another page, not smaller type.
   After merging, rerun `mdt-agent --all`: red flags then carry `area` (until then a specialist
   sees all of them) and the batch adds a pathology view.
 - Fly: the web app (https://mdt-copilot-rakathon.fly.dev, yes-and's account) runs the IRIS build
