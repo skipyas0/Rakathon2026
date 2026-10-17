@@ -128,7 +128,7 @@ Export = the filled template: PDF preview, PDF / DOCX download.
   the web API (case list, briefings, source drawer, intake) and of `mdt-agent` and
   `mdt-patient`. Local: `docker compose up -d iris` → `http://localhost:52773/fhir/r4`
   (`SuperUser` / `IRIS_PASSWORD`, default `SYS`; Management Portal at `/csp/sys/UtilHome.csp`; a 404
-  at `/` is normal). Data in the `iris-data` volume; a fresh volume gets the endpoint on first start
+  at `/` is normal; a wrong password also gives 404, not 401 — `/api/health` then reports `fhir: false`). Data in the `iris-data` volume; a fresh volume gets the endpoint on first start
   (~2 min) and the dataset via `mdt-load-fhir`. Reloading overwrites same-id resources; it is not a
   reset. Contributor 2's older kit volume (`docker-iris-fhir_iris-data`) has the same namespace and
   endpoint, so it can be reused as `iris-data`.
