@@ -317,7 +317,9 @@ legend {
 }
 /* Záměr: the recommended postup folded into one row; opens in a pop-up */
 .recommended-row {
-  margin-top: 1.5rem;
+  display: flex; /* its own line, also under the lock note */
+  width: fit-content;
+  margin-top: 0.25rem;
   background: var(--ai-soft);
   border-color: var(--ai-line);
   color: var(--ai);

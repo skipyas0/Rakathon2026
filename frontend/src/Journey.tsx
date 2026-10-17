@@ -437,6 +437,7 @@ function IntentStep({ record, rec, save, next, prev }: StepProps) {
     <>
       <h1>Léčebný záměr</h1>
       {locked && <Locked />}
+      {rec && <RecommendedPopup rec={rec} record={record} />}
       <div className="tiles">
         {(Object.keys(INTENTS) as Intent[]).map((k) => (
           <button key={k} className={`tile intent-${k} ${intents.includes(k) ? 'on' : ''}`} aria-pressed={intents.includes(k)} disabled={locked} onClick={() => toggle(k)}>
@@ -445,7 +446,6 @@ function IntentStep({ record, rec, save, next, prev }: StepProps) {
           </button>
         ))}
       </div>
-      {rec && <RecommendedPopup rec={rec} record={record} />}
       <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intents.length} saves={!locked} />
     </>
   )
@@ -763,7 +763,7 @@ function Recommended({ rec, record }: { rec: Recommendation; record: CaseRecord 
   )
 }
 
-/** Záměr: the same recommendation folded into one AI row, to prepare the závěr; a click opens it in
+/** Záměr: the same recommendation folded into one AI row above the tiles, to prepare the závěr; a click opens it in
  * a pop-up, where every source opens as anywhere else. */
 function RecommendedPopup({ rec, record }: { rec: NonNullable<Recommendation>; record: CaseRecord }) {
   const S = renderer(record)
@@ -772,7 +772,7 @@ function RecommendedPopup({ rec, record }: { rec: NonNullable<Recommendation>; r
   return (
     <>
       <button className="recommended-row" onClick={() => dialog.current?.showModal()}>
-        <Robot label="AI" /> Doporučený postup <span className="muted">·</span> <IntentIcon intent={rec.intent} /> {INTENTS[rec.intent].label} {example}
+        <Robot label="AI" /> Doporučený postup {example}
       </button>
       <dialog ref={dialog} className="dialog recommended-dialog" onClick={(e) => e.target === dialog.current && dialog.current.close()}>
         <div className="dialog-body">
