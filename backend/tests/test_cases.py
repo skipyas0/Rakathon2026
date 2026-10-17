@@ -1,6 +1,7 @@
 """Case/source API reads patient data only from the FHIR server; 503 while it's unreachable."""
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from mdt_backend import fhir
@@ -77,3 +78,26 @@ def test_ai_status_follows_the_agent(tmp_path, monkeypatch):
     agent.running_path("P09").unlink()
     assert status() == "done"
     assert client.get("/api/cases/nope/ai").status_code == 404
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_agent_running_marker_is_cleaned_up(tmp_path, monkeypatch, fails):
+    from mdt_backend import agent
+
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    marker = agent.running_path("P09")
+
+    def run(patient, runs):
+        assert patient == "P09" and runs == 1
+        assert marker.exists()
+        if fails:
+            raise RuntimeError("pipeline failed")
+        return {"options": []}
+
+    monkeypatch.setattr(agent, "_run_patient", run)
+    if fails:
+        with pytest.raises(RuntimeError, match="pipeline failed"):
+            agent.run_patient("P09", 1)
+    else:
+        assert agent.run_patient("P09", 1) == {"options": []}
+    assert not marker.exists()

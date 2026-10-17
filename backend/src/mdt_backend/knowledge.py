@@ -56,3 +56,12 @@ def trial_source(trial_id: str, criterion_id: str) -> Source:
         title=f"{trial_id} {t['akronym']} – kritérium {kind} {criterion_id}",
         excerpt=c["text"],
     )
+
+
+def trial_diagnosis_source(trial_id: str) -> Source:
+    t = trials()[trial_id]
+    return Source(
+        reference=f"trial:{trial_id}#diagnosis",
+        title=f"{trial_id} {t['akronym']} – diagnóza studie",
+        excerpt=t["diagnoza"],
+    )

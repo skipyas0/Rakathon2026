@@ -138,6 +138,53 @@ Why: Text-then-extract keeps the narrative the model reasons in while the app ge
 individually cited statements. A full run is ~2.5 min per patient (~9 min each with all 6 in
 parallel under the APIM rate limit), too slow for page load.
 
+## 19. Red-flag rules over a concept layer, configured in TOML — 2026-10-17, Contributor 2
+Status: accepted (replaces the six fixed rules of #10)
+Decision: Rule-based red flags (`pravidla-v2`) are written against concepts, not dataset quirks.
+`concepts.py` maps LOINC codes (with aliases), uncoded Observation titles, PROMs linkIds *or*
+question text, ATC codes *or* drug names and ICD-10 onto one vocabulary and extracts the `Facts`
+the rules read. `rules.py` holds generic rule families: A abnormal values (CTCAE v5 grades,
+functional thresholds), B trends (marker rise, large lab change, weight loss, PROMs worsening,
+symptom burden), C discordance between sources (ECOG doctor vs patient, TNM, receptor status,
+CTCAE grade vs lab, weight, allergy, OTC/herbal use), D lab value corroborated by a patient
+symptom, E drug monitoring (required tests per drug class, LVEF drop, neurotoxicity, surgery
+wash-out), F alarm symptoms, G stale or missing data (imaging/labs/ECOG/PROMs age, required
+biomarkers per tumour), H context (unfulfilled steps, missing preference, geriatric screening,
+second tumour, smoking, comorbidity × drug). Thresholds, severities, drug classes and the guideline
+passage each rule cites live in `rules.toml`; `RULES_CONFIG=<file>` overrides it (tables merged,
+lists replaced). Free-text symptoms ("new complaints", pain site) are mapped onto the vocabulary by
+an LLM step in the agent (`symptoms`, excerpts verified verbatim); the LLM-free briefing uses a
+keyword classifier with negation handling. Rules claim the evidence they use so a value or symptom
+is reported once.
+Why: The first rules (Hb + fatigue, ECOG) were right but fit the six example patients; the same
+pattern (a value, a trend, two sources disagreeing, a drug needing a check) recurs for many other
+red flags. Thresholds in a file can be reviewed by clinicians without reading code. The synthetic
+holdout (P07, `secret_*`) was deliberately not used to design or tune the rules.
+
+## 20. One-call preliminary study filter — 2026-10-17, Copilot
+Status: accepted
+Decision: Add one strict-JSON LLM call to the existing agent, covering every criterion of every
+study. Keep the existing `TrialMatch` / `Statement` API and citation UI. Validate criterion coverage
+and patient citations, downgrade unsupported outcomes to unknown, and record rejected evidence
+in the trace. Each criterion cites both the study text and available patient evidence.
+Verdict priority, explicitly chosen by the user: a supported exclusion match means non-match;
+otherwise at least one supported inclusion match means potential match, even if other inclusion
+or exclusion criteria remain unknown; otherwise data missing, including when every inclusion is
+known not to match. Unknown criteria stay visible. This is not full eligibility checking.
+Why: The challenge calls for preliminary screening, not automatic assignment. One cited LLM call
+is sufficient for the proof of concept; a reviewed executable protocol engine, new evidence store
+and new API contracts are out of scope. Clinicians make all decisions; no automatic enrolment
+or dosing decisions. UI labels explicitly warn that potential matches may have unverified criteria.
+
+## 21. Cancer-type mismatch overrides inclusion matches — 2026-10-17, Copilot
+Status: accepted (amends #20)
+Decision: In the same screening call, assess cancer-type compatibility separately from individual
+criteria, with citations to the study diagnosis and patient evidence. A supported different cancer
+type means non-match even when a generic inclusion such as ECOG matches. Unsupported or uncertain
+diagnosis assessments remain unknown; evaluate multiple primary tumours without conflating them.
+Solid-tumour/basket studies remain cross-organ. All other verdict priorities from #20 are unchanged.
+Why: Live inspection found breast-cancer patients labelled potential matches for colorectal and
+lung studies solely through ECOG. The user explicitly requested different cancer types be excluded.
 ## 19. Previous MDT's board in the briefing — 2026-10-17, yes-and
 Status: accepted
 Decision: `Case.previous_board` lists the members of the patient's latest previous MDT from the
@@ -152,9 +199,10 @@ Decision: The coordinator's frontend is one linear journey (`docs/workflow-plan.
 → export, plus a case overview. Specialists get their own short journey (#27). No triage,
 visibility or section configuration in the UI (the backend keeps those record fields for later). The final conclusion
 needs consensus of all board members (`MDT_ZASEDANI_PROCES.md` §4.3): the coordinator records it,
-Potvrdit means the board agreed, anyone against blocks it; no per-member sign-off. Soulad s
-doporučenými postupy is derived: chosen léčebný záměr = recommended one (#21). Where the agent has
-no output, a hand-written example labelled "ukázka" stands in (recommendation, stanoviska).
+Potvrdit means the board agreed, anyone against blocks it; no per-member sign-off. Guideline
+compliance is assessed against the board's actual plan and the cited recommendation (#28). Where
+the agent has no output, a hand-written example labelled "ukázka" stands in (recommendation,
+stanoviska).
 Why: The demo has to be simple and legible end to end; the role-based screens were too much.
 
 ## 21. The agent recommends a léčebný záměr — 2026-10-17, yes-and
@@ -162,8 +210,8 @@ Status: accepted
 Decision: Each option the agent proposes carries its léčebný záměr; the first kept option's goes
 to `DecisionSupport.intent`. `/recommendation` returns that option and intent when present, so
 Potvrzení compares the conclusion with real AI output.
-Why: Soulad is derived from the léčebný záměr (#20); without one per option the app could only
-compare with the examples.
+Why: The recommendation carries its treatment intent, text and cited passages into the final
+guideline-compliance assessment.
 
 ## 22. The patient's preference on its own in the briefing — 2026-10-17, yes-and
 Status: accepted
@@ -240,3 +288,28 @@ quick=True)`: reasoning effort "low", only the verdict extracted, ~20 s instead 
 batch `mdt-agent` keeps the default effort and its full output.
 Why: The board members prepare their part before the meeting (process doc §3); one shared record
 written from two screens must not lose a specialist's input to the coordinator's stale copy.
+
+## 28. LLM assessment of the board's final plan against guidelines — 2026-10-17
+Status: accepted | renumbered 2026-10-17: #27 on the `backend` branch, which `main` had already
+given to the specialists' decision
+Decision: On Potvrzení, a separate LLM call compares the board's entered plan and rationale with
+the available recommendation and its original cited guideline passages. The call returns a
+compliant / deviation / uncertain verdict, a reason, and only guideline citations already cited
+by that recommendation. The reason and exact guideline sources are saved with the confirmed
+decision; an uncertain result requires a coordinator to resolve compliance manually. If no
+recommendation exists, compliance remains manual.
+Why: A treatment-intent match is not enough to establish whether the board's actual plan follows
+the recommended procedure; the final claim needs a reason and clickable primary sources.
+
+## 25-backend. Reconcile the backend branch with the coordinator journey — 2026-10-17, Copilot
+Status: accepted | updated 2026-10-17 (second main merge)
+Decision: Merge `main` into `backend` without rewriting the original backend commits.
+Keep configurable v2 rules, symptom classification and cited study screening alongside the
+coordinator journey, meeting ids, treatment intent, preference and AI-running status. Adopt the
+current UI navigation and PDF/DOCX export; keep expandable study evidence on the discussion
+screen and port source-highlighting fixes into the v2 rules, not the superseded v1 engine.
+Keep `main`'s IRIS-only policy (#24). This entry was #25 on the backend branch; its suffix
+distinguishes it from main's independently assigned export decision without changing that anchor.
+The parallel branches also independently assigned 19–21; name the decision when ambiguous.
+Why: Preserve both contributors' work and published history while keeping one current UI and
+data contract.

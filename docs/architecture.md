@@ -59,24 +59,50 @@ root size, 16px on laptops and narrow windows up to 20px on projectors; widths i
 | `briefing.py`   | `Case`: the MDT briefing (summary, timeline, red flags, sections, decision support, trends) |
 | `bundles.py`    | `Bundle`: one patient's resources in memory (built from IRIS by `agent.Record`), resource accessors, full text of a record |
 | `knowledge.py`  | Guideline passages (`Dataset/guidelines/*.md`) and trial criteria (`Dataset/studie/studie.json`) as verbatim `Source`s: `guideline:KRC-2.3`, `trial:RKT-01#Z2` |
-| `from_fhir.py`  | Builds a `Case` from a bundle deterministically (no LLM): question, summary, timeline, sections, trends, previous MDT's board (`CareTeam`) |
-| `rules.py`      | Rule-based red flags (`origin: "ai"`, model `pravidla-v1`): ECOG doctor vs patient, anaemia + fatigue, rising marker, worsening PROMs, new symptom, stale imaging |
+| `from_fhir.py`  | Builds a `Case` from a bundle deterministically (no LLM): question, summary, timeline, sections, trends, previous MDT's board (`CareTeam`); optional classified symptoms feed the v2 rules |
+| `concepts.py`   | Concept layer for the rules: LOINC (+ aliases) / uncoded titles / PROMs linkId or question / ATC or drug name / ICD-10 → one vocabulary; `Facts` extracted once per bundle; keyword symptom classifier (offline fallback) |
+| `rules.py`      | Rule-based red flags (`origin: "ai"`, model `pravidla-v2:<rule>`, decision 19): families A–H (abnormal values, trends, discordance, corroboration, drug monitoring, alarm symptoms, stale/missing data, context), each citing record sources and its guideline passage |
+| `rules.toml`    | Thresholds, severities, drug classes and guideline ids for every rule; override with `RULES_CONFIG=<file>` |
 | `features/cases.py` | Case list = patients on the FHIR server (IRIS). A case is one meeting: id = patient + planned MDT date (`p03-2026-10-21`, from `Task.restriction`), records are keyed by it; `GET /api/cases/{id}`: `data/ai_cases/<patient>.json` if the agent ran (id set to the meeting, the batch's "Stanovisko (…)" verdicts left out), else the IRIS record → `from_fhir`; `GET /api/sources/{type}/{id}`: full text of a record, read from IRIS by dataset id. IRIS unreachable → 503 (decision 24) |
 | `features/intake.py` | `POST /api/intake` (one FHIR Bundle, base64 in JSON) → validated (a `Case` must build from it) → into IRIS (`load_fhir.put`); returns the case id. IRIS unreachable → 503, bundle rejected by IRIS → 422; nothing is stored elsewhere. Resources of an earlier upload missing from the new one stay (needs patient deletion, not built). `kind: "pdf"` answers 501 until AI extraction exists |
 | `features/records.py` | `CaseRecord` (confirmations, prep, specialist notes, `stanoviska` (specialty → Statement), decision, tasks; coordinator's board, finding triage, section layout + detail level, visibility per specialty; after the meeting: patient's stance, agreed plan), phase status, agenda |
 | `features/stanovisko.py` | A board specialist's stanovisko and stance: `POST /api/cases/{id}/stanovisko/{specialty}/generate` (the agent's specialist step, AI statement, replaces the stored one) and `PATCH …/stanovisko/{specialty}` (`supports` and/or `statement`: the specialist's own, signed, or the AI draft unchanged, confirmed). 404 for a specialty not on the board, 409 once the decision is locked. The only writer of `CaseRecord.stanoviska` and `Member.supports`: the record PUT keeps the stored ones |
 | `features/history.py` | `GET /api/cases/{id}/history`: the patient's previous MDT records and treatment decisions from the health record (`Composition`, sections as text) and every meeting of the patient recorded in the app (status, decision). Read-only |
 | `features/recommendation.py` | `GET /api/cases/{id}/recommendation`: the recommended postup to compare the conclusion with: `{intent, statement}` or null. The agent's first option and its `decision_support.intent` when the agent briefed the case; otherwise ponytail: hand-written examples per dataset patient (`model: "ukázka"`) citing real guideline passages via `knowledge.py` |
+| `features/compliance.py` | `POST /api/cases/{id}/guideline-assessment`: a separate LLM comparison of the board's plan/rationale with the recommendation and its cited original guideline passages; returns the verdict, reason and verified guideline sources saved with the confirmed decision |
 | `features/export.py` | Závěr zasedání MDT = `docs/template_zaver_zasedani/form.md` filled for a meeting (decision 25): header from the confirmed decision + FHIR Patient, history fields from one LLM call (`POST /api/cases/{id}/zaver/draft`, ~20 s, cached in `data/zavery/<case>.json`, `?refresh=true` redoes it), question from the nomination, Závěr MDT from the decision. `GET …/zaver.pdf` (inline, previewed) and `GET …/zaver.docx` (for edits); 409 before the conclusion is confirmed. PDF needs a TrueType font with Czech glyphs (DejaVu in the Docker image) |
 
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =
 `prep`/`meeting`/`followup`/`closed`, board `specialties`, `ai` (as `/ai` below); specialists see only their cases), `GET /api/cases/{id}` (`Case`),
-`GET /api/cases/{id}/history` (patient's MDT history), `POST /api/cases/{id}/stanovisko/{specialty}/generate`, `PATCH /api/cases/{id}/stanovisko/{specialty}`, `GET /api/cases/{id}/recommendation`, `GET /api/cases/{id}/ai` (`{status}`: `running` while `mdt-agent` briefs the patient, `done`, or null), `POST /api/cases/{id}/zaver/draft`, `GET /api/cases/{id}/zaver.pdf` + `.docx`, `GET|PUT|DELETE /api/cases/{id}/record` (`CaseRecord`; DELETE resets the case to new, even a confirmed one; 409 once the decision is locked, 422 when marking a
+`GET /api/cases/{id}/history` (patient's MDT history), `POST /api/cases/{id}/stanovisko/{specialty}/generate`, `PATCH /api/cases/{id}/stanovisko/{specialty}`, `GET /api/cases/{id}/recommendation`, `POST /api/cases/{id}/guideline-assessment` (LLM verdict with source-backed explanation), `GET /api/cases/{id}/ai` (`{status}`: `running` while `mdt-agent` briefs the patient, `done`, or null), `POST /api/cases/{id}/zaver/draft`, `GET /api/cases/{id}/zaver.pdf` + `.docx`, `GET|PUT|DELETE /api/cases/{id}/record` (`CaseRecord`; DELETE resets the case to new, even a confirmed one; 409 once the decision is locked, 422 when marking a
 case prepared without an MDT question or with fewer than 3 specialties on the board, or locking
 the decision while a board member doesn't support it), `GET /api/sources/{type}/{id}` (title, date, author, full
 text of one record — for the source drawer), `POST /api/intake` (upload a
 case).
+
+The agent also classifies free-text symptoms against `concepts.SYMPTOMS`, verifies excerpts
+and recomputes the v2 rule flags. This runs alongside indicators and preference extraction;
+the deterministic briefing uses keyword classification instead. Patient preference is available
+both as `Case.preference` for the journey and at the start of `sections.patient`.
+
+Study prefilter (`agent.screen_trials`, "One-call preliminary study filter" decision): one additional strict-JSON LLM call over
+the patient digest, MDT date and all studies from `knowledge.trials()`. Each inclusion/exclusion
+gets a cited reason and matched / not matched / unknown outcome. Code checks catalogue coverage,
+patient references, non-empty verbatim excerpts and questionnaire item references; unsupported
+outcomes become unknown and are logged in `rejected_citations`. Every displayed criterion also
+cites the exact study criterion. A separate cited cancer-type assessment uses the study's
+`diagnoza` (`trial:<id>#diagnosis`); supported incompatible cancer types → `ineligible`.
+Uncertain tumour origin stays unknown, and solid-tumour/basket studies remain cross-organ.
+Otherwise verdict priority: any supported exclusion match → `ineligible`;
+otherwise any supported inclusion match → `eligible` (even with unknown criteria); otherwise
+`missing_data`, including when no inclusion matches. These are preliminary filtering labels,
+not clinical eligibility decisions. Missing catalogue or invalid output coverage fails explicitly.
+The existing `TrialMatch` contract is unchanged; criteria remain AI `Statement`s. The journey
+discussion screen shows expandable criteria and sources, with a provisional-filter notice.
+No automatic enrolment, protocol dose recommendations or changes to the official record.
+Saved briefings must be regenerated with `uv run mdt-agent --all` to include the new screening;
+the deterministic no-LLM fallback continues to leave trials empty.
 
 Statement origins: `record` = taken from the health record (ground truth, plain text in the UI),
 `human` = written by a clinician (nomination question, notes), `ai` = machine proposal (blue,
@@ -86,6 +112,10 @@ cite via `knowledge.py` (the frontend shows `guideline:`/`trial:` sources by the
 Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 `sections.surgery.2`, `trials.0.1`, …), so they stay valid only while the briefing's order is unchanged.
 
+Rule citations use verbatim questionnaire/observation lines (multiple excerpts separated by
+newlines) for source highlighting. Patient source text includes the recorded name, birth date
+and age extension, so age-based v2 alerts can also be checked in the source drawer.
+
 ## Frontend — `frontend/src/`
 
 | File                | Role                                                          |
@@ -94,7 +124,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `features/roles/`   | `role.ts` (the 4 roles, the role in localStorage, the specialist's steps), `RolePicker.tsx` (the role button and its pop-up of role bubbles; a pick leads to Přehled), `SpecialistJourney.tsx` (Pacient and Klíčové informace = the coordinator's screens on a case narrowed to the specialty; Stanovisko: stance, generate / write / confirm their stanovisko, signed with the specialty) |
 | `Overview.tsx`      | Přehled (a specialist: only their cases, no reset): one line per case (name, tumour, board, MDT date, status), columns folding away as the window narrows; opens where the work continues; reset button (after a confirm dialog) deletes the meeting's record |
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
-| `Journey.tsx`       | Steps 2–11 for one case (Předchozí / Další under each; input steps save first and their Další says "Uložit a další"; `PatientStep`, `FactsStep`, `Nav`, `Working`, `Locked` are exported for the specialist journey): board bubbles, patient (labelled facts, findings, question, the patient's wishes), průběh (diagnosis, ECOG, course), key facts (urgent red flags first), up to 3 trends, the agent's questions for discussion, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (preview of `zaver.pdf` beside PDF / DOCX downloads, FHIR greyed out; asks for the AI draft first) |
+| `Journey.tsx`       | Steps 2–11 for one case (Předchozí / Další under each; input steps save first and their Další says "Uložit a další"; `PatientStep`, `FactsStep`, `Nav`, `Working`, `Locked` are exported for the specialist journey): board bubbles, patient (labelled facts, findings, question, the patient's wishes), průběh (diagnosis, ECOG, course), key facts (urgent red flags first), responsive trends, the agent's questions for discussion + expandable study screening and evidence, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, the LLM guideline assessment (decision #28), stanoviska in a pop-up, důvod odchylky, Potvrdit), export (preview of `zaver.pdf` beside PDF / DOCX downloads, FHIR greyed out; asks for the AI draft first) |
 | `Steps.tsx`         | Progress as chevrons (current solid green; steps up to the furthest one reached light green and linking, back or forward; the rest grey). The furthest step is kept per case and journey in localStorage (`reachedKey`), cleared when Přehled resets the case. Below 980 px only the current step between ‹ and ›, linking the same way |
 | `Stanoviska.tsx`    | Stance bubbles per board specialty (green supports / red doesn't, `Member.supports`, saved via `/stanovisko`), pop-up with the specialist's stanovisko in its own card (empty until they add one; specialties outside the 4 roles: example text with a warning) and the specialty's facts under "Podklady"; used on Závěr and Potvrzení, whose record refreshes every 10 s |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band, axis labels and "norma" as HTML around it; every point opens its source) |

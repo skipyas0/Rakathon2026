@@ -3,8 +3,12 @@ the dataset. Skipped when the dataset folder isn't present (it's not in git)."""
 
 import pytest
 from conftest import BUNDLES
+from fastapi.testclient import TestClient
 
 from mdt_backend import agent
+from mdt_backend.app import app
+from mdt_backend.features import cases
+from mdt_backend.knowledge import trials
 from mdt_backend.provenance import NOT_FOUND
 
 pytestmark = pytest.mark.skipif("p01" not in BUNDLES, reason="no dataset")
@@ -15,6 +19,27 @@ INVENTED = {"ref": "DiagnosticReport/P01-img06", "excerpt": "bez nálezu, vše v
 
 
 def fake_llm(system, user, schema, name, effort=None):
+    if name == "trials":
+        return {
+            "trials": [
+                {
+                    "id": tid,
+                    "diagnosis": {"status": "unknown", "reason": NOT_FOUND, "refs": []},
+                    "criteria": [
+                        {"id": c["id"], "status": "unknown", "reason": NOT_FOUND, "refs": []}
+                        for c in t["zarazeni"] + t["vyrazeni"]
+                    ],
+                }
+                for tid, t in trials().items()
+            ]
+        }
+    if name == "symptoms":
+        return {
+            "symptoms": [
+                {"item": "nove-obtize", "concept": "bone_pain", "excerpt": "kyčel", "new": True},
+                {"item": "neexistuje", "concept": "fever", "excerpt": "x", "new": True},
+            ]
+        }
     if name == "cacc":
         return {
             "prerequisites": [
@@ -199,8 +224,29 @@ def test_output_is_a_valid_case_with_ai_statements(result):
         "summary_extract",
         "indicators",
         "preference",
+        "symptoms",
+        "trials",
         *(f"{k}:{s}" for k in ("context", "opinion", "verdict") for s in agent.SPECIALISTS),
     }
+
+
+def test_symptom_classifier_output_is_checked(result):
+    case, trace = result
+    # the invented item is dropped; the classified hip pain still drives the alarm rule
+    assert [s["concept"] for s in trace["symptoms"]] == ["bone_pain"]
+    assert any("kyčel" in f.statement.text for f in case.red_flags)
+
+
+def test_screening_feeds_all_catalogue_criteria_into_case(result):
+    case, _ = result
+    assert {t.trial for t in case.decision_support.trials} == set(trials())
+    assert sum(len(t.criteria) for t in case.decision_support.trials) == 51
+    assert all(t.verdict == "missing_data" for t in case.decision_support.trials)
+    for trial in case.decision_support.trials:
+        assert all(s.text.endswith(NOT_FOUND) for s in trial.criteria)
+        assert all(
+            s.sources[0].reference.startswith(f"trial:{trial.trial}#") for s in trial.criteria
+        )
 
 
 def test_citations_are_checked(result):
@@ -282,6 +328,31 @@ def test_preference_leads_patient_section(result):
     assert patient.items[0].text == "Pacientka si nepřeje chemoterapii."
     assert patient.items[0].sources[0].reference == "ServiceRequest/P01-zad01"
     assert case.preference == patient.items[: len(case.preference)]  # also on its own for Pacient
+
+
+def test_pipeline_output_reaches_the_meeting_journey(result, tmp_path, monkeypatch):
+    case, trace = result
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    agent.save(case, trace, out_dir=tmp_path)
+    meeting = next(mid for mid, patient in cases.meetings().items() if patient == case.id)
+    client = TestClient(app)
+
+    response = client.get(f"/api/cases/{meeting}")
+    assert response.status_code == 200
+    served = response.json()
+    expected = case.model_dump(mode="json")
+    # the batch's per-specialty verdicts aren't served: a stanovisko is the specialist's (#27)
+    for section in expected["sections"]:
+        section["items"] = [i for i in section["items"] if not i["text"].startswith("Stanovisko (")]
+    assert served == {**expected, "id": meeting}
+    assert len(served["decision_support"]["trials"]) == 6
+    assert served["preference"] and served["previous_board"]
+    assert any(f["statement"]["model"].startswith("pravidla-v2:") for f in served["red_flags"])
+
+    recommendation = client.get(f"/api/cases/{meeting}/recommendation").json()
+    assert recommendation["intent"] == "palliative"
+    assert recommendation["statement"] == case.decision_support.options[0].model_dump(mode="json")
+    assert client.get(f"/api/cases/{meeting}/ai").json() == {"status": "done"}
 
 
 def test_live_stanovisko_is_quick_and_cited(monkeypatch, fake_fhir):

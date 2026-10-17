@@ -6,7 +6,7 @@ BODY     – the patient's history: one LLM call over the FHIR record (POST …/
            per template line plus the resources it came from, cached in data/zavery/<case>.json.
            AI output: blue in both formats, its sources under each value. "Otázka na MDT" comes
            from the nomination (record), not the LLM.
-RESPONSE – the board's confirmed decision (record). No AI.
+RESPONSE – the board's confirmed decision and the sourced AI guideline-compliance assessment.
 The coordinator previews the PDF; to change anything they download the DOCX and edit it."""
 
 import datetime as dt
@@ -266,8 +266,8 @@ def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
         else:
             f.value = NOT_FILLED
 
-    def line(label: str, value: str) -> Field:
-        return Field(label, 1, value, False, f"Závěr MDT > {label}")
+    def line(label: str, value: str, sources: list[str] | None = None) -> Field:
+        return Field(label, 1, value, False, f"Závěr MDT > {label}", sources)
 
     response: list[Field | None] = [
         Field("Závěr MDT", 0, "", True, "Závěr MDT"),
@@ -285,10 +285,19 @@ def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
         )
         if value
     ]
-    compliant = "Ano" if d.guideline_compliant else f"Ne – {d.deviation_reason}"
+    assessment = d.guideline_assessment
+    if assessment:
+        compliant = "V souladu" if d.guideline_compliant else "Odchylka"
+        compliant += f" – {assessment.statement.text}"
+        if d.deviation_reason:
+            compliant += f" Zdůvodnění komise: {d.deviation_reason}"
+        compliance_sources = [source.reference for source in assessment.statement.sources]
+    else:
+        compliant = "Ano" if d.guideline_compliant else f"Ne – {d.deviation_reason}"
+        compliance_sources = None
     at = f", {_local(d.confirmed_at)}" if d.confirmed_at else ""
     response += [
-        line("Soulad s doporučenými postupy", compliant),
+        line("Soulad s doporučenými postupy", compliant, compliance_sources),
         line("Potvrdil(a)", f"{d.confirmed_by}{at} (konsenzus komise)"),
     ]
     sections["RESPONSE"] = response

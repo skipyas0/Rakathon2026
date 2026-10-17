@@ -1,0 +1,454 @@
+# Red-flag rule catalogue (pravidla-v2), read by rules.py.
+# Every rule can be switched off (enabled = false) and has its thresholds and severity here.
+# Point RULES_CONFIG at another TOML file to override keys: tables are merged and lists replaced.
+# `guideline` is a passage id from Dataset/guidelines, or a table keyed by ICD-10 prefix of the
+# primary tumour ("*" = any); a cited passage is attached to the flag as a source.
+# Thresholds come from the cited guideline passage or from CTCAE v5.
+
+[general]
+grade_severity = ["low", "low", "medium", "high", "high"]  # index = CTCAE grade
+current_days = 60   # an administration this recent (before MDT) counts as current treatment
+
+# --- A: abnormal values --------------------------------------------------------------------------
+[abnormal_lab]
+enabled = true
+aggregate_grade1 = true   # G1 (just outside reference) → one combined low flag
+# CTCAE v5 cut-offs for G2, G3, G4 (G1 = outside the record's reference range).
+# below/above: absolute values in the units used here; *_x_uln: multiples of the reference high.
+[abnormal_lab.grades]
+hb = { below = [100, 80, 65] }                # g/l
+neutrophils = { below = [1.5, 1.0, 0.5] }     # 10^9/l
+platelets = { below = [75, 50, 25] }          # 10^9/l
+wbc = { below = [3.0, 2.0, 1.0] }             # 10^9/l
+albumin = { below = [30, 20, 15] }            # g/l
+alt = { above_x_uln = [3, 5, 20] }
+ast = { above_x_uln = [3, 5, 20] }
+alp = { above_x_uln = [2.5, 5, 20] }
+bilirubin = { above_x_uln = [1.5, 3, 10] }
+creatinine = { above_x_uln = [1.5, 3, 6] }
+sodium = { below = [130, 125, 120], above = [150, 155, 160] }   # mmol/l
+potassium = { below = [3.0, 3.0, 2.5], above = [5.5, 6.0, 7.0] }
+calcium = { below = [2.0, 1.75, 1.5], above = [2.9, 3.1, 3.4] }
+glucose = { above = [8.9, 13.9, 27.8] }
+crp = {}
+ld = {}
+tsh = {}
+[abnormal_lab.guideline]   # concept → passage cited with the abnormal value
+sodium = { C34 = "PLI-3.2" }
+bilirubin = { C50 = "PRS-2.4" }
+albumin = "OBC-2.3"
+
+[[threshold]]   # numeric values without a reference range
+concept = "ppo_fev1"
+below = 60
+high_below = 30
+advice = "doplnit zátěžový test (schodový test, spiroergometrie – VO2max)"
+guideline = "PLI-3.1"
+
+[[threshold]]
+concept = "ppo_dlco"
+below = 60
+high_below = 30
+advice = "doplnit zátěžový test (schodový test, spiroergometrie – VO2max)"
+guideline = "PLI-3.1"
+
+# Drug classes (concepts.DRUGS) known to cause a finding: named in the flag as a possible cause.
+[toxicity]
+neutrophils = ["cdk46", "parp", "taxane", "platinum", "fluoropyrimidine", "anthracycline"]
+wbc = ["cdk46", "parp", "taxane", "platinum", "fluoropyrimidine", "anthracycline"]
+hb = ["parp", "platinum", "taxane", "fluoropyrimidine", "cdk46"]
+platelets = ["parp", "platinum", "fluoropyrimidine"]
+alt = ["cdk46", "immunotherapy", "parp"]
+ast = ["cdk46", "immunotherapy", "parp"]
+bilirubin = ["immunotherapy"]
+creatinine = ["platinum", "bone_agent", "vegf"]
+glucose = ["corticosteroid", "immunotherapy"]
+calcium = ["bone_agent"]
+lvef = ["anti_her2", "anthracycline"]
+neuropathy = ["oxaliplatin", "platinum", "taxane"]
+diarrhoea = ["fluoropyrimidine", "cdk46", "immunotherapy"]
+
+# --- B: trends -----------------------------------------------------------------------------------
+[marker_rise]   # tumour marker above the reference range and rising
+enabled = true
+severity = "medium"
+rise_pct = 20
+guideline = { C50 = "PRS-4.2" }
+
+[lab_change]    # abrupt change of a lab that is not (yet) graded ≥ 2
+enabled = true
+severity = "medium"
+rel_pct = 40
+max_days = 90
+
+[weight_loss]
+enabled = true
+window_days = 183
+medium_pct = 5
+high_pct = 10
+guideline = "OBC-2.3"
+
+[proms_worsening]
+enabled = true
+severity = "medium"
+points = 3
+
+[symptom_burden]   # a 0–10 PROMs item at or above min_score
+enabled = true
+severity = "medium"
+min_score = 7
+guideline = "OBC-1.3"
+[symptom_burden.advice]
+pain = "zhodnotit analgezii"
+distress = "zvážit psychoonkologickou péči"
+fatigue = "pátrat po příčině (anémie, tyreopatie, deprese, toxicita)"
+dyspnoea = "vyšetřit příčinu dušnosti"
+appetite = "nutriční screening"
+sleep = "zhodnotit poruchu spánku"
+
+[ecog_change]   # doctor-rated ECOG worse than the previous assessment
+enabled = true
+severity = "low"
+high_points = 2
+high_severity = "medium"
+guideline = "OBC-2.1"
+
+# --- C: discordance between sources --------------------------------------------------------------
+[ecog_discordance]
+enabled = true
+medium_diff = 1
+high_diff = 2
+max_gap_days = 30
+guideline = "OBC-1.3"
+
+[tnm_discordance]   # different T or N (or stage) within a short window, or vs the diagnosis
+enabled = true
+severity = "high"
+window_days = 60
+guideline = { C34 = "PLI-1.1" }
+
+[receptor_discordance]   # ER/PR/HER2 category differs between samples
+enabled = true
+severity = "medium"
+guideline = { C50 = "PRS-1.1" }
+
+[toxicity_discordance]   # doctor's CTCAE grade vs the patient's report or the lab value
+enabled = true
+severity = "medium"
+patient_score = 5        # 0–10 PROMs score that suggests ≥ G2
+lab_window_days = 14
+guideline = { C18 = "KRC-3.2", C19 = "KRC-3.2", C20 = "KRC-3.2" }
+
+[weight_discordance]   # reported vs measured weight
+enabled = true
+severity = "low"
+max_diff_kg = 3
+max_gap_days = 14
+
+[allergy_record]   # patient reports an intolerance that is not recorded
+enabled = true
+severity = "low"
+
+[otc_interaction]   # non-prescribed drugs/supplements during systemic therapy
+enabled = true
+severity = "low"
+high_risk = 'třezalk|hypericum|john|grapefruit|grep|ginkgo|kurkum|echinace|ženšen|ginseng'
+high_severity = "high"
+
+# --- D: lab + symptom corroboration --------------------------------------------------------------
+[[corroborated]]
+lab = "hb"
+direction = "below"
+symptoms = ["fatigue", "dyspnoea", "palpitations"]
+min_score = 6
+severity = "high"
+advice = "zvážit příčinu a léčbu anémie"
+
+[[corroborated]]
+lab = "neutrophils"
+direction = "below"
+symptoms = ["fever"]
+min_score = 1
+severity = "high"
+advice = "vyloučit febrilní neutropenii"
+
+[[corroborated]]
+lab = "platelets"
+direction = "below"
+symptoms = ["bleeding"]
+min_score = 1
+severity = "high"
+advice = "krvácení při trombocytopenii"
+
+[[corroborated]]
+lab = "calcium"
+direction = "above"
+symptoms = ["confusion", "nausea"]
+min_score = 6
+severity = "high"
+advice = "hyperkalcémie se symptomy"
+
+[[corroborated]]
+lab = "bilirubin"
+direction = "above"
+symptoms = ["jaundice"]
+min_score = 1
+severity = "medium"
+advice = "hepatopatie – vyloučit obstrukci, progresi, toxicitu"
+
+[[corroborated]]
+lab = "sodium"
+direction = "below"
+symptoms = ["confusion", "headache", "nausea"]
+min_score = 6
+severity = "high"
+advice = "symptomatická hyponatrémie"
+guideline = { C34 = "PLI-3.2" }
+
+[[corroborated]]
+lab = "creatinine"
+direction = "above"
+symptoms = ["oedema"]
+min_score = 1
+severity = "medium"
+advice = "renální insuficience s otoky"
+
+# --- E: drug monitoring --------------------------------------------------------------------------
+[[monitoring]]
+drug = "cdk46"
+concepts = ["neutrophils", "alt"]
+within_days = 35
+severity = "medium"
+
+[[monitoring]]
+drug = "anti_her2"
+concepts = ["lvef"]
+within_days = 120
+severity = "medium"
+guideline = "PRS-3.4"
+
+[[monitoring]]
+drug = "anthracycline"
+concepts = ["lvef"]
+within_days = 120
+severity = "medium"
+
+[[monitoring]]
+drug = "immunotherapy"
+concepts = ["tsh", "alt"]
+within_days = 60
+severity = "medium"
+
+[[monitoring]]
+drug = "parp"
+concepts = ["hb", "neutrophils", "platelets"]
+within_days = 35
+severity = "medium"
+
+[[monitoring]]
+drug = "platinum"
+concepts = ["creatinine"]
+within_days = 35
+severity = "medium"
+
+[[monitoring]]
+drug = "bone_agent"
+concepts = ["calcium"]
+within_days = 90
+severity = "low"
+guideline = "PRS-4.1"
+
+[[monitoring]]   # DPD deficiency testing before fluoropyrimidines (EMA 2020)
+drug = "fluoropyrimidine"
+biomarker = 'DPD|DPYD'
+severity = "medium"
+
+[lvef_drop]
+enabled = true
+drop_points = 10
+floor = 50
+severity = "medium"
+high_severity = "high"
+symptoms = ["dyspnoea", "oedema", "palpitations"]
+min_score = 6
+guideline = "PRS-3.4"
+
+[neurotoxicity]   # neurotoxic drug + G ≥ 2 by the doctor or a high patient score
+enabled = true
+drugs = ["oxaliplatin", "platinum", "taxane"]
+min_grade = 2
+patient_score = 5
+severity = "medium"
+current_severity = "high"
+guideline = { C18 = "KRC-3.2", C19 = "KRC-3.2", C20 = "KRC-3.2" }
+
+[surgery_washout]   # anti-VEGF must be stopped ≥ 6 weeks before surgery
+enabled = true
+drug = "vegf"
+days = 42
+severity = "high"
+surgery = 'resek|operac|operabil|chirurg|metastazektom|lobektom|výkon'
+guideline = "KRC-2.3"
+
+# --- F: alarm symptoms (new symptoms in the latest questionnaire) --------------------------------
+[new_symptom]   # any new symptom without a more specific alarm
+enabled = true
+severity = "medium"
+advice = "ověřit, zda byla vyšetřena"
+
+[[alarm]]
+symptoms = ["bone_pain"]
+severity = "medium"
+escalate_icd = 'C79\.5'
+advice = "cílené zobrazení (RTG/CT/scintigrafie) – riziko patologické fraktury"
+guideline = { C50 = "PRS-4.2" }
+
+[[alarm]]
+symptoms = ["back_pain"]
+with = ["neuro_deficit"]
+severity = "high"
+advice = "podezření na kompresi míchy – urgentní MR páteře"
+
+[[alarm]]
+symptoms = ["headache", "vision", "neuro_deficit", "confusion"]
+severity = "high"
+advice = "neurologický symptom – cílené zobrazení mozku (MR)"
+guideline = { C50 = "PRS-4.2" }
+
+[[alarm]]
+symptoms = ["haemoptysis"]
+severity = "high"
+advice = "hemoptýza – zhodnotit zdroj krvácení"
+
+[[alarm]]
+symptoms = ["fever"]
+drugs = ["cdk46", "parp", "taxane", "platinum", "fluoropyrimidine", "anthracycline"]
+severity = "high"
+advice = "horečka při myelotoxické léčbě – vyloučit febrilní neutropenii"
+
+[[alarm]]
+symptoms = ["jaundice"]
+severity = "high"
+advice = "ikterus – jaterní testy, vyloučit obstrukci"
+
+[[alarm]]
+symptoms = ["dyspnoea", "chest_pain", "palpitations"]
+severity = "medium"
+advice = "vyloučit progresi, výpotek, anémii, kardiotoxicitu, pneumonitidu a embolii"
+
+[[alarm]]
+symptoms = ["bleeding"]
+severity = "medium"
+advice = "krevní obraz a koagulace"
+
+[[alarm]]
+symptoms = ["neuropathy_functional"]
+severity = "medium"
+advice = "neuropatie omezující běžné činnosti (≈ CTCAE G2) – zvážit úpravu neurotoxické léčby"
+guideline = { C18 = "KRC-3.2", C19 = "KRC-3.2", C20 = "KRC-3.2" }
+
+[[alarm]]
+symptoms = ["weight_loss", "appetite"]
+severity = "medium"
+advice = "nutriční screening"
+guideline = "OBC-2.3"
+
+# --- G: stale or missing data --------------------------------------------------------------------
+[stale]
+enabled = true
+severity = "low"
+imaging_days = 42
+labs_days = 30
+ecog_days = 30
+proms_days = 30
+guideline = "OBC-1.2"
+
+[[required]]
+name = "receptorový stav"
+tumour = 'C50'
+when = ["metastatic"]
+markers = { ER = '^ER\b|estrogen', PR = '^PR\b|progesteron', HER2 = 'HER2' }
+severity = "medium"
+guideline = "PRS-1.1"
+
+[[required]]
+name = "testování při progresi HR+/HER2−"
+tumour = 'C50'
+when = ["metastatic", "hr_positive", "her2_negative"]
+markers = { ESR1 = 'ESR1', "PI3K/AKT" = 'PIK3CA|AKT1|PTEN', "BRCA1/2" = 'BRCA' }
+severity = "medium"
+guideline = "PRS-1.3"
+
+[[required]]
+name = "povinné biomarkery mCRC"
+tumour = 'C1[89]|C20'
+when = ["metastatic"]
+markers = { KRAS = 'KRAS|\bRAS\b', NRAS = 'NRAS|\bRAS\b', "BRAF V600E" = 'BRAF', "MMR/MSI" = 'MMR|MSI' }
+severity = "medium"
+guideline = "KRC-1.1"
+
+[[required]]
+name = "prediktivní biomarkery NSCLC"
+tumour = 'C34'
+when = []
+markers = { EGFR = 'EGFR', ALK = '\bALK\b', "PD-L1" = 'PD-?L1' }
+severity = "medium"
+guideline = "PLI-1.3"
+
+# --- H: process and context ----------------------------------------------------------------------
+[unfulfilled]   # a recommended step that the record says did not happen
+enabled = true
+severity = "medium"
+pattern = 'neproběhl|nebylo provedeno|neprovedeno|nedostavil|nerealizován'
+
+[preference_missing]
+enabled = true
+severity = "low"
+
+[geriatric]
+enabled = true
+severity = "low"
+min_age = 70
+guideline = "OBC-2.2"
+
+[second_tumour]   # more than one primary (or an uncertain neoplasm next to a known cancer)
+enabled = true
+severity = "medium"
+guideline = "OBC-1.4"
+
+[smoking]
+enabled = true
+severity = "low"
+pattern = 'aktivní|kouří|current'
+guideline = { C34 = "PLI-3.3" }
+
+[[comorbidity_drug]]
+icd = 'I2[0-5]|I50|I42'
+drugs = ["fluoropyrimidine", "vegf", "anti_her2", "anthracycline"]
+severity = "medium"
+advice = "kardiální komorbidita při potenciálně kardiotoxické léčbě – kardiologické zhodnocení"
+
+[[comorbidity_drug]]
+icd = 'E1[0-4]'
+drugs = ["corticosteroid"]
+severity = "medium"
+advice = "diabetes při léčbě kortikoidy – monitorovat glykémii a upravit antidiabetika"
+guideline = "OBC-3.1"
+
+[[comorbidity_drug]]
+icd = 'N18'
+drugs = ["platinum", "bone_agent"]
+severity = "low"
+advice = "chronické onemocnění ledvin – dávkování podle clearance kreatininu"
+
+[[comorbidity_drug]]
+icd = 'I10'
+drugs = ["vegf"]
+severity = "low"
+advice = "hypertenze při anti-VEGF léčbě – kontrola TK a proteinurie"
+
+[[comorbidity_drug]]
+icd = 'J4[3-4]|J84'
+drugs = ["immunotherapy"]
+severity = "low"
+advice = "plicní komorbidita při imunoterapii – riziko pneumonitidy"

@@ -30,6 +30,40 @@ def test_confirmed_decision_must_be_complete():
     Decision(**FINAL)
 
 
+def test_guideline_assessment_is_saved_with_decision():
+    body = {
+        **FINAL,
+        "guideline_assessment": {
+            "status": "deviation",
+            "statement": {
+                "text": "Postup se odchyluje od doporučení.",
+                "origin": "ai",
+                "model": "test",
+                "sources": [
+                    {
+                        "reference": "guideline:PRS-3.3",
+                        "title": "Doporučený postup",
+                        "excerpt": "Relevantní pasáž.",
+                    }
+                ],
+            },
+            "compared_plan": "Resekce",
+            "compared_rationale": "Zvolená možnost",
+            "compared_intent": "curative",
+            "recommendation": "Doporučená systémová léčba",
+            "recommendation_sources": [
+                {
+                    "reference": "guideline:PRS-3.3",
+                    "title": "Doporučený postup",
+                    "excerpt": "Relevantní pasáž.",
+                }
+            ],
+        },
+    }
+    decision = Decision(**body)
+    assert decision.guideline_assessment.statement.sources[0].reference == "guideline:PRS-3.3"
+
+
 def case(case_id: str, question: str | None) -> Case:
     q = question and Statement(text=question, origin="human", confirmed_by="MUDr. Odesílající")
     empty = DecisionSupport(options=[], trials=[], questions=[])

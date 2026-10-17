@@ -145,6 +145,16 @@ def observation_line(o: dict) -> str:
 def text_of(r: dict) -> str:
     """Full human-readable text of a resource, for the 'whole record' view."""
     t = r["resourceType"]
+    if t == "Patient":
+        lines = [n["text"] for n in r.get("name", []) if n.get("text")]
+        if r.get("birthDate"):
+            lines.append(r["birthDate"])
+        lines.extend(
+            f"věk {e['valueInteger']}"
+            for e in r.get("extension", [])
+            if "vek" in e.get("url", "") and "valueInteger" in e
+        )
+        return "\n".join(lines) or title_of(r)
     if t == "DiagnosticReport":
         body = "\n\n".join(_decode(a) for a in r.get("presentedForm", []))
         return "\n\n".join(
