@@ -12,8 +12,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 ## yes-and (Claude Code)
 
 - Branch `yes-and/trim-dead-files`: repo cleanup, step 1 — holdout files moved to
-  `Dataset/holdout/` (decision 23), `brief.docx` removed (`brief.md` is the same text). Next
-  cleanup steps: core purpose in AGENTS.md, IRIS-only / FHIR-only (drops bundles fallback + stubs),
+  `Dataset/holdout/` (decision 23), `brief.docx` removed (`brief.md` is the same text); scope
+  rewritten as core + checklist in `problem_statement.md` (decision 24). Next cleanup steps: IRIS-only / FHIR-only (drops bundles fallback + stubs),
   one conclusion PDF following `template_zaver_zasedani`.
 
 - Done (on `main`): three-phase MDT app (#1) on dataset v1.1, Docker image + Fly deploy (#2) at

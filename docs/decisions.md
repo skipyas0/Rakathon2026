@@ -239,3 +239,15 @@ baked into the deployed image. Share them the way the dataset is shared. They re
 history (commit 214594b); fictional data, so no rewrite.
 Why: The answer key must never reach the pipeline or a coding agent's context; at the repo root
 every agent and the Docker build picked it up. `holdout/` is outside every path the code reads.
+
+## 24. Core scope: IRIS only, FHIR only, template output — 2026-10-17, yes-and
+Status: accepted (supersedes the HAPI option of the status.md open question and the on-disk
+fallback of #18)
+Decision: `docs/problem_statement.md` is the scope: the core definition (coordinator workflow over
+the NIS; FHIR + PDF in; PDF following `template_zaver_zasedani` + FHIR out; LLM for PDF parsing,
+suggestions, inconsistencies and the verdict's guideline compliance) plus every item of the brief
+as a checklist. IRIS for Health is the only FHIR server; the app reads patient data only from it
+(no bundles from disk); the deployed app runs on a Fly machine big enough for IRIS alongside. One
+conclusion PDF, the template's. Running the app needs no test suite; checks stay light.
+Why: Defined by yes-and to cut parallel paths (HAPI vs IRIS, server vs disk, two PDFs) and give
+every cleanup step one yardstick. IRIS earns the sponsor bonus.
