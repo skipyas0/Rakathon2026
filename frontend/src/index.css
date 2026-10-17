@@ -307,6 +307,15 @@ legend {
   border-color: transparent;
   color: var(--crit);
 }
+.banner.ai {
+  background: var(--ai-soft);
+  border-color: var(--ai-line);
+  color: var(--ai);
+}
+.ai-chip {
+  background: var(--ai-soft);
+  color: var(--ai);
+}
 .banner.warn {
   background: var(--warn-soft);
   border-color: transparent;

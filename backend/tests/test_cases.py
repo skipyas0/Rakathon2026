@@ -50,6 +50,7 @@ def test_case_list_falls_back_to_disk_when_server_is_down(monkeypatch):
     monkeypatch.setattr(fhir, "get", get)
     monkeypatch.setattr(cases.bundles, "bundle_paths", lambda: {"p77": None})
     monkeypatch.setattr(cases.bundles, "load", lambda path: cases.Bundle({"entry": []}))
+    monkeypatch.setattr(cases, "uploads", dict)
     assert cases.meetings() == {"p77": "p77"}  # no Task → no planned date
 
 
@@ -63,3 +64,18 @@ def test_cases_are_the_patients_nominated_on_the_server(monkeypatch):
     monkeypatch.setattr(fhir, "get", lambda path, **params: {"entry": [{"resource": task}]})
     monkeypatch.setattr(cases, "uploads", dict)
     assert cases.meetings() == {"p09-2026-10-21": "p09"}  # a patient without a Task is no case
+
+
+def test_ai_status_follows_the_agent(tmp_path, monkeypatch):
+    from mdt_backend import agent
+
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(cases, "meetings", lambda: {"p09-2026-10-21": "p09"})
+    status = lambda: client.get("/api/cases/p09-2026-10-21/ai").json()["status"]
+    assert status() is None
+    agent.running_path("P09").touch()
+    assert status() == "running"
+    (tmp_path / "p09.json").write_text("{}")
+    agent.running_path("P09").unlink()
+    assert status() == "done"
+    assert client.get("/api/cases/nope/ai").status_code == 404

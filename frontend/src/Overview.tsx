@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { type AgendaItem, api } from './api'
-import { Check } from './icons'
+import { AI_POLL_MS, type AgendaItem, api } from './api'
+import { Check, Robot } from './icons'
 import { fmtDate, TUMOURS } from './layout'
 
 /** Přehled: every case and whether its conclusion is confirmed; opens where the work continues. */
@@ -8,7 +8,17 @@ export function Overview() {
   const [items, setItems] = useState<AgendaItem[] | null>(null)
   const [error, setError] = useState('')
   useEffect(() => {
-    api.agenda().then(setItems, (e: Error) => setError(e.message))
+    let timer = 0
+    const load = () =>
+      api.agenda().then(
+        (items) => {
+          setItems(items)
+          if (items.some((it) => it.ai === 'running')) timer = window.setTimeout(load, AI_POLL_MS)
+        },
+        (e: Error) => setError(e.message),
+      )
+    void load()
+    return () => window.clearTimeout(timer)
   }, [])
 
   return (
@@ -23,7 +33,14 @@ export function Overview() {
           return (
             <li key={it.id} className={`case-card ${state}`}>
               <a href={`#/case/${encodeURIComponent(it.id)}/${step}`}>
-                <span className="case-name">{it.label}</span>
+                <span className="case-name">
+                  {it.label}{' '}
+                  {it.ai === 'running' && (
+                    <span className="chip ai-chip">
+                      <Robot /> AI připravuje…
+                    </span>
+                  )}
+                </span>
                 <span className="chip">{TUMOURS[it.tumour] ?? it.tumour}</span>
                 <span className="case-meta">{it.board}</span>
                 <span className="case-meta">{it.mdt_date && `MDT ${fmtDate(it.mdt_date)}`}</span>

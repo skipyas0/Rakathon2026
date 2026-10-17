@@ -18,7 +18,9 @@ no descriptions, no extra buttons, one **Další** per screen.
 | 10 | Export | Two rectangles: PDF (downloads the official record, rendered by the backend: question, board, záměr, postup, zdůvodnění, soulad, who confirmed) or FHIR (greyed out, "Připravujeme") |
 
 Plus **Přehled** (`#/`): case cards with a coloured status (Potvrzeno / Rozpracováno / Nový); a
-confirmed case opens Export.
+confirmed case opens Export. While the agent briefs a patient (`mdt-agent`, a batch step), its card
+says "AI připravuje…" and every screen of the case shows a blue banner; both check every 10 s and
+the case reloads itself when the briefing is ready.
 
 Narrow screens (≤ 640 px): one-line progress ("3 / 10 · Pacient"), compact top bar and type, the
 disease course only as a collapsible list, so no screen scrolls.

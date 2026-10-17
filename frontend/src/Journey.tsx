@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { api, type CaseRecord, type Decision, type Intent, type Recommendation } from './api'
+import { AI_POLL_MS, api, type CaseRecord, type Decision, type Intent, type Recommendation } from './api'
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
-import { Alert, Check, Doc, IntentIcon } from './icons'
+import { Alert, Check, Doc, IntentIcon, Robot } from './icons'
 import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
@@ -17,11 +17,27 @@ const SECTION_LABEL: Record<string, string> = { ...SPECIALTIES, patient: 'Pacien
 export function Journey({ id, step, user }: { id: string; step: Step; user: string }) {
   const [data, setData] = useState<Data | null>(null)
   const [error, setError] = useState('')
+  const [aiRunning, setAiRunning] = useState(false)
   useEffect(() => {
-    Promise.all([api.case(id), api.record(id), api.recommendation(id)]).then(
-      ([c, record, rec]) => setData({ c, record, rec }),
-      (e: Error) => setError(e.message),
-    )
+    let timer = 0
+    const load = () =>
+      Promise.all([api.case(id), api.record(id), api.recommendation(id)]).then(
+        ([c, record, rec]) => setData({ c, record, rec }),
+        (e: Error) => setError(e.message),
+      )
+    // while the agent briefs the patient, check back and reload the case once it's done
+    const poll = (wasRunning: boolean) =>
+      api.ai(id).then(
+        ({ status }) => {
+          setAiRunning(status === 'running')
+          if (status === 'running') timer = window.setTimeout(() => poll(true), AI_POLL_MS)
+          else if (wasRunning) void load()
+        },
+        () => setAiRunning(false), // stubs have no AI status
+      )
+    void load()
+    void poll(false)
+    return () => window.clearTimeout(timer)
   }, [id])
 
   if (error) return <div className="banner bad page">{error}</div>
@@ -46,6 +62,11 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
   return (
     <div className="page journey">
       <Steps current={step} caseId={id} />
+      {aiRunning && (
+        <div className="banner ai">
+          <Robot /> AI připravuje podklady… Stránka se po dokončení sama obnoví.
+        </div>
+      )}
       {step === 'board' && <BoardStep {...props} />}
       {step === 'patient' && <PatientStep {...props} />}
       {step === 'facts' && <FactsStep {...props} />}

@@ -909,7 +909,22 @@ def patient_ids() -> list[str]:
     return sorted({r.split("/", 1)[1] for r in refs if r.startswith("Patient/")})
 
 
+def running_path(patient: str) -> Path:
+    """Exists while the agent works on the patient, so the app can say the briefing is coming."""
+    return OUT_DIR / f"{patient.lower()}.running"
+
+
 def run_patient(patient: str, runs: int, source: str) -> dict:
+    marker = running_path(patient)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.touch()
+    try:
+        return _run_patient(patient, runs, source)
+    finally:
+        marker.unlink(missing_ok=True)
+
+
+def _run_patient(patient: str, runs: int, source: str) -> dict:
     cases, trace = [], {}
     for n in range(1, runs + 1):
         try:

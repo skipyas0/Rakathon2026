@@ -10,7 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, model_validator
 
-from mdt_backend.features.cases import case_ids, get_case
+from mdt_backend.features.cases import ai_status, case_ids, get_case
 
 RECORDS = Path(__file__).parents[4] / "data" / "records"
 
@@ -183,6 +183,7 @@ def agenda() -> list[dict]:
                 "intent": r.decision.intent,
                 "status": status(r),
                 "specialties": sorted({m.specialty for m in r.board}),  # who may open it
+                "ai": ai_status(c.patient.split("/")[-1].lower()),
             }
         )
     return out

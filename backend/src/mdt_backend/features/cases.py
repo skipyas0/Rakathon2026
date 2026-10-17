@@ -7,7 +7,9 @@ A case is one meeting about one patient: its id is the patient plus the planned 
 ("p03-2026-10-21"), so a patient's next MDT gets its own case and record."""
 
 import re
+import time
 from pathlib import Path
+from typing import Literal
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -69,6 +71,23 @@ def record(patient: str) -> Bundle:
         if path := bundles.bundle_paths().get(patient):
             return bundles.load(path)
         raise HTTPException(503, "FHIR server nedostupný") from None
+
+
+def ai_status(patient: str) -> Literal["running", "done"] | None:
+    """Whether the agent is briefing the patient now, has briefed them, or never ran for them."""
+    marker = agent.running_path(patient)
+    # ponytail: a run killed mid-way leaves its marker; treat it as stale after an hour (a full
+    # batch takes ~10 min)
+    if marker.exists() and time.time() - marker.stat().st_mtime < 3600:
+        return "running"
+    return "done" if (agent.OUT_DIR / f"{patient}.json").exists() else None
+
+
+@router.get("/cases/{case_id}/ai")
+def get_ai_status(case_id: str) -> dict:
+    if (patient := meetings().get(case_id)) is None:
+        raise HTTPException(404, f"No case {case_id!r}")
+    return {"status": ai_status(patient)}
 
 
 @router.get("/cases/{case_id}")

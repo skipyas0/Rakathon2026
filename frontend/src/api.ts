@@ -15,7 +15,11 @@ export type AgendaItem = {
   intent: Intent | null
   status: Status
   specialties: string[] // on the board; a specialist sees only these cases
+  ai: AiStatus
 }
+
+/** The agent's briefing: being written now, written, or never run for the patient. */
+export type AiStatus = 'running' | 'done' | null
 
 export type Confirmation = { by: string; at: string }
 export type Note = { text: string; by: string; at: string }
@@ -80,6 +84,8 @@ async function call<T>(url: string, init?: RequestInit): Promise<T> {
   return body
 }
 
+export const AI_POLL_MS = 10_000 // how often a page re-checks a running agent
+
 const caseUrl = (id: string) => `/api/cases/${encodeURIComponent(id)}`
 
 export const api = {
@@ -94,6 +100,7 @@ export const api = {
     }),
   history: (id: string) => call<History>(`${caseUrl(id)}/history`),
   recommendation: (id: string) => call<Recommendation>(`${caseUrl(id)}/recommendation`),
+  ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),
   intake: (kind: IntakeKind, files: { name: string; data: string }[]) =>
     call<{ case_id: string }>('/api/intake', {
       method: 'POST',
