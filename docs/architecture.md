@@ -13,7 +13,7 @@ Domain context (how a real MDT runs, what the final record must hold) is in
 [MDT_ZASEDANI_PROCES.md](MDT_ZASEDANI_PROCES.md); the full doc list is in [AGENTS.md](../AGENTS.md).
 
 Deployed (`Dockerfile`): one container on :8000 — FastAPI serves `/api` and the built frontend
-(`frontend/dist`, mounted in `app.py` when present). `Dataset/` is baked into the image (keep it in a
+(`frontend/dist`, mounted in `app.py` when present). `Dataset/` and the agent's briefings (`data/ai_cases/`, without traces) are baked into the image, since no FHIR server runs there (keep it in a
 private registry); mount a volume at `/app/data/records`. Live on Fly.io:
 https://mdt-copilot-rakathon.fly.dev (`fly.toml`, region `fra`, volume `records`, sleeps when idle).
 `APP_PASSWORD` (Fly secret) turns on one shared HTTP basic-auth password for everything except
@@ -116,7 +116,7 @@ Export = PDF download from `GET /api/cases/{id}/zaver.pdf`.
 - `data/ai_cases/`: AI-augmented briefings (`mdt-agent`, `Case` JSON + trace of every step and
   rejected citation, git-ignored). `/api/cases/{id}` serves these instead of the plain build.
 - FHIR R4 on HAPI (H2 DB inside the container: survives restarts, wiped by `docker compose down`).
-  The backend works with any FHIR R4
+  The backend (web API and `mdt-agent`) works with any FHIR R4
   server: set `FHIR_BASE_URL` (+ `FHIR_USER`/`FHIR_PASSWORD` for IRIS, see `.env.example`).
 - InterSystems IRIS for Health (alternative FHIR server), from the sponsor kit in `FHIR-AI-Kit/`
   (container `iris-fhir`, FHIR at `http://localhost:52773/fhir/r4`, `SuperUser`/`SYS`, data in a
