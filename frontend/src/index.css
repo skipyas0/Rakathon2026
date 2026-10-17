@@ -988,7 +988,7 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.45rem 0.35rem 0.45rem 0.95rem;
+  padding: 0.45rem 0.65rem; /* symmetric: the notch (left) and the point (right) are equally deep */
   white-space: nowrap;
   font-size: var(--fs-s);
   font-weight: 600;
@@ -999,7 +999,6 @@ code {
 }
 .steps li:first-child .chevron {
   clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 0 100%);
-  padding-left: 0.6rem;
 }
 .chevron.done {
   color: var(--ok);
