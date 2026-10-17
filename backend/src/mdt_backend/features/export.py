@@ -6,7 +6,7 @@ BODY     – the patient's history: one LLM call over the FHIR record (POST …/
            per template line plus the resources it came from, cached in data/zavery/<case>.json.
            AI output: blue in both formats, its sources under each value. "Otázka na MDT" comes
            from the nomination (record), not the LLM.
-RESPONSE – the board's confirmed decision and the sourced AI guideline-compliance assessment.
+RESPONSE – the board's confirmed decision (record). No AI.
 The coordinator previews the PDF; to change anything they download the DOCX and edit it."""
 
 import datetime as dt
@@ -48,15 +48,12 @@ INTENTS = {
 # template department line → the board specialty's label (as the confirmed decision's attendees
 # carry it, frontend SPECIALTIES); the coordinator, unnamed (decision #27), is present once the
 # conclusion is confirmed.
-# ponytail: the template comes from a sarcoma board; other specialties go on one extra line.
 DEPARTMENTS = {
     "Klinika zobrazovacích metod": "Radiologie",
     "Onkologická klinika": "Klinická onkologie",
     "III.chirurgická klinika": "Chirurgie",
     "Ústav Patologie": "Patologie",
 }
-COORDINATOR = "Koordinátorka onkologické péče"  # as the template words it
-# printed gender-neutral: who coordinates (and who is present) isn't known to be a woman or a man
 COORDINATOR_LABEL = "Koordinátor/ka onkologické péče"
 PRESENT = "přítomen/a"
 
@@ -121,14 +118,9 @@ def fill_header(
             f.value = patient_values[f.label]
         elif f.label in DEPARTMENTS:
             a = present.get(DEPARTMENTS[f.label])
-            f.value = (a.name or PRESENT) if a else "–"
-        elif f.label == COORDINATOR:
-            f.label = COORDINATOR_LABEL
+            f.value = f"Jméno, {a.specialty}" if a else "–"
+        elif f.label == COORDINATOR_LABEL:
             f.value = PRESENT if d.confirmed_by else "–"
-    others = [s for s in present if s not in DEPARTMENTS.values()]
-    if others:
-        at = next(i for i, f in enumerate(lines) if f and f.label == COORDINATOR_LABEL)
-        lines.insert(at, Field("Další odbornosti", 0, ", ".join(others), False, "Další odbornosti"))
 
 
 # --- BODY: the patient's history, drafted by the LLM -----------------------------------------
@@ -266,8 +258,8 @@ def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
         else:
             f.value = NOT_FILLED
 
-    def line(label: str, value: str, sources: list[str] | None = None) -> Field:
-        return Field(label, 1, value, False, f"Závěr MDT > {label}", sources)
+    def line(label: str, value: str) -> Field:
+        return Field(label, 1, value, False, f"Závěr MDT > {label}")
 
     response: list[Field | None] = [
         Field("Závěr MDT", 0, "", True, "Závěr MDT"),
@@ -285,19 +277,10 @@ def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
         )
         if value
     ]
-    assessment = d.guideline_assessment
-    if assessment:
-        compliant = "V souladu" if d.guideline_compliant else "Odchylka"
-        compliant += f" – {assessment.statement.text}"
-        if d.deviation_reason:
-            compliant += f" Zdůvodnění komise: {d.deviation_reason}"
-        compliance_sources = [source.reference for source in assessment.statement.sources]
-    else:
-        compliant = "Ano" if d.guideline_compliant else f"Ne – {d.deviation_reason}"
-        compliance_sources = None
+    compliant = "Ano" if d.guideline_compliant else f"Ne – {d.deviation_reason}"
     at = f", {_local(d.confirmed_at)}" if d.confirmed_at else ""
     response += [
-        line("Soulad s doporučenými postupy", compliant, compliance_sources),
+        line("Soulad s doporučenými postupy", compliant),
         line("Potvrdil(a)", f"{d.confirmed_by}{at} (konsenzus komise)"),
     ]
     sections["RESPONSE"] = response
@@ -323,7 +306,7 @@ def _unsourced(f: Field) -> bool:
 
 def to_pdf(title: str, sections: dict, draft: dict | None) -> bytes:
     doc = PdfDoc(f"Závěr zasedání MDT – {title}", footer=f"Závěr zasedání MDT · {title}")
-    doc.paragraph([Run("Závěr zasedání MDT", bold=True)], size=16)
+    doc.paragraph([Run("Závěr zasedání MDT", bold=True)], size=15)
     doc.paragraph([Run(title, color=GREY)], size=9)
     if note := _ai_note(draft):
         doc.space(4)
@@ -331,7 +314,7 @@ def to_pdf(title: str, sections: dict, draft: dict | None) -> bytes:
     for name, lines in sections.items():
         doc.rule()
         if TITLES.get(name):
-            doc.paragraph([Run(TITLES[name], bold=True)], size=12)
+            doc.paragraph([Run(TITLES[name], bold=True)], size=11.5)
             doc.space(2)
         for f in lines:
             if f is None:
