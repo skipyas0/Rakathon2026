@@ -109,3 +109,18 @@ def test_history_lists_the_patients_meetings(client):
     assert {m["id"] for m in h["meetings"]} == {"example", "lung-incomplete"}
     assert h["documents"] == []  # a stub has no health record behind it
     assert client.get("/api/cases/nope/history").status_code == 404
+
+
+def test_confirmed_conclusion_downloads_as_pdf(client):
+    try:
+        from mdt_backend.pdf import _font_paths
+
+        _font_paths()
+    except FileNotFoundError:
+        pytest.skip("no TrueType font with Czech glyphs on this machine")
+    assert client.get("/api/cases/example/zaver.pdf").status_code == 409  # not confirmed yet
+    body = {"board": BOARD, "decision": FINAL}
+    assert client.put("/api/cases/example/record", json=body).status_code == 200
+    r = client.get("/api/cases/example/zaver.pdf")
+    assert r.status_code == 200 and r.content.startswith(b"%PDF")
+    assert "attachment" in r.headers["content-disposition"]
