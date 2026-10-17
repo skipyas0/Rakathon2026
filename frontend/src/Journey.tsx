@@ -50,6 +50,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
       {step === 'patient' && <PatientStep {...props} />}
       {step === 'facts' && <FactsStep {...props} />}
       {step === 'trends' && <TrendsStep {...props} />}
+      {step === 'questions' && <QuestionsStep {...props} />}
       {step === 'intent' && <IntentStep {...props} />}
       {step === 'plan' && <PlanStep {...props} />}
       {step === 'confirm' && <ConfirmStep {...props} />}
@@ -239,6 +240,27 @@ function FactsStep({ c, record, next }: StepProps) {
 }
 
 const PER_PAGE = 2 // charts per screen, so nothing scrolls
+
+/** The 2–3 questions the agent says the board must settle, before it picks the léčebný záměr. */
+function QuestionsStep({ c, record, next }: StepProps) {
+  const S = renderer(record)
+  const questions = c.decision_support.questions
+  return (
+    <>
+      <h1>Otázky k diskusi</h1>
+      {questions.length ? (
+        <ol className="key-facts questions">
+          {questions.map((q, i) => (
+            <li key={i}>{S(`questions.${i}`, q, 'inline')}</li>
+          ))}
+        </ol>
+      ) : (
+        <p className="muted">Otázky zatím nejsou k dispozici.</p>
+      )}
+      <Next onClick={next} />
+    </>
+  )
+}
 
 function TrendsStep({ c, next }: StepProps) {
   const [page, setPage] = useState(0)

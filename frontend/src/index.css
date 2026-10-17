@@ -1013,6 +1013,16 @@ button.next {
   gap: 0.6rem;
   align-items: baseline;
 }
+.key-facts.questions {
+  counter-reset: q;
+  font-size: 1.35rem;
+}
+.key-facts.questions li::before {
+  counter-increment: q;
+  content: counter(q) '.';
+  color: var(--muted);
+  font-weight: 600;
+}
 .key-facts.crit li,
 .key-facts.warn li {
   margin-bottom: 0.5rem;

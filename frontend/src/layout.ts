@@ -59,6 +59,7 @@ export const STEPS = [
   { id: 'patient', label: 'Pacient' },
   { id: 'facts', label: 'Klíčové informace' },
   { id: 'trends', label: 'Vývoj' },
+  { id: 'questions', label: 'Otázky k diskusi' },
   { id: 'intent', label: 'Léčebný záměr' },
   { id: 'plan', label: 'Závěr' },
   { id: 'confirm', label: 'Potvrzení' },

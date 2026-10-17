@@ -23,7 +23,7 @@ https://mdt-copilot-rakathon.fly.dev (`fly.toml`, region `fra`, volume `records`
 
 One linear journey for the coordinator (decision #20, [workflow-plan.md](workflow-plan.md)), one
 screen per step and one **Další** each: Nahrání (`#/new`) → Komise → Pacient → Klíčové informace →
-Vývoj → Léčebný záměr → Závěr → Potvrzení (`#/case/<id>/<step>`), plus Přehled (`#/`). Soulad s
+Vývoj → Otázky k diskusi → Léčebný záměr → Závěr → Potvrzení (`#/case/<id>/<step>`), plus Přehled (`#/`). Soulad s
 doporučenými postupy is derived on the last screen (chosen léčebný záměr = recommended); on a
 difference, Potvrdit first asks for důvod odchylky. Potvrdit is the board's consensus and locks
 the conclusion; then Export: PDF (download rendered by the backend, `features/export.py`) or FHIR (not built yet).
@@ -80,7 +80,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `App.tsx`           | Shell: top bar (Přehled / Nový případ, user name), hash routing `#/`, `#/new`, `#/case/<id>/<step>` |
 | `Overview.tsx`      | Přehled: cases, confirmed or in progress; opens where the work continues |
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
-| `Journey.tsx`       | Steps 2–8 for one case: board bubbles, patient, key facts (urgent red flags first), up to 3 trends, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (PDF = download of `GET /api/cases/{id}/zaver.pdf`, FHIR greyed out) |
+| `Journey.tsx`       | Steps 2–10 for one case: board bubbles, patient (+ the patient's wishes), key facts (urgent red flags first), up to 3 trends, the agent's questions for discussion, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (PDF = download of `GET /api/cases/{id}/zaver.pdf`, FHIR greyed out) |
 | `Steps.tsx`         | Progress through the journey; finished steps link back        |
 | `Stanoviska.tsx`    | Stance bubbles per board specialty (green supports / red doesn't, `Member.supports`), pop-up with the stanovisko (the agent's verdict for that specialty, else example text) and the specialty's facts; used on Závěr and Potvrzení |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band; every point opens its source) |
