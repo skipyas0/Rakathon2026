@@ -42,8 +42,10 @@ case opens Export; a started case has a reset button (confirm dialog) that clear
 says "AI připravuje…" and every screen of the case shows a blue banner; both check every 10 s and
 the case reloads itself when the briefing is ready.
 
-Progress: green chevrons above every screen (finished ones link back, the current one solid). Below
-980 px only the current step ("3 / 10 · Pacient") between a back arrow and a disabled forward arrow.
+Progress: green chevrons above every screen (the current one solid; every step up to the furthest
+one reached in the case links, so after going back the later steps are one click away; remembered
+per browser, forgotten on reset). Below 980 px only the current step ("3 / 10 · Pacient") between
+back and forward arrows, which link the same way.
 Narrow screens (≤ 640 px): compact top bar and type, a smaller question, and Předchozí / Další fixed at the bottom edge, in the same place on
 every screen, reachable even when the content has to scroll.
 

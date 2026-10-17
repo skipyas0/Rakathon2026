@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AI_POLL_MS, type AgendaItem, api } from './api'
 import { Check, Reset, Robot } from './icons'
-import { fmtDate, TUMOURS } from './layout'
+import { fmtDate, forgetReached, TUMOURS } from './layout'
 
 /** Přehled: every case and whether its conclusion is confirmed; opens where the work continues.
  * A specialist (`role`) sees only the cases the coordinator put their specialty on the board of. */
@@ -26,7 +26,10 @@ export function Overview({ role }: { role: string }) {
   const reset = async (it: AgendaItem) => {
     if (!window.confirm(`Smazat záznam případu ${it.label}? Komise, potvrzení a závěr se odstraní; data pacienta zůstanou.`)) return
     const r = await api.resetRecord(it.id)
-    if (r.ok) setReloads((n) => n + 1)
+    if (r.ok) {
+      forgetReached(it.id)
+      setReloads((n) => n + 1)
+    }
     else setError(`Případ se nepodařilo vymazat (HTTP ${r.status})`)
   }
 

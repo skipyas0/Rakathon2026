@@ -89,3 +89,15 @@ export function save(key: string, value: unknown) {
     // storage unavailable (private window): settings just won't persist
   }
 }
+
+/** Where Steps remembers the furthest step reached in one case's journey. */
+export const reachedKey = (journey: string, caseId: string) => `mdt.reached.${journey}.${caseId}`
+
+/** A reset case starts over: its chevrons link only back again. */
+export function forgetReached(caseId: string) {
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('mdt.reached.') && k.endsWith(`.${caseId}`)) localStorage.removeItem(k)
+  } catch {
+    // storage unavailable: nothing was remembered
+  }
+}
