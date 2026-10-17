@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
-import { getRole, SPECIALIST_STEPS } from './features/roles/role'
+import { getRole, setRole, SPECIALIST_STEPS } from './features/roles/role'
 import { RolePicker } from './features/roles/RolePicker'
 import { SpecialistJourney } from './features/roles/SpecialistJourney'
-import { Person } from './icons'
 import { Intake } from './Intake'
 import { Journey } from './Journey'
-import { SPECIALTIES, STEPS } from './layout'
+import { STEPS } from './layout'
 import { Overview } from './Overview'
 import { SourceDrawer } from './SourceDrawer'
 
-/** #/ = Přehled, #/new = upload (step 1), #/role = the role picker, #/case/<id>/<step> = the
- * journey through one case (the coordinator's, or the specialist's when a specialist role is set). */
+/** #/ = Přehled, #/new = upload (step 1), #/case/<id>/<step> = the journey through one case (the
+ * coordinator's, or the specialist's when a specialist role is set). */
 function parse(hash: string): { id: string; step: string } | null {
   const [, kind, id, step = ''] = hash.split('/')
   if (kind !== 'case' || !id) return null
@@ -23,7 +22,12 @@ const stepIn = <T extends string>(steps: readonly { id: T }[], step: string) => 
 export default function App() {
   const [hash, setHash] = useState(location.hash)
   const route = parse(hash)
-  const role = getRole() // read on every render: the picker saves it and changes the hash
+  const [role, setRoleState] = useState(getRole)
+  const pick = (r: string) => {
+    setRole(r)
+    setRoleState(r)
+    location.hash = '#/' // the role's Přehled
+  }
   useEffect(() => {
     const onHash = () => {
       setHash(location.hash)
@@ -40,7 +44,7 @@ export default function App() {
           <span className="logo">MDT</span> <span className="brand-name">Copilot</span>
         </a>
         <nav className="topnav">
-          <a href="#/" className={hash === '#/new' || hash === '#/role' || route ? '' : 'on'}>
+          <a href="#/" className={hash === '#/new' || route ? '' : 'on'}>
             Přehled
           </a>
           {!role && (
@@ -49,9 +53,7 @@ export default function App() {
             </a>
           )}
         </nav>
-        <a href="#/role" className={`role-btn ${hash === '#/role' ? 'on' : ''}`} title="Změnit roli">
-          <Person /> {role ? SPECIALTIES[role] : 'Koordinátor'}
-        </a>
+        <RolePicker role={role} onPick={pick} />
       </header>
 
       <main>
@@ -61,8 +63,6 @@ export default function App() {
           ) : (
             <Journey key={route.id} id={route.id} step={stepIn(STEPS, route.step)} />
           )
-        ) : hash === '#/role' ? (
-          <RolePicker current={role} />
         ) : hash === '#/new' && !role ? (
           <Intake />
         ) : (

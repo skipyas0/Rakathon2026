@@ -19,8 +19,9 @@ tab (Vývoj: previous chart page first; screens with input save first, either wa
 | 10 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); who confirms is typed next to Potvrdit (the last signer pre-filled). Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
 | 11 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once); the format boxes carry a download icon; dark grey Zavřít (next to Předchozí) returns to Přehled |
 
-**Specialists** (decision #27): the role button at the top right opens **Vaše role** (`#/role`), one
-tile per role (Koordinátor, Chirurgie, Klinická onkologie, Radiologie, Patologie); a tap picks it.
+**Specialists** (decision #27): the role button at the top right opens the **Vaše role** pop-up, one
+bubble per role as on Komise (Koordinátor, Chirurgie, Klinická onkologie, Radiologie, Patologie;
+the current one green); a tap picks it and leads to that role's Přehled.
 A specialist's Přehled lists only the cases the coordinator put their specialty on the board of (a
 case may show for no specialist), without the reset button or Nový případ. Their journey has three
 screens:

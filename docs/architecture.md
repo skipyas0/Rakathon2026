@@ -34,7 +34,7 @@ difference, Potvrdit first asks for důvod odchylky. Potvrdit is the board's con
 the conclusion; then Export: the conclusion in the shape of `template_zaver_zasedani` as a PDF preview with
 PDF and DOCX downloads (`features/export.py`), or FHIR (not built yet).
 
-Specialists (decision #27): a role picked per browser (`#/role`); a specialist sees only the cases
+Specialists (decision #27): a role picked per browser (the role button's pop-up); a specialist sees only the cases
 their specialty is on the board of and walks Pacient → Klíčové informace → Stanovisko (the same
 `#/case/<id>/<step>` URLs). Their stance and stanovisko go through `features/stanovisko.py`.
 
@@ -90,8 +90,8 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 
 | File                | Role                                                          |
 |---------------------|---------------------------------------------------------------|
-| `App.tsx`           | Shell: top bar (Přehled / Nový případ, the role button at the right), hash routing `#/`, `#/new`, `#/role`, `#/case/<id>/<step>` (the coordinator's or the specialist's journey by the role) |
-| `features/roles/`   | `role.ts` (the 4 roles, the role in localStorage, the specialist's steps), `RolePicker.tsx` (`#/role` tiles), `SpecialistJourney.tsx` (Pacient and Klíčové informace = the coordinator's screens on a case narrowed to the specialty; Stanovisko: stance, generate / write / confirm their stanovisko) |
+| `App.tsx`           | Shell: top bar (Přehled / Nový případ, the role button at the right), hash routing `#/`, `#/new`, `#/case/<id>/<step>` (the coordinator's or the specialist's journey by the role) |
+| `features/roles/`   | `role.ts` (the 4 roles, the role in localStorage, the specialist's steps), `RolePicker.tsx` (the role button and its pop-up of role bubbles; a pick leads to Přehled), `SpecialistJourney.tsx` (Pacient and Klíčové informace = the coordinator's screens on a case narrowed to the specialty; Stanovisko: stance, generate / write / confirm their stanovisko) |
 | `Overview.tsx`      | Přehled (a specialist: only their cases, no reset): one line per case (name, tumour, board, MDT date, status), columns folding away as the window narrows; opens where the work continues; reset button (after a confirm dialog) deletes the meeting's record |
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
 | `Journey.tsx`       | Steps 2–11 for one case (Předchozí / Další under each; input steps save first): board bubbles, patient (labelled facts, findings, question, the patient's wishes), průběh (diagnosis, ECOG, course), key facts (urgent red flags first), up to 3 trends, the agent's questions for discussion, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (preview of `zaver.pdf` beside PDF / DOCX downloads, FHIR greyed out; asks for the AI draft first) |

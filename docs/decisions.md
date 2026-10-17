@@ -217,7 +217,7 @@ information system; 21 ad-hoc sizes down to 9px were not legible in either.
 
 ## 27. Specialists: a picked role, a short journey, their own stanovisko — 2026-10-17, yes-and
 Status: accepted
-Decision: A role button (top right) opens a picker: Koordinátor or one of the process doc's 4
+Decision: A role button (top right) opens a pop-up of role bubbles: Koordinátor or one of the process doc's 4
 specialist roles (surgery, oncology, radiology, pathology), stored per browser, not authenticated.
 A specialist sees only the cases whose board the coordinator put their specialty on, and walks
 Pacient → Klíčové informace → Stanovisko: the coordinator's screens narrowed to their section, the
