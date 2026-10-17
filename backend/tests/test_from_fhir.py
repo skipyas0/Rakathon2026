@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from mdt_backend import knowledge
 from mdt_backend.app import app
-from mdt_backend.bundles import Bundle
+from mdt_backend.bundles import Bundle, text_of
 from mdt_backend.from_fhir import build_case
 from mdt_backend.knowledge import guideline_source
 from mdt_backend.provenance import Statement
@@ -114,3 +114,16 @@ def test_recommendation_is_the_agents_first_option(tmp_path, monkeypatch, fake_f
     (tmp_path / "p03.json").write_text(case.model_dump_json(), encoding="utf-8")
     r = TestClient(app).get("/api/cases/p03-2026-10-21/recommendation").json()
     assert r == {"intent": "curative", "statement": option.model_dump(mode="json")}
+
+
+@pytest.mark.parametrize("case_id", BUNDLES)
+def test_excerpts_are_verbatim_so_the_drawer_can_highlight_them(case_id):
+    b = Bundle(BUNDLES[case_id])
+    c = build_case(case_id, b)
+    statements = [*c.summary, *(e.statement for e in c.timeline), *(f.statement for f in c.red_flags),
+                  *(s for sec in c.sections for s in sec.items)]  # fmt: skip
+    for s in statements:
+        for src in s.sources:
+            r = b.get(src.reference)
+            for line in (src.excerpt or "").split("\n") if r else []:  # one passage per line
+                assert " ".join(line.split()) in " ".join(text_of(r).split()), src

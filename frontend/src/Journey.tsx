@@ -53,11 +53,12 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
       return false
     }
   }
-  const next = () => {
-    const i = STEPS.findIndex((s) => s.id === step)
-    location.hash = `#/case/${encodeURIComponent(id)}/${STEPS[i + 1].id}`
-  }
-  const props = { c, record, rec, save, next, user }
+  const i = STEPS.findIndex((s) => s.id === step)
+  const go = (to: number) => (location.hash = `#/case/${encodeURIComponent(id)}/${STEPS[to].id}`)
+  const next = () => go(i + 1)
+  // the upload step has no page for an existing case, so the board has no Předchozí
+  const prev = i > 1 ? () => go(i - 1) : undefined
+  const props = { c, record, rec, save, next, prev, user }
 
   return (
     <div className="page journey">
@@ -69,6 +70,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
       )}
       {step === 'board' && <BoardStep {...props} />}
       {step === 'patient' && <PatientStep {...props} />}
+      {step === 'course' && <CourseStep {...props} />}
       {step === 'facts' && <FactsStep {...props} />}
       {step === 'trends' && <TrendsStep {...props} />}
       {step === 'questions' && <QuestionsStep {...props} />}
@@ -80,12 +82,23 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
   )
 }
 
-type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; user: string }
+type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void; user: string }
 
-const Next = ({ onClick, disabled }: { onClick: () => void; disabled?: boolean }) => (
-  <button className="primary next" onClick={onClick} disabled={disabled}>
-    Další
-  </button>
+/** Předchozí (grey: the previous tab, never a page within one) and Další. Steps with input pass
+ * their own handlers, which save first, so going either way never loses what was entered. */
+const Nav = ({ next, prev, disabled }: { next?: () => void; prev?: () => void; disabled?: boolean }) => (
+  <div className="nav-row">
+    {prev && (
+      <button className="back" onClick={prev}>
+        Předchozí
+      </button>
+    )}
+    {next && (
+      <button className="primary next" onClick={next} disabled={disabled}>
+        Další
+      </button>
+    )}
+  </div>
 )
 
 function BoardStep({ record, save, next }: StepProps) {
@@ -105,7 +118,7 @@ function BoardStep({ record, save, next }: StepProps) {
           </button>
         ))}
       </div>
-      <Next onClick={submit} disabled={chosen.length < MIN_SPECIALTIES} />
+      <Nav next={submit} disabled={chosen.length < MIN_SPECIALTIES} />
     </>
   )
 }
@@ -114,35 +127,35 @@ const RECENT = 4 // latest events shown; the whole course is one click away (no 
 const FACTS = 4 // diagnosis facts shown (the agent's key facts come first), the rest one click away
 const WISHES = 2 // patient's wishes shown under the question, the rest one click away
 
-function PatientStep({ c, record, next }: StepProps) {
+/** Who the patient is, what must not be missed, the question and the patient's wishes. */
+function PatientStep({ c, record, next, prev }: StepProps) {
   const S = renderer(record)
-  const course = (from: number) => (
-    <ol className="course">
-      {c.timeline.slice(Math.max(0, from)).map((e, i, all) => {
-        const k = c.timeline.length - all.length + i
-        return (
-          <li key={k}>
-            <time>{fmtDate(e.date)}</time>
-            <span className="kind">{KIND[e.kind]}</span>
-            {S(`timeline.${k}`, e.statement, 'inline')}
-          </li>
-        )
-      })}
-    </ol>
-  )
   const question = record.prep.question || c.question?.text
-  const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
-  const facts = [...c.summary.entries()].filter(([i]) => i !== ecog)
   const preference = [...(c.preference ?? []).entries()]
   const items = (list: [number, Statement][], path: string) =>
     list.map(([i, s]) => <li key={i}>{S(`${path}.${i}`, s, 'inline')}</li>)
   // what must not be missed: critical findings, else the most important ones
   const critical = [...c.red_flags.entries()].filter(([, f]) => f.severity === 'high')
   const alerts = (critical.length ? critical : [...c.red_flags.entries()].filter(([, f]) => f.severity === 'medium')).slice(0, 2)
+  const facts: [string, string | null | undefined][] = [
+    ['Pacient', c.label],
+    ['Diagnóza', TUMOURS[c.tumour] ?? c.tumour],
+    ['Komise', c.board],
+    ['MDT', c.mdt_date && fmtDate(c.mdt_date)],
+  ]
   return (
     <>
-      <h1 className="huge">{c.label}</h1>
-      <p className="muted">{[TUMOURS[c.tumour], c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
+      <h1>Pacient</h1>
+      <dl className="case-facts">
+        {facts
+          .filter(([, v]) => v)
+          .map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+      </dl>
       {alerts.length > 0 && (
         <ul className={`key-facts compact ${critical.length ? 'crit' : 'warn'}`}>
           {alerts.map(([i, f]) => (
@@ -170,6 +183,35 @@ function PatientStep({ c, record, next }: StepProps) {
           )}
         </section>
       )}
+      <Nav next={next} prev={prev} />
+    </>
+  )
+}
+
+/** The diagnosis, performance status and the course of the disease. */
+function CourseStep({ c, record, next, prev }: StepProps) {
+  const S = renderer(record)
+  const course = (from: number) => (
+    <ol className="course">
+      {c.timeline.slice(Math.max(0, from)).map((e, i, all) => {
+        const k = c.timeline.length - all.length + i
+        return (
+          <li key={k}>
+            <time>{fmtDate(e.date)}</time>
+            <span className="kind">{KIND[e.kind]}</span>
+            {S(`timeline.${k}`, e.statement, 'inline')}
+          </li>
+        )
+      })}
+    </ol>
+  )
+  const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
+  const facts = [...c.summary.entries()].filter(([i]) => i !== ecog)
+  const items = (list: [number, Statement][], path: string) =>
+    list.map(([i, s]) => <li key={i}>{S(`${path}.${i}`, s, 'inline')}</li>)
+  return (
+    <>
+      <h1>Průběh</h1>
       <div className="patient-grid">
         <section>
           <h2>Diagnóza</h2>
@@ -204,14 +246,14 @@ function PatientStep({ c, record, next }: StepProps) {
           )}
         </section>
       </div>
-      <Next onClick={next} />
+      <Nav next={next} prev={prev} />
     </>
   )
 }
 
 const UNROLLED = 4
 
-function FactsStep({ c, record, next }: StepProps) {
+function FactsStep({ c, record, next, prev }: StepProps) {
   const S = renderer(record)
   const flags = (sev: RedFlag['severity']) => [...c.red_flags.entries()].filter(([, f]) => f.severity === sev)
   // at most UNROLLED findings in full (critical first), so the screen doesn't scroll
@@ -273,7 +315,7 @@ function FactsStep({ c, record, next }: StepProps) {
             </details>
           ))}
       </div>
-      <Next onClick={next} />
+      <Nav next={next} prev={prev} />
     </>
   )
 }
@@ -281,7 +323,7 @@ function FactsStep({ c, record, next }: StepProps) {
 const PER_PAGE = 2 // charts per screen, so nothing scrolls
 
 /** The 2–3 questions the agent says the board must settle, before it picks the léčebný záměr. */
-function QuestionsStep({ c, record, next }: StepProps) {
+function QuestionsStep({ c, record, next, prev }: StepProps) {
   const S = renderer(record)
   const questions = c.decision_support.questions
   return (
@@ -296,12 +338,12 @@ function QuestionsStep({ c, record, next }: StepProps) {
       ) : (
         <p className="muted">Otázky zatím nejsou k dispozici.</p>
       )}
-      <Next onClick={next} />
+      <Nav next={next} prev={prev} />
     </>
   )
 }
 
-function TrendsStep({ c, next }: StepProps) {
+function TrendsStep({ c, next, prev }: StepProps) {
   const [page, setPage] = useState(0)
   const pages = Math.ceil(c.trends.length / PER_PAGE)
   return (
@@ -315,16 +357,16 @@ function TrendsStep({ c, next }: StepProps) {
         ))}
         {!c.trends.length && <p className="muted">Bez měřených hodnot.</p>}
       </div>
-      <Next onClick={() => (page + 1 < pages ? setPage(page + 1) : next())} />
+      <Nav next={() => (page + 1 < pages ? setPage(page + 1) : next())} prev={prev} />
     </>
   )
 }
 
-function IntentStep({ record, save, next }: StepProps) {
+function IntentStep({ record, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [intent, setIntent] = useState(record.decision.intent)
-  const submit = async () => {
-    if (locked || (await save({ ...record, decision: { ...record.decision, intent } }))) next()
+  const keep = async (go: () => void) => {
+    if (locked || !intent || (await save({ ...record, decision: { ...record.decision, intent } }))) go()
   }
   return (
     <>
@@ -337,17 +379,17 @@ function IntentStep({ record, save, next }: StepProps) {
           </button>
         ))}
       </div>
-      <Next onClick={submit} disabled={!intent} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intent} />
     </>
   )
 }
 
-function PlanStep({ c, record, save, next }: StepProps) {
+function PlanStep({ c, record, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [plan, setPlan] = useState(record.decision.plan)
   const [rationale, setRationale] = useState(record.decision.rationale)
-  const submit = async () => {
-    if (locked || (await save({ ...record, decision: { ...record.decision, plan: plan.trim(), rationale: rationale.trim() } }))) next()
+  const keep = async (go: () => void) => {
+    if (locked || (await save({ ...record, decision: { ...record.decision, plan: plan.trim(), rationale: rationale.trim() } }))) go()
   }
   return (
     <>
@@ -362,13 +404,13 @@ function PlanStep({ c, record, save, next }: StepProps) {
           <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
         </label>
         <Stanoviska c={c} record={record} save={save} />
-        <Next onClick={submit} disabled={!plan.trim() || !rationale.trim()} />
+        <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} />
       </section>
     </>
   )
 }
 
-function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
+function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
   const S = renderer(record)
   const d = record.decision
   const locked = !!d.confirmed_by
@@ -444,7 +486,7 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
           <p className="verdict ok">
             <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
           </p>
-          <Next onClick={next} />
+          <Nav next={next} prev={prev} />
         </div>
       ) : (
         <>
@@ -455,6 +497,11 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
             </label>
           )}
           <div className="confirm-row">
+            {prev && (
+              <button className="back" onClick={prev}>
+                Předchozí
+              </button>
+            )}
             {!user && (
               <input value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Vaše jméno" aria-label="Kdo potvrzuje" />
             )}
@@ -468,7 +515,7 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
   )
 }
 
-function ExportStep({ c, record }: StepProps) {
+function ExportStep({ c, record, prev }: StepProps) {
   const d = record.decision
   // the AI drafts the template's history once; until then (or if it can't) the preview shows it unfilled
   const [draft, setDraft] = useState<{ created?: string; error?: string } | null>(null)
@@ -517,6 +564,7 @@ function ExportStep({ c, record }: StepProps) {
           </div>
         </>
       )}
+      <Nav prev={prev} />
     </>
   )
 }

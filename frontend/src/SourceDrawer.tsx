@@ -3,19 +3,31 @@ import { Doc, Robot } from './icons'
 import { fmtDate } from './layout'
 import { type Shown, SourcesContext, sourceType } from './sources'
 
-/** The record's text with the cited passage marked: matched ignoring case and whitespace, since
- * quotes don't always keep the record's spacing. No match = no mark (the excerpt above stands). */
+/** The record's text with the cited passages marked (one per excerpt line), each matched
+ * ignoring case and whitespace, since quotes don't always keep the record's spacing. A passage
+ * not found isn't marked (the excerpt above stands). The first mark scrolls into view. */
 function Highlighted({ text, excerpt }: { text: string; excerpt?: string | null }) {
   const mark = useRef<HTMLElement>(null)
   useEffect(() => mark.current?.scrollIntoView({ block: 'nearest' }), [text])
-  const words = excerpt?.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  const m = words?.length ? new RegExp(words.join('\\s+'), 'i').exec(text) : null
-  if (!m) return <>{text}</>
+  const pattern = (excerpt ?? '')
+    .split('\n')
+    .map((line) => line.trim().split(/\s+/).filter(Boolean).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'))
+    .filter(Boolean)
+    .join('|')
+  if (!pattern) return <>{text}</>
+  // odd indexes are the matches, so index 1 is the first one (scrolled into view)
+  const parts = text.split(new RegExp(`(${pattern})`, 'gi'))
   return (
     <>
-      {text.slice(0, m.index)}
-      <mark ref={mark}>{m[0]}</mark>
-      {text.slice(m.index + m[0].length)}
+      {parts.map((part, i) =>
+        i % 2 ? (
+          <mark key={i} ref={i === 1 ? mark : undefined}>
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
     </>
   )
 }

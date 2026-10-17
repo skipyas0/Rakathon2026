@@ -57,10 +57,11 @@ export const STEPS = [
   { id: 'upload', label: 'Nahrání' },
   { id: 'board', label: 'Komise' },
   { id: 'patient', label: 'Pacient' },
+  { id: 'course', label: 'Průběh' },
   { id: 'facts', label: 'Klíčové informace' },
   { id: 'trends', label: 'Vývoj' },
-  { id: 'questions', label: 'Otázky k diskusi' },
-  { id: 'intent', label: 'Léčebný záměr' },
+  { id: 'questions', label: 'Otázky' }, // short labels: all 11 chevrons fit the journey column
+  { id: 'intent', label: 'Záměr' },
   { id: 'plan', label: 'Závěr' },
   { id: 'confirm', label: 'Potvrzení' },
   { id: 'export', label: 'Export' },

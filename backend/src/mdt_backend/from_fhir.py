@@ -21,11 +21,13 @@ from mdt_backend.bundles import (
     LOINC_ECOG,
     LOINC_HB,
     Bundle,
+    answer_line,
     answers,
     by_date,
     category_text,
     code_of,
     date_of,
+    observation_line,
     section_text,
     short_label,
     src,
@@ -125,11 +127,11 @@ def build_case(case_id: str, b: Bundle) -> Case:
     parts, ecog_sources = [], []
     if ecog:
         parts.append(f"lékař {ecog[-1]['valueInteger']}")
-        ecog_sources.append(src(b, ecog[-1], f"ECOG {ecog[-1]['valueInteger']}"))
+        ecog_sources.append(src(b, ecog[-1], observation_line(ecog[-1])))
     if patient_ecog:
         text, a = patient_ecog
         parts.append(f"pacient ≈ {a['valueCoding']['code']}")
-        ecog_sources.append(src(b, proms[-1], f"{text} {value_of(a)}", "samostatnost"))
+        ecog_sources.append(src(b, proms[-1], answer_line(text, a), "samostatnost"))
     if parts:
         summary.append(rec("ECOG: " + " · ".join(parts), *ecog_sources))
 
@@ -286,7 +288,7 @@ def proms_items(b: Bundle, proms: list[dict], link_ids: tuple[str, ...]) -> list
                     "id": link_id,
                     "title": text,
                     "text": value,
-                    "source": src(b, qr, f"{text} {value}", link_id),
+                    "source": src(b, qr, answer_line(text, ans), link_id),
                 }
             )
     return out

@@ -52,19 +52,22 @@ Decision: An unsourced AI statement must *end with* `V dostupné dokumentaci se 
 Why: A bare "not found" doesn't tell the clinician what is missing.
 
 ## 9. Trends in the Case contract; AI shown in blue — 2026-10-16, yes-and
-Status: accepted
+Status: accepted | updated 2026-10-17 (dotted underline)
 Decision: `Case.trends` carries measured values with per-point sources for charts. Unconfirmed AI
 output is blue with a robot icon; record data, clinician input and confirmed AI render as plain
-text. The léčebný záměr (curative/palliative/supportive/surveillance/deferred) has its own colour
+text. Every statement that opens its sources has a dotted underline (teal, or blue for AI), so
+clickable is visible without making record facts blue. The léčebný záměr (curative/palliative/supportive/surveillance/deferred) has its own colour
 and icon everywhere.
 Why: Quick orientation on one screen; AI output must be visually distinct.
 
 ## 10. The base briefing is built from the record without an LLM — 2026-10-16, yes-and
-Status: accepted
+Status: accepted | updated 2026-10-17 (verbatim excerpts)
 Decision: `from_fhir.py` builds `Case` deterministically from the patient's FHIR resources; red
 flags come from fixed rules (`rules.py`, shown as AI proposals). Contract fields driven by the
 data: `Statement.origin = "record"`, `Source.title`, timeline kind `pathology`, `Case.board`,
-`Case.mdt_date`, intent `deferred`.
+`Case.mdt_date`, intent `deferred`. Excerpts quote the record verbatim, one passage per line
+(`bundles.answer_line` / `observation_line`, the same lines `text_of` shows), so the source drawer
+can highlight them in the whole record; `test_excerpts_are_verbatim…` guards it.
 Why: Most of the briefing is structured in the data already; deterministic extraction is exact,
 fast and cites its sources. The agent (#17) adds what rules can't into the same `Case`.
 
