@@ -111,6 +111,8 @@ function BoardStep({ record, save, next }: StepProps) {
 }
 
 const RECENT = 4 // latest events shown; the whole course is one click away (no page scrolling)
+const FACTS = 4 // diagnosis facts shown (the agent's key facts come first), the rest one click away
+const WISHES = 2 // patient's wishes shown under the question, the rest one click away
 
 function PatientStep({ c, record, next }: StepProps) {
   const S = renderer(record)
@@ -130,6 +132,10 @@ function PatientStep({ c, record, next }: StepProps) {
   )
   const question = record.prep.question || c.question?.text
   const ecog = c.summary.findIndex((s) => s.text.startsWith('ECOG'))
+  const facts = [...c.summary.entries()].filter(([i]) => i !== ecog)
+  const preference = [...(c.preference ?? []).entries()]
+  const items = (list: [number, Statement][], path: string) =>
+    list.map(([i, s]) => <li key={i}>{S(`${path}.${i}`, s, 'inline')}</li>)
   // what must not be missed: critical findings, else the most important ones
   const critical = [...c.red_flags.entries()].filter(([, f]) => f.severity === 'high')
   const alerts = (critical.length ? critical : [...c.red_flags.entries()].filter(([, f]) => f.severity === 'medium')).slice(0, 2)
@@ -150,22 +156,34 @@ function PatientStep({ c, record, next }: StepProps) {
         <p className="eyebrow">Otázka pro komisi</p>
         <p className="question">{question ?? 'Chybí otázka pro komisi'}</p>
       </section>
-      {!!c.preference?.length && (
+      {preference.length > 0 && (
         <section className="question-card preference">
           <p className="eyebrow">Přání pacienta</p>
-          <ul className="plain">
-            {c.preference.map((s, i) => (
-              <li key={i}>{S(`preference.${i}`, s, 'inline')}</li>
-            ))}
-          </ul>
+          <ul className="plain">{items(preference.slice(0, WISHES), 'preference')}</ul>
+          {preference.length > WISHES && (
+            <details className="more">
+              <summary>
+                Další <span className="muted">({preference.length - WISHES})</span>
+              </summary>
+              <ul className="plain">{items(preference.slice(WISHES), 'preference')}</ul>
+            </details>
+          )}
         </section>
       )}
       <div className="patient-grid">
         <section>
           <h2>Diagnóza</h2>
-          <ul className="plain">
-            {c.summary.map((s, i) => i !== ecog && <li key={i}>{S(`summary.${i}`, s, 'inline')}</li>)}
-          </ul>
+          <ul className="plain">{items(facts.slice(0, FACTS), 'summary')}</ul>
+          {facts.length > FACTS && (
+            <details className="more">
+              <summary>
+                Další fakta <span className="muted">({facts.length - FACTS})</span>
+              </summary>
+              <div className="scroll-box">
+                <ul className="plain">{items(facts.slice(FACTS), 'summary')}</ul>
+              </div>
+            </details>
+          )}
           {ecog >= 0 && (
             <>
               <h2>Výkonnostní stav</h2>

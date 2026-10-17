@@ -8,7 +8,7 @@ no descriptions, no extra buttons, one **Další** per screen.
 |---|--------|--------------|
 | 1 | Nahrání | Two rectangles with "nebo" between: FHIR (pick or drop a file → uploads at once) and PDF (greyed out, "Připravujeme") |
 | 2 | Komise | Specialty bubbles; a tap adds it (green outline). At least 3 |
-| 3 | Pacient | Patient and board, up to 2 critical findings (else the 2 most important) as red/amber cards, the MDT question in a highlighted card (red when missing), the patient's wishes right under it (AI, when the agent briefed the case), diagnoses + ECOG, course of the disease |
+| 3 | Pacient | Patient and board, up to 2 critical findings (else the 2 most important) as red/amber cards, the MDT question in a highlighted card (red when missing), the patient's wishes right under it (AI, when the agent briefed the case; 2 shown), diagnoses (4 facts shown) + ECOG, course of the disease (4 latest events); the rest of each one click away |
 | 4 | Klíčové informace | Critical (high) and important (medium) red flags unrolled as red / amber cards; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
 | 5 | Vývoj | Two charts per screen, no scrolling; Další pages through further series |
 | 6 | Otázky k diskusi | The agent's 2–3 questions for the board, numbered, each with its source (AI); "not available" until the agent has briefed the case |
