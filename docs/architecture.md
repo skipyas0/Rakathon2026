@@ -67,6 +67,24 @@ Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 case prepared without an MDT question), `GET /api/sources/{type}/{id}` (title, date, author, full
 text of one record — for the source drawer).
 
+Study prefilter (`agent.screen_trials`, decision 20): one additional strict-JSON LLM call over
+the patient digest, MDT date and all studies from `knowledge.trials()`. Each inclusion/exclusion
+gets a cited reason and matched / not matched / unknown outcome. Code checks catalogue coverage,
+patient references, non-empty verbatim excerpts and questionnaire item references; unsupported
+outcomes become unknown and are logged in `rejected_citations`. Every displayed criterion also
+cites the exact study criterion. A separate cited cancer-type assessment uses the study's
+`diagnoza` (`trial:<id>#diagnosis`); supported incompatible cancer types → `ineligible`.
+Uncertain tumour origin stays unknown, and solid-tumour/basket studies remain cross-organ.
+Otherwise verdict priority: any supported exclusion match → `ineligible`;
+otherwise any supported inclusion match → `eligible` (even with unknown criteria); otherwise
+`missing_data`, including when no inclusion matches. These are preliminary filtering labels,
+not clinical eligibility decisions. Missing catalogue or invalid output coverage fails explicitly.
+The existing `TrialMatch` contract is unchanged; criteria remain AI `Statement`s. Both the full
+case view and expandable meeting view show criteria and sources, with a provisional-filter notice.
+No automatic enrolment, protocol dose recommendations or changes to the official record.
+Saved briefings must be regenerated with `uv run mdt-agent --all` to include the new screening;
+the deterministic no-LLM fallback continues to leave trials empty.
+
 Statement origins: `record` = taken from the health record (ground truth, plain text in the UI),
 `human` = written by a clinician (nomination question, notes), `ai` = machine proposal (blue,
 needs confirmation). Guideline options and trial screening are empty until an LLM step fills them; it must

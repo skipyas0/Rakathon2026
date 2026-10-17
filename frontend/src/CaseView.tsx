@@ -39,7 +39,17 @@ export function TrialList({ c, S, variant = 'card' }: { c: Case; S: Render; vari
         <strong>{t.trial}</strong>
         <span className={`chip verdict-${t.verdict}`}>{VERDICT[t.verdict]}</span>
       </div>
-      {variant === 'card' && t.criteria.map((s, i) => S(`trials.${ti}.${i}`, s))}
+      <p className="ai-note">
+        AI předběžný filtr, nikoli potvrzení způsobilosti. Potenciální shoda může mít neověřená
+        kritéria; stačí jedno doložené zařazení bez doloženého vyřazení nebo neshody typu nádoru.
+        Rozhoduje lékař.
+      </p>
+      {variant === 'card' ? t.criteria.map((s, i) => S(`trials.${ti}.${i}`, s)) : (
+        <details>
+          <summary>Kritéria a zdroje</summary>
+          {t.criteria.map((s, i) => S(`trials.${ti}.${i}`, s))}
+        </details>
+      )}
     </div>
   ))
 }

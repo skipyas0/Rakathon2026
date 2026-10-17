@@ -213,3 +213,27 @@ pattern (a value, a trend, two sources disagreeing, a drug needing a check) recu
 red flags. Thresholds in a file can be reviewed by clinicians without reading code. The synthetic
 holdout (P07, `secret_*`) was deliberately not used to design or tune the rules.
 
+## 20. One-call preliminary study filter — 2026-10-17, Copilot
+Status: accepted
+Decision: Add one strict-JSON LLM call to the existing agent, covering every criterion of every
+study. Keep the existing `TrialMatch` / `Statement` API and citation UI. Validate criterion coverage
+and patient citations, downgrade unsupported outcomes to unknown, and record rejected evidence
+in the trace. Each criterion cites both the study text and available patient evidence.
+Verdict priority, explicitly chosen by the user: a supported exclusion match means non-match;
+otherwise at least one supported inclusion match means potential match, even if other inclusion
+or exclusion criteria remain unknown; otherwise data missing, including when every inclusion is
+known not to match. Unknown criteria stay visible. This is not full eligibility checking.
+Why: The challenge calls for preliminary screening, not automatic assignment. One cited LLM call
+is sufficient for the proof of concept; a reviewed executable protocol engine, new evidence store
+and new API contracts are out of scope. Clinicians make all decisions; no automatic enrolment
+or dosing decisions. UI labels explicitly warn that potential matches may have unverified criteria.
+
+## 21. Cancer-type mismatch overrides inclusion matches — 2026-10-17, Copilot
+Status: accepted (amends #20)
+Decision: In the same screening call, assess cancer-type compatibility separately from individual
+criteria, with citations to the study diagnosis and patient evidence. A supported different cancer
+type means non-match even when a generic inclusion such as ECOG matches. Unsupported or uncertain
+diagnosis assessments remain unknown; evaluate multiple primary tumours without conflating them.
+Solid-tumour/basket studies remain cross-organ. All other verdict priorities from #20 are unchanged.
+Why: Live inspection found breast-cancer patients labelled potential matches for colorectal and
+lung studies solely through ECOG. The user explicitly requested different cancer types be excluded.

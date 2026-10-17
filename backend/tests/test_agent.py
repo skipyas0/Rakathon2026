@@ -5,6 +5,7 @@ import pytest
 
 from mdt_backend import agent
 from mdt_backend.bundles import bundle_paths
+from mdt_backend.knowledge import trials
 from mdt_backend.provenance import NOT_FOUND
 
 pytestmark = pytest.mark.skipif("p01" not in bundle_paths(), reason="no dataset")
@@ -15,6 +16,20 @@ INVENTED = {"ref": "DiagnosticReport/P01-img06", "excerpt": "bez nálezu, vše v
 
 
 def fake_llm(system, user, schema, name):
+    if name == "trials":
+        return {
+            "trials": [
+                {
+                    "id": tid,
+                    "diagnosis": {"status": "unknown", "reason": NOT_FOUND, "refs": []},
+                    "criteria": [
+                        {"id": c["id"], "status": "unknown", "reason": NOT_FOUND, "refs": []}
+                        for c in t["zarazeni"] + t["vyrazeni"]
+                    ],
+                }
+                for tid, t in trials().items()
+            ]
+        }
     if name == "symptoms":
         return {
             "symptoms": [
@@ -189,6 +204,7 @@ def test_output_is_a_valid_case_with_ai_statements(result):
         "indicators",
         "preference",
         "symptoms",
+        "trials",
         *(f"{k}:{s}" for k in ("context", "opinion", "verdict") for s in agent.SPECIALISTS),
     }
 
@@ -198,6 +214,18 @@ def test_symptom_classifier_output_is_checked(result):
     # the invented item is dropped; the classified hip pain still drives the alarm rule
     assert [s["concept"] for s in trace["symptoms"]] == ["bone_pain"]
     assert any("kyčel" in f.statement.text for f in case.red_flags)
+
+
+def test_screening_feeds_all_catalogue_criteria_into_case(result):
+    case, _ = result
+    assert {t.trial for t in case.decision_support.trials} == set(trials())
+    assert sum(len(t.criteria) for t in case.decision_support.trials) == 51
+    assert all(t.verdict == "missing_data" for t in case.decision_support.trials)
+    for trial in case.decision_support.trials:
+        assert all(s.text.endswith(NOT_FOUND) for s in trial.criteria)
+        assert all(
+            s.sources[0].reference.startswith(f"trial:{trial.trial}#") for s in trial.criteria
+        )
 
 
 def test_citations_are_checked(result):

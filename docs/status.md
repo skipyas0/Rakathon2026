@@ -75,3 +75,31 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   server or evaluated by the LLM pipeline.
 - Passed official FHIR R4 JSON-schema validation and local checks for composition/size,
   references, attachments, PROM answer types, chronology, citations and label leakage.
+
+## Copilot - IRIS deployment documentation
+
+- Added [iris-fhir-deployment.md](iris-fhir-deployment.md): server behavior, existing
+  Docker configuration, restart steps, and a combined IRIS/web-app deployment example
+  with explicit durable-volume reuse, initialization, verification, and deployment caveats.
+- Documentation only; no runtime configuration or patient data changed.
+
+## Copilot - preliminary study screening
+
+- Implemented one cited strict-JSON LLM call in `agent.screen_trials`, feeding the existing trial
+  panel and criterion confirmation flow without changing the API contract or dataset.
+- User-selected priority: supported exclusion match → non-match; otherwise any supported
+  inclusion match → potential match (unknown criteria allowed); otherwise data missing.
+- Follow-up: a supported cancer-type mismatch also means non-match (decision 21). The same
+  call adds a diagnosis statement citing `trial:<id>#diagnosis`; uncertain origin remains unknown.
+- All criteria retained; absent/invalid citations become unknown and are logged. Invalid catalogue
+  coverage fails explicitly. Meeting view now expands criterion evidence and labels the filter
+  as preliminary, not confirmed eligibility.
+- Validation: 50 screening, pipeline, briefing and provenance tests passed; changed Python files
+  pass Ruff lint/format and Python syntax validation; frontend lint and production build passed.
+- Live validation: all six briefings saved and served by the running API. P05 initially timed out,
+  then succeeded on retry. P01–P04/P06 screening was refreshed with the cancer-type gate without
+  rerunning their other LLM steps. Each case has six studies and 51 assessments (45 criteria plus
+  six cancer-type assessments); saved/API results agree, with sourced claims and incompatible
+  cancer types consistently marked non-match.
+- Browser verified six studies, expandable criteria and source drawers with both study/patient
+  evidence; P02 → COLUMBA-LM now shows non-match with the cited cancer-type explanation.
