@@ -19,7 +19,7 @@ Scope = the POVINNÉ items in `problem_statement.md`.
 | Doc | What it is |
 |-----|------------|
 | [docs/workflow-plan.md](docs/workflow-plan.md) | **Agreed target workflow, roles and screens** (English) |
-| [docs/brief.md](docs/brief.md) | Official brief (original [brief.docx](docs/brief.docx)), general |
+| [docs/brief.md](docs/brief.md) | Official brief, general |
 | [docs/problem_statement.md](docs/problem_statement.md) | The same brief restructured as a checklist (POVINNÉ vs BONUS) |
 | [docs/MDT_ZASEDANI_PROCES.md](docs/MDT_ZASEDANI_PROCES.md) | How a real MDT runs: roles, nomination, meeting, consensus, follow-up, repeat MDTs |
 | [docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md](docs/MDT_COPILOT_KONZULTACE_OBECNE_RADY.md) | Mentor consultation notes: priorities and hints, not verified requirements |

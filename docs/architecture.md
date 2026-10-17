@@ -106,6 +106,10 @@ Export = PDF download from `GET /api/cases/{id}/zaver.pdf`.
   MedicationAdministrations only cover recent doses); previous MDTs = `Composition` (`mdt-zaznam`); planned MDT date = `Task.restriction.period.start`
   (not `ServiceRequest.occurrenceDateTime`, which differs); Condition `category` text is
   `onkologická diagnóza` / `komorbidita` / `nežádoucí účinek léčby`.
+- `Dataset/holdout/` (git-ignored, excluded from the Docker image): an extra synthetic patient
+  P07 (`secret_bundles.ndjson`) and its evaluator-only answer key (`secret_ground_truth.md`). Not
+  read by any code path (`pacienti/`, `fhir/bundles.ndjson`, `guidelines/` don't include it); keep
+  the answer key out of every LLM/RAG input. Decision 23.
 - `data/stubs/*.json`: hand-made `Case` briefings, validated by `backend/tests/test_stubs.py`. None
   now, so the folder doesn't exist (`cases.py` and the test treat it as empty). The fictional demo
   stubs were removed once the dataset was integrated.

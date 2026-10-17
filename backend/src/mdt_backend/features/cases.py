@@ -21,7 +21,6 @@ from mdt_backend.from_fhir import build_case, planned_date
 from mdt_backend.load_fhir import fhir_id
 
 STUBS = Path(__file__).parents[4] / "data" / "stubs"
-STUBS = Path(__file__).parents[4] / "data" / "stubs"
 INTAKE = Path(__file__).parents[4] / "data" / "intake"  # <patient>/bundle.json, see intake.py
 _AUTHOR_FIELDS = ("performer", "author", "requester", "recorder")
 
