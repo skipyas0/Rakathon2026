@@ -19,6 +19,22 @@ tab (Vývoj: previous chart page first; screens with input save first, either wa
 | 10 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); who confirms is typed next to Potvrdit (the last signer pre-filled). Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
 | 11 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once); the format boxes carry a download icon; dark grey Zavřít (next to Předchozí) returns to Přehled |
 
+**Specialists** (decision #27): the role button at the top right opens **Vaše role** (`#/role`), one
+tile per role (Koordinátor, Chirurgie, Klinická onkologie, Radiologie, Patologie); a tap picks it.
+A specialist's Přehled lists only the cases the coordinator put their specialty on the board of (a
+case may show for no specialist), without the reset button or Nový případ. Their journey has three
+screens:
+
+| # | Screen | What's on it |
+|---|--------|--------------|
+| 1 | Pacient | As the coordinator's, with the red flags for their area |
+| 2 | Klíčové informace | As the coordinator's, narrowed to their section, the patient's and their red flags |
+| 3 | Stanovisko | Navržený postup (when written); Podporuje / Nepodporuje; their stanovisko: empty, then Vygenerovat (AI, blue, ~45 s, Potvrdit signs it) or Napsat / Upravit (their own, signed); their name typed next to the buttons |
+
+The coordinator's stanovisko bubbles show the specialist's stanovisko and stance (refreshed every
+10 s on Závěr and Potvrzení); empty until the specialist adds one; other specialties keep the
+"ukázka" text with a warning.
+
 Plus **Přehled** (`#/`): one tidy line per case with a coloured status (Potvrzeno / Rozpracováno /
 Nový); on narrower windows the board name, then the tumour, then the date fold away. A confirmed
 case opens Export; a started case has a reset button (confirm dialog) that clears its record. While the agent briefs a patient (`mdt-agent`, a batch step), its card
@@ -39,4 +55,4 @@ and say so with a lock note (reset the case in Přehled to change them).
 Known gaps (mandatory items in `problem_statement.md` left out for simplicity): section order and
 detail level, trial screening. The backend keeps triage, visibility, notes, tasks and the patient's
 stance in the record for later screens. Against `MDT_ZASEDANI_PROCES.md`: no per-member sign-off;
-the stanovisko bubbles stand in (anyone against blocks Potvrdit).
+the stanovisko bubbles stand in (anyone against blocks Potvrdit); roles are picked, not logged in.
