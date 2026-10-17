@@ -132,8 +132,10 @@ type ViewProps = Pick<StepProps, 'c' | 'record' | 'next' | 'prev'> // screens th
 
 /** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
  * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
- * going either way never loses what was entered. */
-export const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean }) => (
+ * going either way never loses what was entered; `saves` says so on the button ("Uložit a další"),
+ * since a chevron click leaves without saving. */
+type NavProps = { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean; saves?: boolean }
+export const Nav = ({ next, prev, close, disabled, saves }: NavProps) => (
   <div className="nav-row">
     {prev && (
       <button className="back" onClick={prev}>
@@ -142,7 +144,7 @@ export const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?:
     )}
     {next && (
       <button className="primary next" onClick={next} disabled={disabled}>
-        Další
+        {saves ? 'Uložit a další' : 'Další'}
       </button>
     )}
     {close && (
@@ -170,7 +172,7 @@ function BoardStep({ record, save, next }: StepProps) {
           </button>
         ))}
       </div>
-      <Nav next={submit} disabled={chosen.length < MIN_SPECIALTIES} />
+      <Nav next={submit} disabled={chosen.length < MIN_SPECIALTIES} saves />
     </>
   )
 }
@@ -447,7 +449,7 @@ function IntentStep({ record, save, next, prev }: StepProps) {
           </button>
         ))}
       </div>
-      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intent} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intent} saves={!locked} />
     </>
   )
 }
@@ -472,7 +474,7 @@ function PlanStep({ c, record, save, setRecord, next, prev }: StepProps) {
         <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
       </label>
       <Stanoviska c={c} record={record} onChange={setRecord} />
-      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} saves={!locked} />
     </>
   )
 }

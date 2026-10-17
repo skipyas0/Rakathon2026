@@ -3,7 +3,9 @@
 **Audience:** the team and their coding agents. Agreed target for the frontend (decision #20).
 One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, **Další** per screen and a grey **Předchozí** to the previous
-tab (Vývoj: previous chart page first; screens with input save first, either way).
+tab (Vývoj: previous chart page first; screens with input save first, either way, and say so:
+**Uložit a další** on Komise, Záměr and Závěr until the conclusion is locked; a chevron click
+leaves without saving).
 
 | # | Screen | What's on it |
 |---|--------|--------------|
