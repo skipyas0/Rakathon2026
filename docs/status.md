@@ -118,3 +118,15 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   Recovery ref: `recovery/backend-before-main-20261017-0729`.
 - Second-merge validation: backend pytest (101 passed), Ruff lint/format (passed), frontend
   lint/build (passed); browser shows all six studies alongside Předchozí / Další navigation.
+
+## Copilot - FHIR export rulebook
+
+- Prepared [fhir-export-rulebook.md](fhir-export-rulebook.md), a researched implementation proposal;
+  no application code changed.
+- Recommendation: R4 document export using validated mCODE STU4 profiles where applicable, local
+  Czech MDT workflow profiles, and a versioned ECCDM logical-model crosswalk. ECCDM's published
+  1.0.0-ballot implementation material is informative, not a complete oncology profile contract.
+- Covers the brief's Condition/TNM, Observation, QuestionnaireResponse, CarePlan/Task and Provenance
+  requirements; exact-revision clinical approval, consensus, immutable snapshots and acceptance tests.
+- Official published specifications and relevant current source contracts inspected. Documentation
+  only: no runtime tests run and no implementation/conformance claim made.
