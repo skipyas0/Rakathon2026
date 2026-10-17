@@ -1631,13 +1631,17 @@ button.back {
   .narrow-only {
     display: inline;
   }
-  /* the journey's buttons stay at the bottom edge while the content scrolls above them */
+  /* the journey's buttons always sit in the same place at the bottom edge, on every screen;
+     the page keeps room for them so its last lines aren't hidden behind the bar */
+  .journey {
+    padding-bottom: 6rem;
+  }
   .nav-row,
   .confirm-row {
-    position: sticky;
-    bottom: 0;
+    position: fixed;
+    inset: auto 0 0 0;
     z-index: 1;
-    margin: 1rem -1rem 0;
+    margin: 0;
     padding: 0.6rem 1rem;
     background: var(--bg);
     border-top: 1px solid var(--line);

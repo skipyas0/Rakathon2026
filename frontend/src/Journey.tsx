@@ -93,8 +93,13 @@ const Nav = ({ next, prev, disabled }: { next?: () => void; prev?: () => void; d
         Předchozí
       </button>
     )}
-    {next && (
+    {next ? (
       <button className="primary next" onClick={next} disabled={disabled}>
+        Další
+      </button>
+    ) : (
+      // keeps Předchozí in its usual place on the last screen, which has no Další
+      <button className="primary next" style={{ visibility: 'hidden' }} aria-hidden tabIndex={-1}>
         Další
       </button>
     )}
