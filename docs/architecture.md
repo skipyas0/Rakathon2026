@@ -26,7 +26,7 @@ screen per step and one **Další** each: Nahrání (`#/new`) → Komise → Pac
 Vývoj → Léčebný záměr → Závěr → Potvrzení (`#/case/<id>/<step>`), plus Přehled (`#/`). Soulad s
 doporučenými postupy is derived on the last screen (chosen léčebný záměr = recommended); on a
 difference, Potvrdit first asks for důvod odchylky. Potvrdit is the board's consensus and locks
-the conclusion; then Export: PDF (prints the official record) or FHIR (not built yet).
+the conclusion; then Export: PDF (download rendered by the backend, `features/export.py`) or FHIR (not built yet).
 
 Visual language: unconfirmed AI output is blue with a robot icon; examples standing in for AI
 output are labelled "ukázka"; everything else (record data, clinician input) is plain text.
@@ -93,7 +93,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `provenance.ts` / `briefing.ts` | TS mirrors of backend models                      |
 
 The user name lives in localStorage and signs the confirmation. Shared state lives in the backend.
-Export = browser print-to-PDF (`@media print` in `index.css`).
+Export = PDF download from `GET /api/cases/{id}/zaver.pdf`.
 
 ## Data
 

@@ -28,4 +28,6 @@ who confirmed and when, and means the board agreed (consensus).
 
 Known gaps (mandatory items in `problem_statement.md` left out for simplicity): section order and
 detail level, trial screening, AI questions for discussion. The backend keeps the board, finding
-triage, visibility and history data for a later access-control / admin view.
+triage, visibility and history data for a later access-control / admin view. Against
+`MDT_ZASEDANI_PROCES.md`: no per-member sign-off; the stanovisko bubbles stand in (anyone against
+blocks Potvrdit).

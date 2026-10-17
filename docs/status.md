@@ -15,15 +15,16 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
   yes-and's personal account).
 - Branch `yes-and/meeting-records` (pushed, not merged): the full role-based workflow (#16).
-- Branch `yes-and/simple-journey`: the simple coordinator journey (#18, docs/workflow-plan.md),
-  built; old screens removed (still on `yes-and/meeting-records`).
+- Branch `yes-and/journey-meets-pipeline`: the simple coordinator journey (#18,
+  docs/workflow-plan.md), built; old screens removed (still on `yes-and/meeting-records`). Next:
+  rebase onto `main` to join it with the LLM pipeline.
 - Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
   `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
 - Gaps against `MDT_ZASEDANI_PROCES.md` + the record template (not started):
   - The app's decision form doesn't follow `docs/template_zaver_zasedani/form.md`; the filled
-    template exists only as the `mdt-zaver` CLI PDF, and the app's export is a print of the
-    follow-up page.
+    template exists only as the `mdt-zaver` CLI PDF; the app's PDF (`features/export.py`) has its
+    own simpler layout.
   - The decision doesn't separate the MDT recommendation, the patient's decision, the agreed plan
     and the care actually delivered (§6).
   - PROMs answers are only partly split by specialty: surgery gets walking + weight change, the
