@@ -728,6 +728,24 @@ code {
 
 }
 
+/* the source's exact reference (left) and its whole-record link (right), wrapping when narrow */
+.source-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-top: 0.4rem;
+}
+.source-foot code {
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.source-foot .link {
+  margin-left: auto;
+  white-space: nowrap;
+}
 .full-text {
   white-space: pre-wrap;
   font-size: 0.85rem;

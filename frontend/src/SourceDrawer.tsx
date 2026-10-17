@@ -3,21 +3,28 @@ import { Doc, Robot } from './icons'
 import { fmtDate } from './layout'
 import { type Shown, SourcesContext, sourceType } from './sources'
 
-/** Loads the whole source record on demand (the excerpt above is only the cited passage). */
-function FullText({ reference }: { reference: string }) {
+/** The exact reference, and the whole source record on demand (the excerpt above is only the
+ * cited passage). guideline:/trial: references have no record behind them. */
+function SourceFoot({ reference }: { reference: string }) {
   const [text, setText] = useState<string | null>(null)
   const ref = reference.split('#')[0]
-  if (!/^[A-Z][A-Za-z]+\/[\w.-]+$/.test(ref)) return null // guideline:/trial: refs have no record
+  const hasRecord = /^[A-Z][A-Za-z]+\/[\w.-]+$/.test(ref)
   const load = () =>
     fetch(`/api/sources/${ref}`)
       .then((r) => (r.ok ? r.json() : { text: 'Celý záznam není v dostupných datech.' }))
       .then((d) => setText(d.text))
-  return text === null ? (
-    <button className="link" onClick={load}>
-      Zobrazit celý záznam
-    </button>
-  ) : (
-    <div className="full-text">{text}</div>
+  return (
+    <>
+      <div className="source-foot">
+        <code>{reference}</code>
+        {hasRecord && text === null && (
+          <button className="link" onClick={load}>
+            Zobrazit celý záznam
+          </button>
+        )}
+      </div>
+      {text !== null && <div className="full-text">{text}</div>}
+    </>
   )
 }
 
@@ -64,8 +71,7 @@ export function SourceDrawer({ children }: { children: ReactNode }) {
                       <mark>{s.excerpt}</mark>
                     </blockquote>
                   )}
-                  <code>{s.reference}</code>
-                  <FullText key={s.reference} reference={s.reference} />
+                  <SourceFoot key={s.reference} reference={s.reference} />
                 </li>
               ))}
             </ul>
