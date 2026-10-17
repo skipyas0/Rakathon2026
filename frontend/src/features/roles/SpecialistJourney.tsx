@@ -27,7 +27,7 @@ export function SpecialistJourney({ id, step, role }: { id: string; step: Specia
   if (error) return <div className="banner bad page">{error}</div>
   if (!data || data.c.id !== id) return <p className="muted page">Načítám…</p>
   const { record } = data
-  if (!record.board.some((m) => m.specialty === role)) return <p className="big page">Tento případ vám koordinátor nepřidělil.</p>
+  if (!record.board.some((m) => m.specialty === role)) return <p className="page">Tento případ vám koordinátor nepřidělil.</p>
   // its own section, the patient's, and the red flags raised for it (no area = for everyone)
   const c: Case = {
     ...data.c,
@@ -123,7 +123,7 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
       ) : own ? (
         S(`stanoviska.${role}`, own, 'card')
       ) : (
-        <p className="muted big">Stanovisko zatím není zadáno.</p>
+        <p className="muted">Stanovisko zatím není zadáno.</p>
       )}
       {!locked && !busy && (
         <div className="stanovisko-actions">
