@@ -923,6 +923,9 @@ code {
   font-size: var(--fs-m);
   font-weight: 600;
 }
+.narrow-only {
+  display: none;
+}
 .patient-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1191,9 +1194,7 @@ button.back {
   color: var(--ink-2);
   background: var(--surface-2);
 }
-.confirm-row .nav-row {
-  margin: 0 0 0 auto;
-}
+
 .key-facts {
   list-style: none;
   padding: 0;
@@ -1605,11 +1606,43 @@ button.back {
     padding: 0.8rem 1rem;
   }
   .question-card .question {
-    font-size: var(--fs-l);
+    font-size: var(--fs-m);
   }
   .patient-grid {
     font-size: var(--fs-m);
   }
+  /* Pacient's facts as one line of values, dot-separated; the labels move to tooltips */
+  .case-facts {
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+  .case-facts div,
+  .case-facts dd {
+    display: inline;
+  }
+  .case-facts dt {
+    display: none;
+  }
+  .case-facts div + div::before {
+    content: '·';
+    margin: 0 0.4rem;
+    color: var(--muted);
+  }
+  .narrow-only {
+    display: inline;
+  }
+  /* the journey's buttons stay at the bottom edge while the content scrolls above them */
+  .nav-row,
+  .confirm-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin: 1rem -1rem 0;
+    padding: 0.6rem 1rem;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+  }
+
   .journey h2 {
     margin: 0.75rem 0 0.3rem;
   }

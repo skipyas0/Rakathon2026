@@ -137,11 +137,12 @@ function PatientStep({ c, record, next, prev }: StepProps) {
   // what must not be missed: critical findings, else the most important ones
   const critical = [...c.red_flags.entries()].filter(([, f]) => f.severity === 'high')
   const alerts = (critical.length ? critical : [...c.red_flags.entries()].filter(([, f]) => f.severity === 'medium')).slice(0, 2)
-  const facts: [string, string | null | undefined][] = [
+  // [label, value, prefix shown when narrow screens hide the labels]
+  const facts: [string, string | null | undefined, string?][] = [
     ['Pacient', c.label],
     ['Diagnóza', TUMOURS[c.tumour] ?? c.tumour],
     ['Komise', c.board],
-    ['MDT', c.mdt_date && fmtDate(c.mdt_date)],
+    ['MDT', c.mdt_date && fmtDate(c.mdt_date), 'MDT '],
   ]
   return (
     <>
@@ -149,10 +150,13 @@ function PatientStep({ c, record, next, prev }: StepProps) {
       <dl className="case-facts">
         {facts
           .filter(([, v]) => v)
-          .map(([label, value]) => (
-            <div key={label}>
+          .map(([label, value, prefix]) => (
+            <div key={label} title={label}>
               <dt>{label}</dt>
-              <dd>{value}</dd>
+              <dd>
+                {prefix && <span className="narrow-only">{prefix}</span>}
+                {value}
+              </dd>
             </div>
           ))}
       </dl>
@@ -482,12 +486,12 @@ function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
       )}
 
       {locked ? (
-        <div className="confirm-row">
+        <>
           <p className="verdict ok">
             <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
           </p>
           <Nav next={next} prev={prev} />
-        </div>
+        </>
       ) : (
         <>
           {asking && (
