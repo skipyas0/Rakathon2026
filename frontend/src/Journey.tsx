@@ -470,31 +470,53 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
 
 function ExportStep({ c, record }: StepProps) {
   const d = record.decision
+  // the AI drafts the template's history once; until then (or if it can't) the preview shows it unfilled
+  const [draft, setDraft] = useState<{ created?: string; error?: string } | null>(null)
+  useEffect(() => {
+    if (d.confirmed_by) api.zaverDraft(c.id).then(setDraft, (e: Error) => setDraft({ error: e.message }))
+  }, [c.id, d.confirmed_by])
   if (!d.confirmed_by)
     return (
       <p className="big">
         Závěr zatím není potvrzen. <a href={`#/case/${encodeURIComponent(c.id)}/confirm`}>Zpět na potvrzení</a>
       </p>
     )
+  const url = `/api/cases/${encodeURIComponent(c.id)}/zaver`
   return (
     <>
       <h1>Export</h1>
       <p className="verdict ok">
         <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
       </p>
-      <div className="upload">
-        <a className="upload-box" href={`/api/cases/${encodeURIComponent(c.id)}/zaver.pdf`} download>
-          <Doc />
-          <strong>PDF</strong>
-        </a>
-        <span className="or">nebo</span>
-        {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
-        <div className="upload-box soon" aria-disabled>
-          <Doc />
-          <strong>FHIR</strong>
-          <span className="chip muted-chip">Připravujeme</span>
-        </div>
-      </div>
+      {!draft ? (
+        <p className="ai-note">
+          <Robot /> AI doplňuje podklady ze zdravotního záznamu…
+        </p>
+      ) : (
+        <>
+          {draft.error && <div className="banner bad">{draft.error}</div>}
+          <div className="export">
+            <iframe className="preview" src={`${url}.pdf?v=${draft.created ?? ''}`} title="Náhled závěru" />
+            <div className="export-actions">
+              <a className="upload-box" href={`${url}.pdf`} download>
+                <Doc />
+                <strong>PDF</strong>
+              </a>
+              <a className="upload-box" href={`${url}.docx`} download>
+                <Doc />
+                <strong>DOCX</strong>
+                <span className="muted small">k úpravám</span>
+              </a>
+              {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
+              <div className="upload-box soon" aria-disabled>
+                <Doc />
+                <strong>FHIR</strong>
+                <span className="chip muted-chip">Připravujeme</span>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }

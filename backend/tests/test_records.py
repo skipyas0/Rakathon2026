@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from mdt_backend import agent
 from mdt_backend.app import app
 from mdt_backend.briefing import Case, DecisionSupport
-from mdt_backend.features import cases, records
+from mdt_backend.features import cases, export, records
 from mdt_backend.features.records import Decision, Triage
 from mdt_backend.provenance import Statement
 
@@ -47,6 +47,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(cases, "meetings", lambda: {c.id: c.id for c in test_cases})
     monkeypatch.setattr(cases, "record", lambda patient: cases.Bundle({"entry": []}))
     monkeypatch.setattr(records, "RECORDS", tmp_path / "records")
+    monkeypatch.setattr(export, "DRAFTS", tmp_path / "zavery")  # no AI draft: history unfilled
     return TestClient(app)
 
 
@@ -125,6 +126,9 @@ def test_confirmed_conclusion_downloads_as_pdf(client):
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     r = client.get("/api/cases/example/zaver.pdf")
     assert r.status_code == 200 and r.content.startswith(b"%PDF")
+    assert "inline" in r.headers["content-disposition"]  # previewed on the Export step
+    r = client.get("/api/cases/example/zaver.docx")
+    assert r.status_code == 200 and r.content.startswith(b"PK")  # docx = zip
     assert "attachment" in r.headers["content-disposition"]
 
 

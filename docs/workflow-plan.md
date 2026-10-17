@@ -15,7 +15,7 @@ no descriptions, no extra buttons, one **Další** per screen.
 | 7 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
 | 8 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
 | 9 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); a name field appears when none is set. Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
-| 10 | Export | Two rectangles: PDF (downloads the official record, rendered by the backend: question, board, záměr, postup, zdůvodnění, soulad, who confirmed) or FHIR (greyed out, "Připravujeme") |
+| 10 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once) |
 
 Plus **Přehled** (`#/`): case cards with a coloured status (Potvrzeno / Rozpracováno / Nový); a
 confirmed case opens Export. While the agent briefs a patient (`mdt-agent`, a batch step), its card

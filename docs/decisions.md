@@ -256,3 +256,16 @@ unreachable IRIS is a 503 (intake too, so an upload is never half-saved); `/api/
 and reports `fhir`. Tests use a fake FHIR server holding the dataset as the loader stores it.
 Why: Defined by yes-and to cut parallel paths (HAPI vs IRIS, server vs disk, two PDFs) and give
 every cleanup step one yardstick. IRIS earns the sponsor bonus.
+
+## 25. The conclusion is the filled template: PDF preview, DOCX for edits — 2026-10-17, yes-and
+Status: accepted (replaces the `mdt-zaver` CLI of #13 and the app's own PDF layout)
+Decision: Export renders `template_zaver_zasedani/form.md` for the meeting: header from the
+confirmed decision's attendees and the FHIR Patient, history fields drafted by one LLM call over
+the IRIS record (cached per meeting, each value with its FHIR sources, blue in PDF and DOCX), the
+question from the nomination, Závěr MDT from the board's confirmed decision. The coordinator
+previews the PDF; to change anything they download the DOCX and edit it. No AI writes the board's
+conclusion (the CLI's second call is gone). Data the dataset lacks (birth number, address, phone)
+print as `NOT_FOUND`, never invented.
+Why: The template is the official output (its README); a preview with an editable DOCX is the
+smallest flow that keeps AI output labelled and sourced without a per-field confirmation screen
+(yes-and's call).

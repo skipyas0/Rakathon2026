@@ -8,8 +8,9 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 - Branch `yes-and/trim-dead-files`: repo cleanup, step 1 — holdout files moved to
   `Dataset/holdout/` (decision 23), `brief.docx` removed (`brief.md` is the same text); scope
   rewritten as core + checklist in `problem_statement.md` (decision 24); IRIS only, FHIR only (`iris/`, no
-  HAPI/stubs/disk fallback). Next: one conclusion PDF following `template_zaver_zasedani`; docs
-  trim. Future: patient deletion (clean re-uploads, holdout P07 evaluation).
+  HAPI/stubs/disk fallback). Branch
+  `yes-and/iris-on-fly`: Fly volume fix. Branch `yes-and/template-pdf`: Export = filled template
+  (decision 25). Next: docs trim. Future: patient deletion (clean re-uploads, holdout P07 evaluation).
 
 - Done (on `main`): three-phase MDT app (#1) on dataset v1.1, Docker image + Fly deploy (#2) at
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on

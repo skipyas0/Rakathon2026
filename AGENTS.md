@@ -80,7 +80,6 @@ New features go in their own module so they can be removed in one move:
 docker compose up -d iris                              # IRIS FHIR → http://localhost:52773/fhir/r4 (first start ~2 min)
 cd backend && uv run mdt-load-fhir                     # load Dataset/fhir/bundles.ndjson into IRIS (once per fresh volume)
 cd backend && uv run mdt-patient P01                   # pretty-print one patient's full record from the server
-cd backend && uv run mdt-zaver P01                     # MDT conclusion PDF → data/zavery/ (needs FHIR server + AZURE_API_KEY)
 cd backend && uv run mdt-agent P01 --runs 2            # MDT agent → data/ai_cases/ (IRIS + AZURE_API_KEY)
 cd backend && uv run mdt-agent --all                   # refresh the AI briefings of every nominated patient (what the app shows)
 cd backend && uv sync && uv run mdt-backend            # API → http://localhost:8000 (docs at /docs)
