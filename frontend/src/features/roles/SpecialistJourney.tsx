@@ -3,7 +3,7 @@ import { api, type CaseRecord } from '../../api'
 import type { Case } from '../../briefing'
 import { Alert, Check, Robot } from '../../icons'
 import { FactsStep, Locked, Nav, PatientStep, Working } from '../../Journey'
-import { load, save as remember, SPECIALTIES } from '../../layout'
+import { SPECIALTIES } from '../../layout'
 import type { Statement } from '../../provenance'
 import { now, renderer } from '../../render'
 import { Steps } from '../../Steps'
@@ -53,12 +53,13 @@ export function SpecialistJourney({ id, step, role }: { id: string; step: Specia
 type StepProps = Data & { role: string; setRecord: (r: CaseRecord) => void; prev?: () => void }
 
 /** The specialist's stance on the proposed postup and their stanovisko: empty until they generate
- * it (AI, blue, to confirm) or write it; editing makes it theirs. Signed with the name typed here. */
+ * it (AI, blue, to confirm) or write it; editing makes it theirs. Signed with the
+ * specialty: ponytail: one person per specialty (decision #27); ask for a name once a specialty can
+ * have several. */
 function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const member = record.board.find((m) => m.specialty === role)
   const own = record.stanoviska[role]
-  const [name, setName] = useState(() => load('mdt.signer', ''))
   const [text, setText] = useState<string | null>(null) // null = not editing
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -74,14 +75,7 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
     }
   }
   const update = (u: { supports?: boolean; statement?: Statement }) => run(api.updateStanovisko(c.id, role, u))
-  const sign = async (s: Statement) => {
-    if (!name.trim()) {
-      setError('Vyplňte své jméno')
-      return false
-    }
-    remember('mdt.signer', name.trim())
-    return update({ statement: { ...s, confirmed_by: name.trim(), confirmed_at: now() } })
-  }
+  const sign = (s: Statement) => update({ statement: { ...s, confirmed_by: SPECIALTIES[role], confirmed_at: now() } })
   const generate = async () => {
     if (own && !window.confirm('Nahradit stávající stanovisko návrhem AI?')) return
     setBusy(true)
@@ -133,11 +127,10 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
       )}
       {!locked && !busy && (
         <div className="stanovisko-actions">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Vaše jméno" aria-label="Vaše jméno" />
           {text !== null ? (
             <>
               <button onClick={() => setText(null)}>Zrušit</button>
-              <button className="primary" disabled={!text.trim() || !name.trim()} onClick={() => void write()}>
+              <button className="primary" disabled={!text.trim()} onClick={() => void write()}>
                 Uložit
               </button>
             </>
@@ -155,7 +148,7 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
         prev={prev}
         close={editing ? () => void write().then((ok) => ok && (location.hash = '#/')) : () => (location.hash = '#/')}
         saves={editing}
-        disabled={editing && (!text.trim() || !name.trim())}
+        disabled={editing && !text.trim()}
       />
     </>
   )

@@ -883,9 +883,6 @@ code {
   gap: 0.5rem;
   margin: 1rem 0;
 }
-.stanovisko-actions input {
-  flex: 1 1 12rem;
-}
 
 /* Intake */
 .intake .card {
