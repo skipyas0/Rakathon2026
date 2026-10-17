@@ -824,8 +824,8 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
                 known.add(_norm(item))
                 section(area).items.append(missing(item))
     # the patient's own preference leads the patient section (the meeting shows its first items)
-    patient = section("patient")
-    patient.items[:0] = pref_items or [missing("Preference pacienta ohledně léčby")]
+    case.preference = pref_items or [missing("Preference pacienta ohledně léčby")]
+    section("patient").items[:0] = case.preference
 
     # options (max 2, each must keep a guideline citation) + preference + questions
     pref = rec_out["preference"]

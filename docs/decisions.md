@@ -220,3 +220,12 @@ that option and intent when present, so Potvrzení compares the conclusion with 
 "ukázka" examples remain only for cases the agent hasn't briefed.
 Why: Soulad s doporučenými postupy is derived from the léčebný záměr (#20); without one per option
 the app could only compare with the hand-written examples.
+
+## 22. The patient's preference on its own in the briefing — 2026-10-17, yes-and
+Status: accepted (builds on #18)
+Decision: `Case.preference` (backend `briefing.py`, frontend `briefing.ts`) holds the agent's
+statements of the patient's treatment wishes and goals (or one `NOT_FOUND` statement); the same
+statements still lead `sections.patient`. Empty when the agent hasn't briefed the case. Pacient
+shows them in a card under the MDT question.
+Why: The process doc (§3.1, §4.1) puts the patient's view next to the question; picking the first
+items of the patient section by position would break as soon as the section changes.

@@ -101,3 +101,6 @@ class Case(BaseModel):
     decision_support: DecisionSupport
     trends: list[Trend] = []  # lab markers and PROMs over time, for the meeting charts
     previous_board: list[BoardMember] = []  # who sat on the patient's last MDT
+    preference: list[
+        Statement
+    ] = []  # the patient's treatment wishes and goals (agent); [] = none run

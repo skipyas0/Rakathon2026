@@ -829,6 +829,11 @@ code {
 .question-card.missing {
   border-left-color: var(--crit);
 }
+.question-card.preference {
+  margin-top: -0.75rem; /* right under the question it qualifies */
+  padding-block: 0.75rem;
+  border-left-color: var(--muted);
+}
 .question-card.missing .question {
   color: var(--crit);
 }

@@ -128,6 +128,16 @@ function PatientStep({ c, record, next }: StepProps) {
         <p className="eyebrow">Otázka pro komisi</p>
         <p className="question">{question ?? 'Chybí otázka pro komisi'}</p>
       </section>
+      {!!c.preference?.length && (
+        <section className="question-card preference">
+          <p className="eyebrow">Přání pacienta</p>
+          <ul className="plain">
+            {c.preference.map((s, i) => (
+              <li key={i}>{S(`preference.${i}`, s, 'inline')}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="patient-grid">
         <section>
           <h2>Diagnóza</h2>

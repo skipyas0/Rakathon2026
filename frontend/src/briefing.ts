@@ -41,6 +41,7 @@ export type Case = {
   decision_support: DecisionSupport
   trends: Trend[]
   previous_board: BoardMember[] // who sat on the patient's last MDT (record's CareTeam)
+  preference?: Statement[] // the patient's treatment wishes and goals (agent); empty = not briefed
 }
 
 /** name = practitioner id, '' when the record names only the role. */

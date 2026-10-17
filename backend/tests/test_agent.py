@@ -281,3 +281,4 @@ def test_preference_leads_patient_section(result):
     patient = next(s for s in case.sections if s.id == "patient")
     assert patient.items[0].text == "Pacientka si nepřeje chemoterapii."
     assert patient.items[0].sources[0].reference == "ServiceRequest/P01-zad01"
+    assert case.preference == patient.items[: len(case.preference)]  # also on its own for Pacient
