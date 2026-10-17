@@ -15,6 +15,13 @@ INVENTED = {"ref": "DiagnosticReport/P01-img06", "excerpt": "bez nálezu, vše v
 
 
 def fake_llm(system, user, schema, name):
+    if name == "symptoms":
+        return {
+            "symptoms": [
+                {"item": "nove-obtize", "concept": "bone_pain", "excerpt": "kyčel", "new": True},
+                {"item": "neexistuje", "concept": "fever", "excerpt": "x", "new": True},
+            ]
+        }
     if name == "cacc":
         return {
             "prerequisites": [
@@ -181,8 +188,16 @@ def test_output_is_a_valid_case_with_ai_statements(result):
         "summary_extract",
         "indicators",
         "preference",
+        "symptoms",
         *(f"{k}:{s}" for k in ("context", "opinion", "verdict") for s in agent.SPECIALISTS),
     }
+
+
+def test_symptom_classifier_output_is_checked(result):
+    case, trace = result
+    # the invented item is dropped; the classified hip pain still drives the alarm rule
+    assert [s["concept"] for s in trace["symptoms"]] == ["bone_pain"]
+    assert any("kyčel" in f.statement.text for f in case.red_flags)
 
 
 def test_citations_are_checked(result):

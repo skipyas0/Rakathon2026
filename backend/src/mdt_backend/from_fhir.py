@@ -10,7 +10,6 @@ import re
 from mdt_backend.briefing import (
     Case,
     DecisionSupport,
-    RedFlag,
     Section,
     TimelineEvent,
     Trend,
@@ -31,6 +30,7 @@ from mdt_backend.bundles import (
     title_of,
     value_of,
 )
+from mdt_backend.concepts import Symptom
 from mdt_backend.provenance import Source, Statement
 from mdt_backend.rules import red_flags
 
@@ -58,7 +58,8 @@ def rec(text: str, *sources: Source) -> Statement:
     return Statement(text=text, origin="record", sources=list(sources))
 
 
-def build_case(case_id: str, b: Bundle) -> Case:
+def build_case(case_id: str, b: Bundle, symptoms: list[Symptom] | None = None) -> Case:
+    """`symptoms`: free-text symptoms classified by the agent's LLM (None = keyword fallback)."""
     patient = b.all("Patient")[0]
     nomination = b.all("ServiceRequest")[0]
     conditions = b.all("Condition")
@@ -121,10 +122,7 @@ def build_case(case_id: str, b: Bundle) -> Case:
         question=question,
         summary=summary,
         timeline=build_timeline(b, onco, pathology, imaging, note("Předchozí onkologická léčba")),
-        red_flags=[
-            RedFlag(**f)
-            for f in red_flags(b, observations, proms, imaging, trends, LOINC_MARKERS, mdt_date)
-        ],
+        red_flags=red_flags(b, mdt_date, symptoms),
         sections=build_sections(b, conditions, observations, proms, pathology, imaging, note),
         decision_support=DecisionSupport(options=[], trials=[], questions=[]),
         trends=trends,

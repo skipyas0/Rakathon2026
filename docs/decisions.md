@@ -189,3 +189,27 @@ Why: The user asked for the app to show the pipeline without touching the fronte
 patient data to come from IRIS. Text-then-extract keeps the narrative the model reasons in, while
 the app gets small, individually cited statements. A full run is ~2.5 min per patient alone (~9
 min each with all 6 in parallel under the APIM rate limit), too slow to run on page load.
+
+## 19. Red-flag rules over a concept layer, configured in TOML — 2026-10-17, Contributor 2
+Status: accepted (replaces the six fixed rules of #10)
+Decision: Rule-based red flags (`pravidla-v2`) are written against concepts, not dataset quirks.
+`concepts.py` maps LOINC codes (with aliases), uncoded Observation titles, PROMs linkIds *or*
+question text, ATC codes *or* drug names and ICD-10 onto one vocabulary and extracts the `Facts`
+the rules read. `rules.py` holds generic rule families: A abnormal values (CTCAE v5 grades,
+functional thresholds), B trends (marker rise, large lab change, weight loss, PROMs worsening,
+symptom burden), C discordance between sources (ECOG doctor vs patient, TNM, receptor status,
+CTCAE grade vs lab, weight, allergy, OTC/herbal use), D lab value corroborated by a patient
+symptom, E drug monitoring (required tests per drug class, LVEF drop, neurotoxicity, surgery
+wash-out), F alarm symptoms, G stale or missing data (imaging/labs/ECOG/PROMs age, required
+biomarkers per tumour), H context (unfulfilled steps, missing preference, geriatric screening,
+second tumour, smoking, comorbidity × drug). Thresholds, severities, drug classes and the guideline
+passage each rule cites live in `rules.toml`; `RULES_CONFIG=<file>` overrides it (tables merged,
+lists replaced). Free-text symptoms ("new complaints", pain site) are mapped onto the vocabulary by
+an LLM step in the agent (`symptoms`, excerpts verified verbatim); the LLM-free briefing uses a
+keyword classifier with negation handling. Rules claim the evidence they use so a value or symptom
+is reported once.
+Why: The first rules (Hb + fatigue, ECOG) were right but fit the six example patients; the same
+pattern (a value, a trend, two sources disagreeing, a drug needing a check) recurs for many other
+red flags. Thresholds in a file can be reviewed by clinicians without reading code. The synthetic
+holdout (P07, `secret_*`) was deliberately not used to design or tune the rules.
+

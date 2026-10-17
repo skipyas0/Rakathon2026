@@ -18,7 +18,10 @@ Pipeline (a fixed chain of tool steps and strict-JSON LLM calls, decision #16):
   8. preference  – LLM: the patient's treatment preferences and goals, cited
   9. recommend   – LLM: 1–2 treatment options strictly from the guidelines, mentioning (not
                    following) the patient's preference, plus open questions for the board
-Steps 3–4, 7 and 8 run in parallel, then 5 and 6, then 9.
+  +  symptoms – LLM maps the patient's free-text answers onto the rule engine's symptom
+                 vocabulary (concepts.SYMPTOMS); the rule-based red flags (rules.py) are then
+                 recomputed with them (the deterministic briefing uses a keyword fallback)
+Steps 3–4, 7, 8 and symptoms run in parallel, then 5 and 6, then 9.
 
 Every citation the model returns is checked before it reaches a Statement: passage ids must be in
 the guidelines allowed for the diagnosis, record references must exist in the patient's record and
@@ -38,6 +41,7 @@ from typing import get_args
 import httpx
 
 from mdt_backend import bundles, fhir
+from mdt_backend import concepts as C
 from mdt_backend.briefing import Case, RedFlag, Section, TimelineEvent, Trend, TrendPoint
 from mdt_backend.bundles import (
     Bundle,
@@ -55,6 +59,7 @@ from mdt_backend.knowledge import guideline_source, guidelines
 from mdt_backend.llm import chat_json
 from mdt_backend.load_fhir import dataset_id
 from mdt_backend.provenance import NOT_FOUND, Source, Statement
+from mdt_backend.rules import red_flags
 
 PROMPT_VERSION = "mdt-agent-v2"
 OUT_DIR = Path(__file__).parents[3] / "data" / "ai_cases"
@@ -610,6 +615,63 @@ začínající „Pacient/ka …“ (vlastními slovy pacienta, kde je to možn�
     )
 
 
+SYMPTOMS_SCHEMA = _obj(
+    symptoms=_arr(
+        _obj(
+            item=_STR,
+            concept={"type": "string", "enum": list(C.SYMPTOMS)},
+            excerpt=_STR,
+            new={"type": "boolean"},
+        )
+    )
+)
+
+
+def classify_symptoms(b: Bundle, mdt, trace: dict) -> list[C.Symptom]:
+    """Free-text PROMs answers → the rules' symptom vocabulary (concepts.SYMPTOMS). Handles
+    negation and paraphrase that the keyword fallback misses; output is checked against the text."""
+    f = C.facts(b, mdt, symptoms=[])
+    answers_ = C.free_text_answers(f)
+    if not answers_:
+        return []
+    before = f.qa(-2)
+    lines = []
+    for _, link_id, concept, question, answer in answers_:
+        prev = value_of(before[concept][2]) if concept in before else ""
+        lines.append(
+            f"[{link_id}] {question}\n  nyní: {answer}" + (f"\n  minule: {prev}" if prev else "")
+        )
+    vocab = "\n".join(f"- {k}: {v}" for k, v in C.SYMPTOM_LABELS.items())
+    try:
+        out = _call(
+            trace,
+            "symptoms",
+            f"""Zařaď příznaky z volných odpovědí pacienta do kontrolovaného slovníku (concept).
+Pro každý příznak: item = linkId odpovědi, concept ze slovníku, excerpt = doslovný úsek odpovědi,
+new = true, pokud je příznak nový nebo se zhoršil oproti minulé odpovědi; false, pokud trvá beze
+změny nebo je popřen. Popřené příznaky („nic nového“, „nemám“) nevypisuj. bone_pain = bolest
+v oblasti kostí (kyčel, páteř, žebra, pánev, dlouhé kosti); neuropathy_functional = brnění nebo
+necitlivost, která omezuje běžné činnosti (knoflíky, psaní, chůze). Nic nedomýšlej.
+Slovník:
+{vocab}""",
+            "\n".join(lines),
+            SYMPTOMS_SCHEMA,
+        )
+    except (httpx.HTTPError, RuntimeError) as e:  # the rules still run, on the keyword fallback
+        trace["steps"]["symptoms"] = {"error": repr(e), "fallback": "keywords"}
+        return C.keyword_symptoms(f)
+    by_item = {link_id: (qr, answer) for qr, link_id, _, _, answer in answers_}
+    found = []
+    for s in out["symptoms"]:
+        if s["item"] not in by_item or s["concept"] not in C.SYMPTOMS:
+            continue
+        qr, answer = by_item[s["item"]]
+        excerpt = s["excerpt"].strip()
+        excerpt = excerpt if excerpt and excerpt in answer else answer  # quotes must be verbatim
+        found.append(C.Symptom(s["concept"], qr, s["item"], excerpt, bool(s["new"])))
+    return found
+
+
 def recommend(
     dx: dict, issues: dict, views: list[dict], preference: str, question: str, trace: dict
 ) -> dict:
@@ -713,12 +775,19 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
     cite = Citations(rec, dx["passages"])
     record_text = digest({ref: b.by_ref[ref] for ref in rec.refs()})
 
-    with ThreadPoolExecutor(2) as pool:
+    with ThreadPoolExecutor(3) as pool:
         f_ind = pool.submit(pick_indicators, dx, b, question, trace)
         f_pref = pool.submit(extract_preference, b, trace)
+        f_sym = pool.submit(classify_symptoms, b, case.mdt_date, trace)
         cacc = build_cacc(dx, question, trace)
         issues = find_issues(dx, cacc, record_text, case.mdt_date, trace)
         indicators, pref_out = f_ind.result(), f_pref.result()
+        symptoms = f_sym.result()
+    # rule flags again, now with the LLM-classified free-text symptoms
+    case.red_flags = red_flags(b, case.mdt_date, symptoms)
+    trace["symptoms"] = [
+        {"concept": s.concept, "item": s.item, "new": s.new, "excerpt": s.excerpt} for s in symptoms
+    ]
     known_flags = [f.statement.text for f in case.red_flags] + [
         f["text"] for f in issues["findings"]
     ]

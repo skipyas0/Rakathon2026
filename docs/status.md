@@ -55,6 +55,11 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   oxaliplatin for neuropathy per KRC-3.2 + MMR/MSI), Jaccard 0.67. Wording and the exact list of
   findings vary between runs; the RED findings overlapped (stale staging, new hip pain without
   imaging / missing chest CT, MMR/MSI, neuropathy).
+- Red-flag rules v2 (decision 19): generic families A–H over a concept layer, configured in
+  `backend/src/mdt_backend/rules.toml`; LLM symptom classifier in the agent, keyword fallback in
+  the plain briefing. 10–15 flags per patient (P01–P06), each with record sources and guideline
+  passage; unit tests on synthetic records with other codes/wording (`tests/test_rules.py`). The
+  P07 holdout was not used for design or tuning — evaluate on it.
 - `bundles.bundle_paths()` now finds bundles in per-patient folders (`pacienti/P01/P01_bundle.json`,
   the dataset's current layout) — before, the app found no FHIR cases with that layout.
 

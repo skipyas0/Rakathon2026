@@ -86,6 +86,7 @@ cd backend && uv run mdt-zaver P01                     # MDT conclusion PDF → 
 cd backend && uv run mdt-agent P01 --runs 2            # MDT agent → data/ai_cases/ (IRIS + AZURE_API_KEY; --source file = no server)
 cd backend && uv run mdt-agent --all                   # refresh the AI briefings of every IRIS patient (what the app shows)
 cd backend && uv sync && uv run mdt-backend            # API → http://localhost:8000 (docs at /docs)
+RULES_CONFIG=my.toml uv run mdt-backend                # override red-flag thresholds (merged over src/mdt_backend/rules.toml)
 cd backend && uv run pytest && uv run ruff check . && uv run ruff format --check .
 cd frontend && npm install && npm run dev              # UI → http://localhost:5173, /api proxied to :8000
 cd frontend && npm run lint && npm run build
