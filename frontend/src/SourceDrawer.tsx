@@ -1,23 +1,63 @@
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Doc, Robot } from './icons'
 import { fmtDate } from './layout'
 import { type Shown, SourcesContext, sourceType } from './sources'
 
-/** Loads the whole source record on demand (the excerpt above is only the cited passage). */
-function FullText({ reference }: { reference: string }) {
+/** The record's text with the cited passages marked (one per excerpt line), each matched
+ * ignoring case and whitespace, since quotes don't always keep the record's spacing. A passage
+ * not found isn't marked (the excerpt above stands). The first mark scrolls into view. */
+function Highlighted({ text, excerpt }: { text: string; excerpt?: string | null }) {
+  const mark = useRef<HTMLElement>(null)
+  useEffect(() => mark.current?.scrollIntoView({ block: 'nearest' }), [text])
+  const pattern = (excerpt ?? '')
+    .split('\n')
+    .map((line) => line.trim().split(/\s+/).filter(Boolean).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s+'))
+    .filter(Boolean)
+    .join('|')
+  if (!pattern) return <>{text}</>
+  // odd indexes are the matches, so index 1 is the first one (scrolled into view)
+  const parts = text.split(new RegExp(`(${pattern})`, 'gi'))
+  return (
+    <>
+      {parts.map((part, i) =>
+        i % 2 ? (
+          <mark key={i} ref={i === 1 ? mark : undefined}>
+            {part}
+          </mark>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  )
+}
+
+/** The exact reference, and the whole source record on demand with the cited passage marked.
+ * guideline:/trial: references have no record behind them. */
+function SourceFoot({ reference, excerpt }: { reference: string; excerpt?: string | null }) {
   const [text, setText] = useState<string | null>(null)
   const ref = reference.split('#')[0]
-  if (!/^[A-Z][A-Za-z]+\/[\w.-]+$/.test(ref)) return null // guideline:/trial: refs have no record
+  const hasRecord = /^[A-Z][A-Za-z]+\/[\w.-]+$/.test(ref)
   const load = () =>
     fetch(`/api/sources/${ref}`)
       .then((r) => (r.ok ? r.json() : { text: 'Celý záznam není v dostupných datech.' }))
       .then((d) => setText(d.text))
-  return text === null ? (
-    <button className="link" onClick={load}>
-      Zobrazit celý záznam
-    </button>
-  ) : (
-    <div className="full-text">{text}</div>
+  return (
+    <>
+      <div className="source-foot">
+        <code>{reference}</code>
+        {hasRecord && text === null && (
+          <button className="link" onClick={load}>
+            Zobrazit celý záznam
+          </button>
+        )}
+      </div>
+      {text !== null && (
+        <div className="full-text">
+          <Highlighted text={text} excerpt={excerpt} />
+        </div>
+      )}
+    </>
   )
 }
 
@@ -59,13 +99,8 @@ export function SourceDrawer({ children }: { children: ReactNode }) {
                     <span className="muted">{[s.date && fmtDate(s.date), s.author].filter(Boolean).join(' · ')}</span>
                   </div>
                   {s.title && <p className="source-title">{s.title}</p>}
-                  {s.excerpt && (
-                    <blockquote>
-                      <mark>{s.excerpt}</mark>
-                    </blockquote>
-                  )}
-                  <code>{s.reference}</code>
-                  <FullText key={s.reference} reference={s.reference} />
+                  {s.excerpt && <blockquote>{s.excerpt}</blockquote>}
+                  <SourceFoot key={s.reference} reference={s.reference} excerpt={s.excerpt} />
                 </li>
               ))}
             </ul>

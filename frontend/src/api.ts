@@ -98,9 +98,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record),
     }),
+  resetRecord: (id: string) => fetch(`${caseUrl(id)}/record`, { method: 'DELETE' }),
   history: (id: string) => call<History>(`${caseUrl(id)}/history`),
   recommendation: (id: string) => call<Recommendation>(`${caseUrl(id)}/recommendation`),
   ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),
+  /** The AI's draft of the template's history fields: made on first call (~30 s), then cached. */
+  zaverDraft: (id: string) => call<{ created: string }>(`${caseUrl(id)}/zaver/draft`, { method: 'POST' }),
   intake: (kind: IntakeKind, files: { name: string; data: string }[]) =>
     call<{ case_id: string }>('/api/intake', {
       method: 'POST',

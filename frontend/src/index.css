@@ -2,8 +2,16 @@
    Blue is reserved for AI: anything blue with a robot is an unconfirmed AI proposal. */
 :root {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  font-size: 15px;
+  /* Type scale (decision 26): five sizes, nothing below --fs-s. The base grows from 16px (laptop,
+     narrow window beside the hospital system) to 20px (big or projected screen); every size and
+     the main widths are rem, so the whole UI scales together, and browser zoom still works. */
+  font-size: clamp(16px, 8px + 0.6vw, 20px);
   line-height: 1.5;
+  --fs-s: 0.875rem;
+  --fs-m: 1rem;
+  --fs-l: 1.2rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
   color-scheme: light;
   --bg: #f2f6f8;
   --surface: #ffffff;
@@ -43,16 +51,16 @@ body {
   color: var(--ink);
 }
 h1 {
-  font-size: 1.6rem;
+  font-size: var(--fs-xl);
   margin: 0;
   letter-spacing: -0.01em;
 }
 h2 {
-  font-size: 1.15rem;
+  font-size: var(--fs-l);
   margin: 0;
 }
 h3 {
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -68,13 +76,13 @@ a {
   color: var(--muted);
 }
 .small {
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 .eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -126,13 +134,13 @@ button.link {
   background: none;
   padding: 0;
   color: var(--teal);
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 .icon-btn {
   border: 0;
   background: none;
   padding: 0.3rem 0.5rem;
-  font-size: 1.1rem;
+  font-size: var(--fs-l);
   line-height: 1;
   color: var(--ink-2);
 }
@@ -162,7 +170,7 @@ textarea {
 }
 label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   font-weight: 500;
   color: var(--ink-2);
   margin-bottom: 0.9rem;
@@ -188,7 +196,7 @@ fieldset {
   margin: 0 0 1rem;
 }
 legend {
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   font-weight: 500;
   color: var(--ink-2);
   margin-bottom: 0.4rem;
@@ -199,7 +207,7 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: var(--fs-s);
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
@@ -257,29 +265,13 @@ legend {
 .logo {
   background: var(--teal);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   padding: 0.25rem 0.4rem;
   border-radius: 6px;
   letter-spacing: 0.04em;
 }
-.spacer {
-  flex: 1;
-}
-.topbar .user {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0;
-  color: var(--muted);
-}
-.topbar .user input {
-  width: 14rem;
-}
-.topbar .role {
-  width: auto;
-}
 .page {
-  max-width: 1360px;
+  max-width: 85rem;
   margin: 0 auto;
   padding: 1.5rem;
 }
@@ -329,7 +321,7 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   text-decoration: none;
   margin-bottom: 0.5rem;
 }
@@ -352,7 +344,7 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.72rem;
+  font-size: var(--fs-s);
   font-weight: 700;
   color: var(--ai);
   text-transform: uppercase;
@@ -369,28 +361,32 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--ok);
 }
 button.confirm {
   margin-left: auto;
   padding: 0.2rem 0.65rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--ok);
   border-color: color-mix(in srgb, var(--ok) 40%, transparent);
   background: var(--surface);
 }
+/* Every statement opens its sources: a dotted underline says so. Teal for record facts; AI keeps
+   its blue (and robot), so blue still means only "AI, check this". */
 .stmt-inline {
   cursor: pointer;
   border-radius: 4px;
-}
-.stmt-inline:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--line);
-  text-underline-offset: 3px;
+  text-decoration: underline dotted var(--teal);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
 }
 .stmt-inline.ai {
   color: var(--ai);
+  text-decoration-color: var(--ai);
+}
+.stmt-inline:hover {
+  text-decoration-style: solid;
 }
 .stmt-inline .icon {
   margin-left: 0.3rem;
@@ -436,25 +432,25 @@ button.confirm {
   gap: 0 0.5rem;
 }
 .trend-label {
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--ink-2);
   width: 100%;
 }
 .trend-value {
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   font-weight: 650;
 }
 .trend-value small {
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   font-weight: 400;
   color: var(--muted);
 }
 .trend-delta {
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .oor {
-  font-size: 0.72rem;
+  font-size: var(--fs-s);
   font-weight: 700;
   color: var(--crit);
 }
@@ -467,17 +463,39 @@ button.confirm {
 .trend .band {
   fill: var(--ok-soft);
 }
-.trend .band-label {
-  font-size: 9px;
-  fill: var(--ok);
-}
 .trend .grid {
   stroke: var(--line);
   stroke-width: 1;
 }
-.trend .tick {
-  font-size: 10px;
-  fill: var(--muted);
+/* axis labels and "norma" are HTML beside the stretched SVG, so they keep the type scale */
+.plot {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  font-size: var(--fs-s);
+  line-height: 1.1;
+  color: var(--muted);
+}
+.y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: right;
+}
+.plot-area {
+  position: relative;
+}
+.band-label {
+  position: absolute;
+  right: 0.3rem;
+  margin-top: 0.15rem;
+  color: var(--ok);
+}
+.x-axis {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.2rem;
 }
 .trend .line {
   fill: none;
@@ -552,7 +570,7 @@ button.confirm {
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  font-size: 1.1rem;
+  font-size: var(--fs-l);
   color: var(--c);
   background: color-mix(in srgb, var(--c) 10%, white);
   margin-bottom: 0.2rem;
@@ -569,11 +587,11 @@ button.confirm {
   border-radius: 10px;
   color: var(--c);
   background: color-mix(in srgb, var(--c) 9%, white);
-  font-size: 1.4rem;
+  font-size: var(--fs-xl);
   margin-bottom: 1rem;
 }
 .intent-banner div {
-  font-size: 0.95rem;
+  font-size: var(--fs-m);
 }
 .intent-banner small {
   display: block;
@@ -588,7 +606,7 @@ dl div {
 }
 dt {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 dd {
   margin: 0;
@@ -629,7 +647,7 @@ dialog::backdrop {
   margin: 0 0 0 auto;
   height: 100vh;
   max-height: 100vh;
-  width: min(480px, 100vw);
+  width: min(30rem, 100vw);
 }
 .drawer-body {
   padding: 1.25rem 1.5rem;
@@ -641,8 +659,61 @@ dialog::backdrop {
 }
 .drawer-body h2 {
   margin: 0.5rem 0 0.75rem;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   line-height: 1.4;
+}
+/* waiting on the AI: a sliding bar under the label, elapsed time below */
+.working {
+  max-width: 34rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: var(--ai);
+  background: var(--ai-soft);
+}
+.working p {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+.working-bar {
+  position: relative;
+  height: 4px;
+  margin: 0.6rem 0 0.4rem;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--ai-line);
+}
+.working-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  border-radius: 2px;
+  background: var(--ai);
+  animation: working 1.6s ease-in-out infinite;
+}
+@keyframes working {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(340%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .working-bar span { animation: none; width: 100%; opacity: 0.4; }
+}
+.working-time {
+  font-size: var(--fs-s);
+  color: var(--ink-2);
+}
+.locked-note {
+  display: inline-flex;
+  gap: 0.45rem;
+  align-items: center;
+  margin: 0 0 1rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--fs-s);
 }
 .ai-note {
   display: flex;
@@ -652,7 +723,7 @@ dialog::backdrop {
   background: var(--ai-soft);
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 .source-list {
   list-style: none;
@@ -671,9 +742,10 @@ dialog::backdrop {
 }
 .source-head .muted {
   margin-left: auto;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
 }
 blockquote {
+  white-space: pre-line; /* a multi-passage excerpt has one passage per line */
   margin: 0.5rem 0;
   padding: 0.5rem 0.75rem;
   border-left: 3px solid var(--teal);
@@ -686,7 +758,7 @@ mark {
   padding: 0 0.1rem;
 }
 code {
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .narrative .stmt-inline {
@@ -728,9 +800,27 @@ code {
 
 }
 
+/* the source's exact reference (left) and its whole-record link (right), wrapping when narrow */
+.source-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  margin-top: 0.4rem;
+}
+.source-foot code {
+  font-size: var(--fs-s);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.source-foot .link {
+  margin-left: auto;
+  white-space: nowrap;
+}
 .full-text {
   white-space: pre-wrap;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   background: var(--surface-2);
   border-radius: 8px;
   padding: 0.75rem;
@@ -749,6 +839,7 @@ code {
   gap: 0.25rem;
 }
 .topnav a {
+  white-space: nowrap;
   padding: 0.35rem 0.7rem;
   border-radius: 8px;
   color: var(--ink-2);
@@ -789,7 +880,7 @@ code {
 /* Dashboard additions */
 .soon {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   opacity: 0.8;
 }
 
@@ -799,23 +890,23 @@ code {
 
 /* The journey (decision #20): big, calm, one action per screen */
 .journey {
-  max-width: 920px;
+  max-width: 57.5rem;
 }
 .journey h1 {
-  font-size: 1.8rem;
+  font-size: var(--fs-2xl);
   margin: 0.5rem 0 1.25rem;
 }
 .journey .huge {
-  font-size: 2rem;
+  font-size: var(--fs-2xl);
   line-height: 1.25;
   margin: 0 0 0.75rem;
 }
 .journey .big {
-  font-size: 1.35rem;
+  font-size: var(--fs-xl);
   line-height: 1.4;
 }
 .journey h2 {
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted);
@@ -831,7 +922,7 @@ code {
 }
 .question-card .question {
   margin: 0;
-  font-size: 1.45rem;
+  font-size: var(--fs-l);
   line-height: 1.4;
   font-weight: 600;
 }
@@ -846,11 +937,35 @@ code {
 .question-card.missing .question {
   color: var(--crit);
 }
+/* Pacient: the case's key facts as labelled values, in the eyebrow style of the cards below */
+.case-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 2.5rem;
+  margin: 0 0 1.25rem;
+}
+.case-facts div {
+  display: block; /* not the global label | value grid of dl */
+  padding: 0;
+  border: 0;
+}
+.case-facts dt {
+  font-size: var(--fs-s);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.case-facts dd {
+  margin: 0;
+  font-size: var(--fs-m);
+  font-weight: 600;
+}
 .patient-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 0 2.5rem;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
 }
 .plain {
   list-style: none;
@@ -882,38 +997,93 @@ code {
 }
 .course time {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .course .kind {
   font-weight: 600;
   margin-right: 0.4rem;
 }
-.steps-compact {
-  display: none;
-  margin: 0 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.steps-compact strong {
-  color: var(--ink);
-}
+/* Journey progress as chevrons (clip-path arrows): done = light green, now = solid green, next =
+   grey. Below 980px (the journey column gets narrower than the bar) only the current step shows,
+   between back/forward arrows. */
 .steps {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  gap: 3px;
   list-style: none;
   padding: 0;
   margin: 0 0 1.5rem;
-  font-size: 0.8rem;
+}
+.steps li {
+  flex: 1 1 auto;
+  display: flex;
+}
+.chevron {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.45rem 0.65rem; /* symmetric: the notch (left) and the point (right) are equally deep */
+  white-space: nowrap;
+  font-size: var(--fs-s);
+  font-weight: 600;
+  text-decoration: none;
   color: var(--muted);
+  background: color-mix(in srgb, var(--line) 70%, var(--surface));
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 0 100%, 9px 50%);
 }
-.steps li.done a {
+.steps li:first-child .chevron {
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 0 100%);
+}
+.chevron.done {
   color: var(--ok);
+  background: var(--ok-soft);
 }
-.steps li.now {
-  color: var(--ink);
-  font-weight: 700;
+a.chevron.done:hover {
+  background: color-mix(in srgb, var(--ok) 22%, var(--surface));
+}
+.chevron.now {
+  color: #fff;
+  background: var(--ok);
+}
+.steps-compact {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+}
+.steps-compact .chevron {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0.55rem 1.6rem 0.55rem 1.4rem;
+  font-size: var(--fs-m);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.step-arrow {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border-radius: 999px;
+  font-size: var(--fs-xl);
+  line-height: 1;
+  text-decoration: none;
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.step-arrow.off {
+  color: var(--line);
+  background: none;
+}
+@media (max-width: 980px) {
+  .steps {
+    display: none;
+  }
+  .steps-compact {
+    display: flex;
+  }
 }
 .bubbles {
   display: flex;
@@ -925,7 +1095,7 @@ code {
   border: 2px solid var(--line);
   border-radius: 999px;
   padding: 0.7rem 1.3rem;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   background: var(--surface);
 }
 .bubble.on {
@@ -934,8 +1104,8 @@ code {
   color: var(--ink);
 }
 .small-bubbles .bubble {
-  font-size: 0.95rem;
-  padding: 0.45rem 1rem;
+  font-size: var(--fs-s);
+  padding: 0.3rem 0.85rem;
 }
 .upload {
   display: flex;
@@ -960,7 +1130,7 @@ code {
   border: 2px dashed var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   position: relative;
   cursor: pointer;
 }
@@ -981,6 +1151,44 @@ code {
   opacity: 0;
   cursor: pointer;
 }
+/* Export: the PDF preview beside its download boxes; stacked on narrow screens */
+.export {
+  display: flex;
+  gap: 1.25rem;
+  height: calc(100vh - 22.5rem); /* top bar, chevrons, heading, status card, buttons */
+  min-height: 20rem;
+}
+.export .preview {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.export-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 11rem;
+}
+.export-actions .upload-box {
+  aspect-ratio: auto;
+  flex: 1;
+  font-size: var(--fs-l);
+}
+@media (max-width: 640px) {
+  .export {
+    flex-direction: column-reverse;
+    height: auto;
+    min-height: 0; /* the preview is hidden here, so no room is kept for it */
+  }
+  .export .preview {
+    display: none; /* phones open PDFs themselves; the PDF box does that */
+  }
+  .export-actions {
+    flex-direction: row;
+    width: auto;
+  }
+}
 .upload-box.soon {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1000,17 +1208,43 @@ code {
   }
 
 }
-button.next {
+button.next,
+button.back,
+button.close {
   display: flex;
-  margin: 1.5rem 0 0 auto;
-  font-size: 1.1rem;
-  padding: 0.7rem 2rem;
+  font-size: var(--fs-m);
+  font-weight: 600;
+  padding: 0.55rem 1.5rem;
 }
+/* Předchozí (grey) right next to Další, both at the right under every journey screen */
+.nav-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.nav-row button {
+  margin: 0;
+}
+button.back {
+  color: var(--ink-2);
+  background: var(--surface-2);
+}
+button.close {
+  color: #fff;
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+}
+button.close:hover {
+  background: var(--ink);
+}
+
 .key-facts {
   list-style: none;
   padding: 0;
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--fs-l);
   line-height: 1.4;
 }
 .key-facts li {
@@ -1023,8 +1257,7 @@ button.next {
   align-items: baseline;
 }
 .key-facts.questions {
-  counter-reset: q;
-  font-size: 1.35rem;
+  counter-reset: q; /* size: as .key-facts, L wide / M narrow */
 }
 .key-facts.questions li::before {
   counter-increment: q;
@@ -1050,7 +1283,7 @@ button.next {
   background: var(--warn-soft);
 }
 .key-facts.compact {
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   margin: 1rem 0 0;
 }
 .key-facts.crit .icon,
@@ -1067,7 +1300,7 @@ button.next {
 }
 .more summary {
   cursor: pointer;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   font-weight: 500;
 }
 .more ul {
@@ -1088,20 +1321,15 @@ button.next {
 .journey-trends {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-.journey-trends svg {
-  width: 100%;
-  height: auto;
-  max-height: 38vh;
+  gap: 1.25rem 1.5rem;
 }
 .page-count {
-  font-size: 1rem;
+  font-size: var(--fs-m);
   font-weight: 400;
 }
 .big-field {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1111,13 +1339,13 @@ button.next {
 .big-field textarea {
   display: block;
   width: 100%;
-  min-height: 8rem;
+  min-height: 6.5rem;
   margin-top: 0.5rem;
   padding: 0.8rem 1rem;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--surface-2);
-  font-size: 1.1rem;
+  background: var(--surface); /* white on the page background: the fields need no card around them */
+  font-size: var(--fs-l);
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
@@ -1129,14 +1357,6 @@ button.next {
   border-color: var(--teal);
   background: var(--surface);
   box-shadow: 0 0 0 3px var(--teal-soft);
-}
-.form-card {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 1.5rem 2rem;
-}
-.form-card button.next {
-  margin-top: 0.5rem;
 }
 .tiles {
   display: grid;
@@ -1152,7 +1372,7 @@ button.next {
   border: 2px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   font-weight: 600;
 }
 .tile .icon {
@@ -1178,17 +1398,40 @@ button.next {
 .tile.intent-deferred .icon {
   color: var(--deferred);
 }
+/* Potvrzení: chosen and recommended postup as two columns of one card (equal height, no colour
+   but the AI's own blue), soulad as the card's footer; stacked on narrow screens */
 .compare {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-.compare section {
-  padding: 1rem;
-  border: 1px solid var(--line);
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 0.75rem;
   border-radius: var(--radius);
   background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.compare section {
+  padding: 1rem 1.25rem;
+}
+.compare section + section {
+  border-left: 1px solid var(--line);
+}
+.compare .soulad {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.65rem 1.25rem;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 640px) {
+  .compare {
+    grid-template-columns: 1fr;
+  }
+  .compare section + section {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+}
+.compare .big {
+  font-size: var(--fs-m); /* chosen vs recommended side by side: body size, so Potvrdit fits */
+  margin: 0.4rem 0 0;
 }
 .intent-label {
   display: flex;
@@ -1196,11 +1439,13 @@ button.next {
   gap: 0.4rem;
   font-weight: 700;
 }
+/* status lines (soulad, potvrzeno): coloured text and icon only */
 .verdict {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 1.15rem;
+  gap: 0.45rem;
+  margin: 0.5rem 0;
+  font-size: var(--fs-m);
   font-weight: 600;
 }
 .verdict.ok {
@@ -1211,11 +1456,10 @@ button.next {
 }
 .stanoviska {
   align-items: center;
-  margin: 1rem 0 0;
+  margin: 0.5rem 0 0;
 }
 .bubble.yes {
-  border-color: var(--ok);
-  background: var(--ok-soft);
+  border-color: var(--line); /* calm when everyone agrees; only the icon is green */
 }
 .bubble.yes .icon {
   color: var(--ok);
@@ -1264,8 +1508,21 @@ button.next {
   margin: 0;
 }
 .dialog-body .plain {
-  max-height: 50vh;
+  max-height: 45vh;
   overflow: auto;
+}
+/* the specialty's stanovisko in its own card, its other facts under a separate heading */
+.question-card.stanovisko {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.1rem;
+}
+.question-card.stanovisko p:last-child {
+  margin-bottom: 0;
+}
+.dialog-body h4.eyebrow {
+  display: block;
+  margin: 0 0 0.5rem;
+  color: var(--muted);
 }
 .deviation {
   padding: 1rem 1.25rem;
@@ -1281,11 +1538,11 @@ button.next {
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
-.confirm-row button.next {
+.confirm-row button {
   margin: 0;
 }
 .confirm-row input {
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   padding: 0.6rem 0.8rem;
 }
 .case-list {
@@ -1295,25 +1552,50 @@ button.next {
   display: grid;
   gap: 0.75rem;
 }
-.case-card a {
+/* Přehled: one tidy line per case; less important columns fold away as the window narrows
+   (board name, then tumour, then date). A reset slot is kept on every card so columns align. */
+.overview {
+  max-width: 77.5rem;
+}
+.case-card {
   display: grid;
-  grid-template-columns: minmax(12rem, 2fr) auto minmax(10rem, 2fr) auto 9.5rem;
+  grid-template-columns: minmax(0, 1fr) 3rem;
   align-items: center;
-  gap: 0.5rem 1.25rem;
-  padding: 1rem 1.25rem;
   border-left: 5px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
+}
+.case-card:hover {
+  box-shadow: 0 0 0 2px var(--teal-soft), var(--shadow);
+}
+.case-card a {
+  display: grid;
+  grid-template-columns: minmax(17rem, 1.2fr) 11rem minmax(0, 2fr) auto 9rem;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.25rem 0 1.25rem 1.5rem;
   color: var(--ink);
   text-decoration: none;
 }
-.case-card a:hover {
-  box-shadow: 0 0 0 2px var(--teal-soft), var(--shadow);
+.case-name,
+.case-board {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.case-tumour {
+  justify-self: start; /* fixed column, so every row's board name starts at the same place */
+}
+.case-reset {
+  justify-self: center;
+}
+.case-reset:hover {
+  color: var(--crit);
 }
 .case-name {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
 }
 .case-meta {
   color: var(--ink-2);
@@ -1325,17 +1607,17 @@ button.next {
   gap: 0.3rem;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   font-weight: 600;
 }
-.case-card.done a {
+.case-card.done {
   border-left-color: var(--ok);
 }
 .case-card.done .pill {
   background: var(--ok-soft);
   color: var(--ok);
 }
-.case-card.progress a {
+.case-card.progress {
   border-left-color: var(--warn);
 }
 .case-card.progress .pill {
@@ -1346,43 +1628,81 @@ button.next {
   background: var(--surface-2);
   color: var(--ink-2);
 }
-@media (max-width: 760px) {
-  .case-card a {
-    grid-template-columns: 1fr auto;
+@media (max-width: 1100px) {
+  .case-board {
+    display: none;
   }
-
+  .case-card a {
+    grid-template-columns: minmax(0, 1fr) 11rem auto 9rem;
+  }
+}
+@media (max-width: 820px) {
+  .case-tumour {
+    display: none;
+  }
+  .case-card a {
+    grid-template-columns: minmax(0, 1fr) auto 9rem;
+  }
+}
+@media (max-width: 560px) {
+  .case-date {
+    display: none;
+  }
+  .case-card a {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    padding-left: 1rem;
+  }
 }
 
 @media (max-width: 640px) {
-  /* the journey on a narrow screen: one-line progress, smaller type, nothing that forces scrolling */
-  .steps {
-    display: none;
-  }
-  .steps-compact {
-    display: block;
-  }
+  /* the journey on a narrow screen: smaller type, nothing that forces scrolling */
   .journey h1 {
-    font-size: 1.35rem;
+    font-size: var(--fs-xl);
     margin: 0 0 0.75rem;
   }
   .journey .huge {
-    font-size: 1.5rem;
+    font-size: var(--fs-xl);
     margin-bottom: 0.25rem;
   }
   .journey .big,
   .key-facts {
-    font-size: 1rem;
+    font-size: var(--fs-m);
   }
   .question-card {
     margin: 0.75rem 0;
     padding: 0.8rem 1rem;
   }
   .question-card .question {
-    font-size: 1.1rem;
+    font-size: var(--fs-m);
   }
   .patient-grid {
-    font-size: 0.95rem;
+    font-size: var(--fs-m);
   }
+  .case-facts {
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+  /* the question card has less space below it here, so the wishes card is pulled up less */
+  .question-card.preference {
+    margin-top: -0.35rem;
+  }
+  /* the journey's buttons always sit in the same place at the bottom edge, on every screen;
+     the page keeps room for them so its last lines aren't hidden behind the bar */
+  .journey {
+    padding-bottom: 6rem;
+  }
+  .nav-row,
+  .confirm-row {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 1;
+    margin: 0;
+    padding: 0.6rem 1rem;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+  }
+
   .journey h2 {
     margin: 0.75rem 0 0.3rem;
   }
@@ -1393,18 +1713,11 @@ button.next {
   .key-facts.warn li {
     padding: 0.5rem 0.75rem;
   }
-  .journey-trends svg {
-    max-height: 28vh;
-  }
   .tile {
     aspect-ratio: auto;
     padding: 1rem 0.5rem;
   }
-  button.next {
-    margin-top: 1rem;
-  }
   .topnav a {
-    white-space: nowrap;
     padding: 0.3rem 0.5rem;
   }
 }

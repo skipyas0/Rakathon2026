@@ -9,9 +9,11 @@ from mdt_backend.bundles import (
     LOINC_ECOG,
     LOINC_HB,
     Bundle,
+    answer_line,
     answers,
     code_of,
     date_of,
+    observation_line,
     short_label,
     src,
     title_of,
@@ -54,8 +56,8 @@ def red_flags(
             flag(
                 "high" if pat - doc >= 2 else "medium",
                 f"ECOG dle lékaře {doc}, pacient popisuje stav odpovídající ECOG {pat} – ověřit výkonnostní stav.",
-                src(b, ecog[-1], f"ECOG {doc}"),
-                src(b, latest_qr, f"{text} {value_of(a)}", "samostatnost"),
+                src(b, ecog[-1], observation_line(ecog[-1])),
+                src(b, latest_qr, answer_line(text, a), "samostatnost"),
             )
 
     # 2. Anaemia + fatigue (brief's own example)
@@ -99,8 +101,9 @@ def red_flags(
             flag(
                 "medium",
                 f"Zhoršení v dotazníku pacienta: {items} (škála 0–10).",
-                src(b, proms[-2], "; ".join(f"{t}: {x}" for _, t, x, _ in worse)),
-                src(b, latest_qr, "; ".join(f"{t}: {y}" for _, t, _, y in worse)),
+                # one cited answer per line: each is verbatim, so the drawer highlights each one
+                src(b, proms[-2], "\n".join(f"{t}: {x}" for _, t, x, _ in worse)),
+                src(b, latest_qr, "\n".join(f"{t}: {y}" for _, t, _, y in worse)),
             )
 
     # 5. New symptom reported by the patient

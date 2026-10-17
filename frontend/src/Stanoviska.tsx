@@ -26,7 +26,7 @@ export function Stanoviska({ c, record, save }: Props) {
   return (
     <>
       <div className="bubbles small-bubbles stanoviska">
-        <span className="muted">Stanoviska:</span>
+        <span className="eyebrow">Stanoviska</span>
         {record.board.map((m) => (
           <button
             key={m.specialty}
@@ -57,23 +57,32 @@ export function Stanoviska({ c, record, save }: Props) {
                 <Alert /> Nepodporuje
               </button>
             </div>
-            {verdict ? (
-              <p>{S(`sections.${member.specialty}.${verdict[0]}`, verdict[1], 'inline')}</p>
-            ) : (
-              <p>
-                <span className="chip muted-chip">ukázka</span>{' '}
-                {member.supports
-                  ? `Z pohledu odbornosti ${label(member.specialty)} bez námitek k navrženému postupu.`
-                  : `Z pohledu odbornosti ${label(member.specialty)} navržený postup nepodporuje.`}
-              </p>
+            <section className="question-card stanovisko">
+              <p className="eyebrow">Stanovisko</p>
+              {verdict ? (
+                // the card says what it is, so the "Stanovisko (…):" prefix isn't repeated
+                <p>{S(`sections.${member.specialty}.${verdict[0]}`, { ...verdict[1], text: verdict[1].text.replace(/^Stanovisko \([^)]*\):\s*/, '') }, 'inline')}</p>
+              ) : (
+                <p>
+                  <span className="chip muted-chip">ukázka</span>{' '}
+                  {member.supports
+                    ? `Z pohledu odbornosti ${label(member.specialty)} bez námitek k navrženému postupu.`
+                    : `Z pohledu odbornosti ${label(member.specialty)} navržený postup nepodporuje.`}
+                </p>
+              )}
+            </section>
+            {items.length > (verdict ? 1 : 0) && (
+              <>
+                <h4 className="eyebrow">Podklady · {label(member.specialty)}</h4>
+                <ul className="plain">
+                  {items
+                    .filter(([i]) => i !== verdict?.[0])
+                    .map(([i, s]) => (
+                      <li key={i}>{S(`sections.${member.specialty}.${i}`, s, 'inline')}</li>
+                    ))}
+                </ul>
+              </>
             )}
-            <ul className="plain">
-              {items
-                .filter(([i]) => i !== verdict?.[0])
-                .map(([i, s]) => (
-                  <li key={i}>{S(`sections.${member.specialty}.${i}`, s, 'inline')}</li>
-                ))}
-            </ul>
           </div>
         )}
       </dialog>

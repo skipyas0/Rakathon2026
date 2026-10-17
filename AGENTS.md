@@ -80,7 +80,6 @@ New features go in their own module so they can be removed in one move:
 docker compose up -d iris                              # IRIS FHIR → http://localhost:52773/fhir/r4 (first start ~2 min)
 cd backend && uv run mdt-load-fhir                     # load Dataset/fhir/bundles.ndjson into IRIS (once per fresh volume)
 cd backend && uv run mdt-patient P01                   # pretty-print one patient's full record from the server
-cd backend && uv run mdt-zaver P01                     # MDT conclusion PDF → data/zavery/ (needs FHIR server + AZURE_API_KEY)
 cd backend && uv run mdt-agent P01 --runs 2            # MDT agent → data/ai_cases/ (IRIS + AZURE_API_KEY)
 cd backend && uv run mdt-agent --all                   # refresh the AI briefings of every nominated patient (what the app shows)
 cd backend && uv sync && uv run mdt-backend            # API → http://localhost:8000 (docs at /docs)
@@ -112,10 +111,11 @@ Other contributors' agents only know what's written down. In the same PR as the 
 | When you…                                          | Update                                         |
 |----------------------------------------------------|------------------------------------------------|
 | add/remove/move a module, endpoint, or data flow   | [docs/architecture.md](docs/architecture.md)   |
-| make a choice others must follow (lib, model, API shape, reverting something) | append to [docs/decisions.md](docs/decisions.md) |
+| make a choice others must follow (lib, model, API shape, reverting something) | add or edit an entry in [docs/decisions.md](docs/decisions.md) |
 | start, finish or abandon work                      | your own section in [docs/status.md](docs/status.md) |
 | change commands, layout or rules                   | this file                                      |
 
-Rules: edit only your own section of `status.md` (avoids merge conflicts). Never rewrite past
-entries in `decisions.md` — supersede them with a new entry. Keep this file agent-neutral: no
+Rules: edit only your own section of `status.md` (avoids merge conflicts). `decisions.md` holds
+only the decisions in force: change one in place (date on its Status line), delete one that no
+longer holds, never renumber (code and docs cite the numbers). Keep this file agent-neutral: no
 tool-specific syntax; tool-specific config goes in that tool's own folder.

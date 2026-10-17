@@ -5,35 +5,25 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 
 ## yes-and (Claude Code)
 
-- Branch `yes-and/trim-dead-files`: repo cleanup, step 1 — holdout files moved to
-  `Dataset/holdout/` (decision 23), `brief.docx` removed (`brief.md` is the same text); scope
-  rewritten as core + checklist in `problem_statement.md` (decision 24); IRIS only, FHIR only (`iris/`, no
-  HAPI/stubs/disk fallback). Next: one conclusion PDF following `template_zaver_zasedani`; docs
-  trim. Future: patient deletion (clean re-uploads, holdout P07 evaluation).
-
-- Done (on `main`): three-phase MDT app (#1) on dataset v1.1, Docker image + Fly deploy (#2) at
-  https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
-  yes-and's personal account).
-- Branch `yes-and/meeting-records` (pushed, not merged): the full role-based workflow (#16).
-- Branch `yes-and/journey-meets-pipeline` (on top of `backend`): the simple coordinator journey
-  (#20, docs/workflow-plan.md) joined with Contributor 2's agent. Cases are meetings over the
-  FHIR server's nominated patients; the agent's briefing feeds every screen, its first option +
-  léčebný záměr is the recommendation (#21), its verdicts the stanoviska, its questions a new step,
-  the patient's wishes a card on Pacient (#22). "ukázka" examples remain only where the agent has
-  no output (pathology stanovisko, unbriefed cases).
-- The agent also runs against the local HAPI (`FHIR_BASE_URL=http://localhost:8080/fhir`, empty
-  `FHIR_USER`), loaded with `mdt-load-fhir`.
-- Next: trial screening (still empty). Ground truth (`ground_truth/` in the dataset README) is not
-  delivered.
-- Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
-- Gaps against `MDT_ZASEDANI_PROCES.md` + the record template (not started):
-  - The app's decision form doesn't follow `docs/template_zaver_zasedani/form.md`; the filled
-    template exists only as the `mdt-zaver` CLI PDF; the app's PDF (`features/export.py`) has its
-    own simpler layout.
-  - The decision doesn't separate the MDT recommendation, the patient's decision, the agreed plan
-    and the care actually delivered (§6).
-  - PROMs answers are only partly split by specialty: surgery gets walking + weight change, the
-    other specialist sections get none, the rest is in the `patient` section (§2).
+- Open branches, merge in this order: `yes-and/iris-on-fly` (Fly volume fix),
+  `yes-and/template-pdf` (Export = the filled template, #25), `yes-and/docs-trim` (on top of
+  template-pdf: decisions in force only, shorter docs).
+- Fly: IRIS runs as the private app `mdt-copilot-iris` (#14). The web app
+  (https://mdt-copilot-rakathon.fly.dev, yes-and's account) still runs the pre-IRIS build until
+  redeployed with the `FHIR_PASSWORD` secret.
+- Next, by the scope (`problem_statement.md`): trial screening (POVINNÉ, empty); section
+  order/detail configuration (POVINNÉ, 20 % of the score); PDF intake and FHIR export (CORE);
+  running the agent from the app; LLM red flags and an LLM guideline-compliance check instead of
+  `rules.py` and the derived soulad (CORE). Later: deleting a patient (clean re-uploads, holdout
+  P07 evaluation).
+- Gaps against `MDT_ZASEDANI_PROCES.md`: the decision doesn't separate the MDT recommendation, the
+  patient's decision, the agreed plan and the care delivered (§6); PROMs are only partly split by
+  specialty (§2).
+- Open issue: every board member's stance starts as "Podporuje" (`Member.supports = True`), so
+  consensus exists by default; proposed: start undecided, Potvrdit only once every stance is set.
+- The agent's output leaks "[refs: …]" placeholders into some statements; strip them in the agent.
+- `data/ai_cases/` is from the first agent run (old intent prompt); rerun `mdt-agent --all`.
+  Ground truth (`ground_truth/` in the dataset README) is not delivered.
 
 ## Contributor 2
 
