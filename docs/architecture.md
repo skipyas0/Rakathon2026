@@ -36,6 +36,8 @@ PDF and DOCX downloads (`features/export.py`), or FHIR (not built yet).
 
 Visual language: unconfirmed AI output is blue with a robot icon; examples standing in for AI
 output are labelled "ukázka"; everything else (record data, clinician input) is plain text.
+Type: five sizes (`--fs-s` … `--fs-2xl` in `index.css`, nothing smaller than `--fs-s`) on a fluid
+root size, 16px on laptops and narrow windows up to 20px on projectors; widths in rem (decision 26).
 
 ## Backend — `backend/src/mdt_backend/`
 
@@ -89,7 +91,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `Journey.tsx`       | Steps 2–10 for one case: board bubbles, patient (+ the patient's wishes), key facts (urgent red flags first), up to 3 trends, the agent's questions for discussion, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (preview of `zaver.pdf` beside PDF / DOCX downloads, FHIR greyed out; asks for the AI draft first) |
 | `Steps.tsx`         | Progress as chevrons (done light green and linking back, current solid green, next grey); below 980 px only the current step between ‹ (back) and a disabled › (forward goes through Další, which saves) |
 | `Stanoviska.tsx`    | Stance bubbles per board specialty (green supports / red doesn't, `Member.supports`), pop-up with the stanovisko (the agent's verdict for that specialty, else example text) and the specialty's facts; used on Závěr and Potvrzení |
-| `Charts.tsx`        | `TrendChart` (SVG line + reference band; every point opens its source) |
+| `Charts.tsx`        | `TrendChart` (SVG line + reference band, axis labels and "norma" as HTML around it; every point opens its source) |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
 | `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records (the cited excerpt as plain text, then a row with the reference and "Zobrazit celý záznam"; the whole record opens below with the excerpt highlighted and scrolled into view); `useSources()` opens it |
 | `render.tsx`        | `renderer`, `now` helpers                                     |

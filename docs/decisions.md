@@ -200,3 +200,14 @@ previews the PDF; to change anything they download the DOCX and edit it. No AI w
 conclusion. Data the dataset lacks (birth number, address, phone) print as `NOT_FOUND`.
 Why: The template is the official output; a preview with an editable DOCX is the smallest flow that
 keeps AI output labelled and sourced without a per-field confirmation screen.
+
+## 26. One type scale that grows with the screen — 2026-10-17, yes-and
+Status: accepted
+Decision: Five font sizes only, as CSS variables (`--fs-s` 0.875rem, `--fs-m` 1rem, `--fs-l` 1.2rem,
+`--fs-xl` 1.5rem, `--fs-2xl` 2rem); nothing smaller than `--fs-s`. The root size is fluid,
+`clamp(16px, 8px + 0.6vw, 20px)`: 16px on laptops and in a narrow window beside the hospital
+system, up to 20px on big or projected screens. Sizes and the main widths (page, journey column,
+Přehled, source drawer) are rem, so the UI scales as one; browser zoom works on top. Chart labels
+are HTML around the stretched SVG, so they keep the scale too.
+Why: The app is projected in the meeting and also sits in a narrow window next to the hospital
+information system; 21 ad-hoc sizes down to 9px were not legible in either.

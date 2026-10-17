@@ -2,8 +2,16 @@
    Blue is reserved for AI: anything blue with a robot is an unconfirmed AI proposal. */
 :root {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  font-size: 15px;
+  /* Type scale (decision 26): five sizes, nothing below --fs-s. The base grows from 16px (laptop,
+     narrow window beside the hospital system) to 20px (big or projected screen); every size and
+     the main widths are rem, so the whole UI scales together, and browser zoom still works. */
+  font-size: clamp(16px, 8px + 0.6vw, 20px);
   line-height: 1.5;
+  --fs-s: 0.875rem;
+  --fs-m: 1rem;
+  --fs-l: 1.2rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: 2rem;
   color-scheme: light;
   --bg: #f2f6f8;
   --surface: #ffffff;
@@ -43,16 +51,16 @@ body {
   color: var(--ink);
 }
 h1 {
-  font-size: 1.6rem;
+  font-size: var(--fs-xl);
   margin: 0;
   letter-spacing: -0.01em;
 }
 h2 {
-  font-size: 1.15rem;
+  font-size: var(--fs-l);
   margin: 0;
 }
 h3 {
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--muted);
@@ -68,13 +76,13 @@ a {
   color: var(--muted);
 }
 .small {
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 .eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -126,13 +134,13 @@ button.link {
   background: none;
   padding: 0;
   color: var(--teal);
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 .icon-btn {
   border: 0;
   background: none;
   padding: 0.3rem 0.5rem;
-  font-size: 1.1rem;
+  font-size: var(--fs-l);
   line-height: 1;
   color: var(--ink-2);
 }
@@ -162,7 +170,7 @@ textarea {
 }
 label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   font-weight: 500;
   color: var(--ink-2);
   margin-bottom: 0.9rem;
@@ -188,7 +196,7 @@ fieldset {
   margin: 0 0 1rem;
 }
 legend {
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   font-weight: 500;
   color: var(--ink-2);
   margin-bottom: 0.4rem;
@@ -199,7 +207,7 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: var(--fs-s);
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
@@ -257,7 +265,7 @@ legend {
 .logo {
   background: var(--teal);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   padding: 0.25rem 0.4rem;
   border-radius: 6px;
   letter-spacing: 0.04em;
@@ -279,7 +287,7 @@ legend {
   width: auto;
 }
 .page {
-  max-width: 1360px;
+  max-width: 85rem;
   margin: 0 auto;
   padding: 1.5rem;
 }
@@ -329,7 +337,7 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   text-decoration: none;
   margin-bottom: 0.5rem;
 }
@@ -352,7 +360,7 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.72rem;
+  font-size: var(--fs-s);
   font-weight: 700;
   color: var(--ai);
   text-transform: uppercase;
@@ -369,13 +377,13 @@ legend {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--ok);
 }
 button.confirm {
   margin-left: auto;
   padding: 0.2rem 0.65rem;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--ok);
   border-color: color-mix(in srgb, var(--ok) 40%, transparent);
   background: var(--surface);
@@ -436,25 +444,25 @@ button.confirm {
   gap: 0 0.5rem;
 }
 .trend-label {
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--ink-2);
   width: 100%;
 }
 .trend-value {
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   font-weight: 650;
 }
 .trend-value small {
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   font-weight: 400;
   color: var(--muted);
 }
 .trend-delta {
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .oor {
-  font-size: 0.72rem;
+  font-size: var(--fs-s);
   font-weight: 700;
   color: var(--crit);
 }
@@ -467,17 +475,39 @@ button.confirm {
 .trend .band {
   fill: var(--ok-soft);
 }
-.trend .band-label {
-  font-size: 9px;
-  fill: var(--ok);
-}
 .trend .grid {
   stroke: var(--line);
   stroke-width: 1;
 }
-.trend .tick {
-  font-size: 10px;
-  fill: var(--muted);
+/* axis labels and "norma" are HTML beside the stretched SVG, so they keep the type scale */
+.plot {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  font-size: var(--fs-s);
+  line-height: 1.1;
+  color: var(--muted);
+}
+.y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: right;
+}
+.plot-area {
+  position: relative;
+}
+.band-label {
+  position: absolute;
+  right: 0.3rem;
+  margin-top: 0.15rem;
+  color: var(--ok);
+}
+.x-axis {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.2rem;
 }
 .trend .line {
   fill: none;
@@ -552,7 +582,7 @@ button.confirm {
   width: 2rem;
   height: 2rem;
   border-radius: 50%;
-  font-size: 1.1rem;
+  font-size: var(--fs-l);
   color: var(--c);
   background: color-mix(in srgb, var(--c) 10%, white);
   margin-bottom: 0.2rem;
@@ -569,11 +599,11 @@ button.confirm {
   border-radius: 10px;
   color: var(--c);
   background: color-mix(in srgb, var(--c) 9%, white);
-  font-size: 1.4rem;
+  font-size: var(--fs-xl);
   margin-bottom: 1rem;
 }
 .intent-banner div {
-  font-size: 0.95rem;
+  font-size: var(--fs-m);
 }
 .intent-banner small {
   display: block;
@@ -588,7 +618,7 @@ dl div {
 }
 dt {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 dd {
   margin: 0;
@@ -629,7 +659,7 @@ dialog::backdrop {
   margin: 0 0 0 auto;
   height: 100vh;
   max-height: 100vh;
-  width: min(480px, 100vw);
+  width: min(30rem, 100vw);
 }
 .drawer-body {
   padding: 1.25rem 1.5rem;
@@ -641,7 +671,7 @@ dialog::backdrop {
 }
 .drawer-body h2 {
   margin: 0.5rem 0 0.75rem;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   line-height: 1.4;
 }
 .ai-note {
@@ -652,7 +682,7 @@ dialog::backdrop {
   background: var(--ai-soft);
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
 }
 .source-list {
   list-style: none;
@@ -671,7 +701,7 @@ dialog::backdrop {
 }
 .source-head .muted {
   margin-left: auto;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
 }
 blockquote {
   margin: 0.5rem 0;
@@ -686,7 +716,7 @@ mark {
   padding: 0 0.1rem;
 }
 code {
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .narrative .stmt-inline {
@@ -738,7 +768,7 @@ code {
   margin-top: 0.4rem;
 }
 .source-foot code {
-  font-size: 0.75rem;
+  font-size: var(--fs-s);
   color: var(--muted);
   overflow-wrap: anywhere;
 }
@@ -748,7 +778,7 @@ code {
 }
 .full-text {
   white-space: pre-wrap;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   background: var(--surface-2);
   border-radius: 8px;
   padding: 0.75rem;
@@ -807,7 +837,7 @@ code {
 /* Dashboard additions */
 .soon {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   opacity: 0.8;
 }
 
@@ -817,23 +847,23 @@ code {
 
 /* The journey (decision #20): big, calm, one action per screen */
 .journey {
-  max-width: 920px;
+  max-width: 57.5rem;
 }
 .journey h1 {
-  font-size: 1.8rem;
+  font-size: var(--fs-2xl);
   margin: 0.5rem 0 1.25rem;
 }
 .journey .huge {
-  font-size: 2rem;
+  font-size: var(--fs-2xl);
   line-height: 1.25;
   margin: 0 0 0.75rem;
 }
 .journey .big {
-  font-size: 1.35rem;
+  font-size: var(--fs-xl);
   line-height: 1.4;
 }
 .journey h2 {
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--muted);
@@ -849,7 +879,7 @@ code {
 }
 .question-card .question {
   margin: 0;
-  font-size: 1.45rem;
+  font-size: var(--fs-xl);
   line-height: 1.4;
   font-weight: 600;
 }
@@ -868,7 +898,7 @@ code {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 0 2.5rem;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
 }
 .plain {
   list-style: none;
@@ -900,7 +930,7 @@ code {
 }
 .course time {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   color: var(--muted);
 }
 .course .kind {
@@ -926,9 +956,9 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 0.6rem 0.5rem 1.1rem;
+  padding: 0.45rem 0.35rem 0.45rem 0.95rem;
   white-space: nowrap;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   font-weight: 600;
   text-decoration: none;
   color: var(--muted);
@@ -937,7 +967,7 @@ code {
 }
 .steps li:first-child .chevron {
   clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 0 100%);
-  padding-left: 0.8rem;
+  padding-left: 0.6rem;
 }
 .chevron.done {
   color: var(--ok);
@@ -960,7 +990,7 @@ a.chevron.done:hover {
   flex: 0 1 auto;
   min-width: 0;
   padding: 0.55rem 1.6rem 0.55rem 1.4rem;
-  font-size: 0.9rem;
+  font-size: var(--fs-m);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -971,7 +1001,7 @@ a.chevron.done:hover {
   height: 2.25rem;
   flex: none;
   border-radius: 999px;
-  font-size: 1.5rem;
+  font-size: var(--fs-xl);
   line-height: 1;
   text-decoration: none;
   color: var(--ok);
@@ -999,7 +1029,7 @@ a.chevron.done:hover {
   border: 2px solid var(--line);
   border-radius: 999px;
   padding: 0.7rem 1.3rem;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   background: var(--surface);
 }
 .bubble.on {
@@ -1008,7 +1038,7 @@ a.chevron.done:hover {
   color: var(--ink);
 }
 .small-bubbles .bubble {
-  font-size: 0.95rem;
+  font-size: var(--fs-m);
   padding: 0.45rem 1rem;
 }
 .upload {
@@ -1034,7 +1064,7 @@ a.chevron.done:hover {
   border: 2px dashed var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  font-size: 1.3rem;
+  font-size: var(--fs-xl);
   position: relative;
   cursor: pointer;
 }
@@ -1077,7 +1107,7 @@ a.chevron.done:hover {
 .export-actions .upload-box {
   aspect-ratio: auto;
   flex: 1;
-  font-size: 1.1rem;
+  font-size: var(--fs-l);
 }
 @media (max-width: 640px) {
   .export {
@@ -1114,14 +1144,14 @@ a.chevron.done:hover {
 button.next {
   display: flex;
   margin: 1.5rem 0 0 auto;
-  font-size: 1.1rem;
+  font-size: var(--fs-l);
   padding: 0.7rem 2rem;
 }
 .key-facts {
   list-style: none;
   padding: 0;
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--fs-l);
   line-height: 1.4;
 }
 .key-facts li {
@@ -1135,7 +1165,7 @@ button.next {
 }
 .key-facts.questions {
   counter-reset: q;
-  font-size: 1.35rem;
+  font-size: var(--fs-xl);
 }
 .key-facts.questions li::before {
   counter-increment: q;
@@ -1161,7 +1191,7 @@ button.next {
   background: var(--warn-soft);
 }
 .key-facts.compact {
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   margin: 1rem 0 0;
 }
 .key-facts.crit .icon,
@@ -1178,7 +1208,7 @@ button.next {
 }
 .more summary {
   cursor: pointer;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   font-weight: 500;
 }
 .more ul {
@@ -1207,12 +1237,12 @@ button.next {
   max-height: 38vh;
 }
 .page-count {
-  font-size: 1rem;
+  font-size: var(--fs-m);
   font-weight: 400;
 }
 .big-field {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--fs-s);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1228,7 +1258,7 @@ button.next {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface-2);
-  font-size: 1.1rem;
+  font-size: var(--fs-l);
   font-weight: 400;
   text-transform: none;
   letter-spacing: normal;
@@ -1263,7 +1293,7 @@ button.next {
   border: 2px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   font-weight: 600;
 }
 .tile .icon {
@@ -1311,7 +1341,7 @@ button.next {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 1.15rem;
+  font-size: var(--fs-l);
   font-weight: 600;
 }
 .verdict.ok {
@@ -1396,7 +1426,7 @@ button.next {
   margin: 0;
 }
 .confirm-row input {
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
   padding: 0.6rem 0.8rem;
 }
 .case-list {
@@ -1409,7 +1439,7 @@ button.next {
 /* Přehled: one tidy line per case; less important columns fold away as the window narrows
    (board name, then tumour, then date). A reset slot is kept on every card so columns align. */
 .overview {
-  max-width: 1240px;
+  max-width: 77.5rem;
 }
 .case-card {
   display: grid;
@@ -1449,7 +1479,7 @@ button.next {
 }
 .case-name {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: var(--fs-m);
 }
 .case-meta {
   color: var(--ink-2);
@@ -1461,7 +1491,7 @@ button.next {
   gap: 0.3rem;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: var(--fs-s);
   font-weight: 600;
 }
 .case-card.done {
@@ -1512,26 +1542,26 @@ button.next {
 @media (max-width: 640px) {
   /* the journey on a narrow screen: smaller type, nothing that forces scrolling */
   .journey h1 {
-    font-size: 1.35rem;
+    font-size: var(--fs-xl);
     margin: 0 0 0.75rem;
   }
   .journey .huge {
-    font-size: 1.5rem;
+    font-size: var(--fs-xl);
     margin-bottom: 0.25rem;
   }
   .journey .big,
   .key-facts {
-    font-size: 1rem;
+    font-size: var(--fs-m);
   }
   .question-card {
     margin: 0.75rem 0;
     padding: 0.8rem 1rem;
   }
   .question-card .question {
-    font-size: 1.1rem;
+    font-size: var(--fs-l);
   }
   .patient-grid {
-    font-size: 0.95rem;
+    font-size: var(--fs-m);
   }
   .journey h2 {
     margin: 0.75rem 0 0.3rem;
