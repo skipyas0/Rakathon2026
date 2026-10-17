@@ -921,6 +921,8 @@ code {
 }
 .upload-box {
   flex: 1 1 0;
+  color: var(--ink);
+  text-decoration: none;
   min-width: 0;
   max-width: 320px;
   aspect-ratio: 4 / 3;
@@ -1174,9 +1176,6 @@ button.next {
   max-height: 50vh;
   overflow: auto;
 }
-.print-only {
-  display: none;
-}
 .deviation {
   padding: 1rem 1.25rem;
   border-left: 4px solid var(--warn);
@@ -1259,23 +1258,6 @@ button.next {
 @media (max-width: 760px) {
   .case-card a {
     grid-template-columns: 1fr auto;
-  }
-
-}
-@media print {
-  .journey > :not(.print-only) {
-    display: none !important;
-  }
-  .print-only {
-    display: block;
-    font-size: 11pt;
-  }
-  .print-only dt {
-    font-weight: 700;
-    margin-top: 0.8em;
-  }
-  .print-only dd {
-    margin: 0.2em 0 0;
   }
 
 }

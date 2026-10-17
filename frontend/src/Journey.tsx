@@ -430,10 +430,10 @@ function ExportStep({ c, record }: StepProps) {
         <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
       </p>
       <div className="upload">
-        <button className="upload-box" onClick={() => print()}>
+        <a className="upload-box" href={`/api/cases/${encodeURIComponent(c.id)}/zaver.pdf`} download>
           <Doc />
           <strong>PDF</strong>
-        </button>
+        </a>
         <span className="or">nebo</span>
         {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
         <div className="upload-box soon" aria-disabled>
@@ -442,36 +442,7 @@ function ExportStep({ c, record }: StepProps) {
           <span className="chip muted-chip">Připravujeme</span>
         </div>
       </div>
-      <PrintRecord c={c} record={record} />
     </>
-  )
-}
-
-/** The official record as printed (PDF): human decisions only, so nothing in it needs an AI label. */
-function PrintRecord({ c, record }: { c: Case; record: CaseRecord }) {
-  const d = record.decision
-  const rows: [string, string][] = [
-    ['Otázka pro komisi', record.prep.question || c.question?.text || 'Chybí'],
-    ['Komise', record.board.map((m) => SPECIALTIES[m.specialty] ?? m.specialty).join(', ')],
-    ['Léčebný záměr', d.intent ? INTENTS[d.intent].label : ''],
-    ['Zvolený postup', d.plan],
-    ['Zdůvodnění', d.rationale],
-    ['Soulad s doporučenými postupy', d.guideline_compliant ? 'Ano' : `Ne – ${d.deviation_reason}`],
-    ['Potvrdil(a)', `${d.confirmed_by}, ${d.confirmed_at && fmtDateTime(d.confirmed_at)} (konsenzus komise)`],
-  ]
-  return (
-    <article className="print-only">
-      <h1>Závěr zasedání MDT</h1>
-      <p>{[c.label, TUMOURS[c.tumour], c.board, c.mdt_date && `MDT ${fmtDate(c.mdt_date)}`].filter(Boolean).join(' · ')}</p>
-      <dl>
-        {rows.map(([k, v]) => (
-          <div key={k}>
-            <dt>{k}</dt>
-            <dd>{v}</dd>
-          </div>
-        ))}
-      </dl>
-    </article>
   )
 }
 

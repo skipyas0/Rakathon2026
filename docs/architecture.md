@@ -79,7 +79,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `App.tsx`           | Shell: top bar (Přehled / Nový případ, user name), hash routing `#/`, `#/new`, `#/case/<id>/<step>` |
 | `Overview.tsx`      | Přehled: cases, confirmed or in progress; opens where the work continues |
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
-| `Journey.tsx`       | Steps 2–8 for one case: board bubbles, patient, key facts (urgent red flags first), up to 3 trends, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (PDF = print of `PrintRecord`, FHIR greyed out) |
+| `Journey.tsx`       | Steps 2–8 for one case: board bubbles, patient, key facts (urgent red flags first), up to 3 trends, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (PDF = download of `GET /api/cases/{id}/zaver.pdf`, FHIR greyed out) |
 | `Steps.tsx`         | Progress through the journey; finished steps link back        |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band; every point opens its source) |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
