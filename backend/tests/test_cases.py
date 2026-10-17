@@ -51,3 +51,15 @@ def test_case_list_falls_back_to_disk_when_server_is_down(monkeypatch):
     monkeypatch.setattr(cases.bundles, "bundle_paths", lambda: {"p77": None})
     monkeypatch.setattr(cases.bundles, "load", lambda path: cases.Bundle({"entry": []}))
     assert cases.meetings() == {"p77": "p77"}  # no Task → no planned date
+
+
+def test_cases_are_the_patients_nominated_on_the_server(monkeypatch):
+    task = {
+        "resourceType": "Task",
+        "id": "P09-task01",
+        "for": {"reference": "Patient/P09"},
+        "restriction": {"period": {"start": "2026-10-21T14:00:00+02:00"}},
+    }
+    monkeypatch.setattr(fhir, "get", lambda path, **params: {"entry": [{"resource": task}]})
+    monkeypatch.setattr(cases, "uploads", dict)
+    assert cases.meetings() == {"p09-2026-10-21": "p09"}  # a patient without a Task is no case

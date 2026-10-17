@@ -42,17 +42,13 @@ def meeting_id(patient: str, b: Bundle) -> str:
 
 
 def meetings() -> dict[str, str]:
-    """Case id → patient: the patients on the FHIR server (the dataset's bundles while it's
-    unreachable), each replaced by an upload when there is one."""
+    """Case id → patient: the patients nominated on the FHIR server (a `Task` for them; the
+    dataset's bundles while it's unreachable), each replaced by an upload when there is one."""
     try:
-        tasks = {
-            t["for"]["reference"].split("/")[-1].lower(): t
-            for t in (e["resource"] for e in fhir.get("Task", _count=200).get("entry", []))
-            if "for" in t
-        }
         found = {
-            p: Bundle({"entry": [{"resource": tasks[p]}] if p in tasks else []})
-            for p in (p.lower() for p in agent.patient_ids())
+            t["for"]["reference"].split("/")[-1].lower(): Bundle({"entry": [{"resource": t}]})
+            for t in (e["resource"] for e in fhir.get("Task", _count=200).get("entry", []))
+            if t.get("for", {}).get("reference", "").startswith("Patient/")
         }
     except httpx.HTTPError:
         found = {p: bundles.load(path) for p, path in bundles.bundle_paths().items()}
