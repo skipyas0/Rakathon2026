@@ -32,7 +32,7 @@ export default function App() {
     <SourceDrawer>
       <header className="topbar">
         <a href="#/" className="brand">
-          <span className="logo">MDT</span> Copilot
+          <span className="logo">MDT</span> <span className="brand-name">Copilot</span>
         </a>
         <nav className="topnav">
           <a href="#/" className={hash === '#/new' || route ? '' : 'on'}>

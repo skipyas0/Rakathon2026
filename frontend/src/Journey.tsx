@@ -143,7 +143,7 @@ function PatientStep({ c, record, next }: StepProps) {
         </section>
         <section>
           <h2>Průběh onemocnění</h2>
-          {course(c.timeline.length - RECENT)}
+          <div className="course-recent">{course(c.timeline.length - RECENT)}</div>
           {c.timeline.length > RECENT && (
             <details className="more">
               <summary>

@@ -19,6 +19,9 @@ no descriptions, no extra buttons, one **Další** per screen.
 Plus **Přehled** (`#/`): case cards with a coloured status (Potvrzeno / Rozpracováno / Nový); a
 confirmed case opens Export.
 
+Narrow screens (≤ 640 px): one-line progress ("3 / 9 · Pacient"), compact top bar and type, the
+disease course only as a collapsible list, so no screen scrolls.
+
 Rules that still hold: every statement opens its source; AI output is blue; examples that aren't
 real AI output yet (recommended postup, stanoviska) carry a visible "ukázka" label; Potvrdit records
 who confirmed and when, and means the board agreed (consensus).

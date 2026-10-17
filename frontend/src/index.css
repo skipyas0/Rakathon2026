@@ -691,13 +691,16 @@ code {
   .topbar {
     padding: 0.6rem 1rem;
   }
+  .topbar {
+    gap: 0.5rem;
+  }
   .topbar .user input {
-    width: 9rem;
+    width: 7.5rem;
   }
-  .tasks li {
-    grid-template-columns: auto 1fr;
+  .topbar .user .icon,
+  .brand-name {
+    display: none;
   }
-
 }
 
 @media print {
@@ -871,6 +874,15 @@ code {
 .course .kind {
   font-weight: 600;
   margin-right: 0.4rem;
+}
+.steps-compact {
+  display: none;
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.steps-compact strong {
+  color: var(--ink);
 }
 .steps {
   display: flex;
@@ -1315,4 +1327,60 @@ button.next {
     grid-template-columns: 1fr auto;
   }
 
+}
+
+@media (max-width: 640px) {
+  /* the journey on a narrow screen: one-line progress, smaller type, nothing that forces scrolling */
+  .steps {
+    display: none;
+  }
+  .steps-compact {
+    display: block;
+  }
+  .journey h1 {
+    font-size: 1.35rem;
+    margin: 0 0 0.75rem;
+  }
+  .journey .huge {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .journey .big,
+  .key-facts {
+    font-size: 1rem;
+  }
+  .question-card {
+    margin: 0.75rem 0;
+    padding: 0.8rem 1rem;
+  }
+  .question-card .question {
+    font-size: 1.1rem;
+  }
+  .patient-grid {
+    font-size: 0.95rem;
+  }
+  .journey h2 {
+    margin: 0.75rem 0 0.3rem;
+  }
+  .course-recent {
+    display: none;
+  }
+  .key-facts.crit li,
+  .key-facts.warn li {
+    padding: 0.5rem 0.75rem;
+  }
+  .journey-trends svg {
+    max-height: 28vh;
+  }
+  .tile {
+    aspect-ratio: auto;
+    padding: 1rem 0.5rem;
+  }
+  button.next {
+    margin-top: 1rem;
+  }
+  .topnav a {
+    white-space: nowrap;
+    padding: 0.3rem 0.5rem;
+  }
 }
