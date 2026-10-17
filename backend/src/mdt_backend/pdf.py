@@ -215,7 +215,7 @@ class PdfDoc:
     def paragraph(
         self,
         runs: list[Run] | str,
-        size: float = 10,
+        size: float = 9.5,
         indent: float = 0,
         bar: Color | None = None,
         text_offset: float = 0,
