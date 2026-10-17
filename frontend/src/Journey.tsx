@@ -132,8 +132,8 @@ type ViewProps = Pick<StepProps, 'c' | 'record' | 'next' | 'prev'> // screens th
 
 /** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
  * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
- * going either way never loses what was entered; `saves` says so on the button ("Uložit a další"),
- * since a chevron click leaves without saving. */
+ * going either way never loses what was entered; `saves` says so on the button ("Uložit a další",
+ * "Uložit a zavřít"), since a chevron click leaves without saving. */
 type NavProps = { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean; saves?: boolean }
 export const Nav = ({ next, prev, close, disabled, saves }: NavProps) => (
   <div className="nav-row">
@@ -148,8 +148,8 @@ export const Nav = ({ next, prev, close, disabled, saves }: NavProps) => (
       </button>
     )}
     {close && (
-      <button className="close" onClick={close}>
-        Zavřít
+      <button className="close" onClick={close} disabled={disabled}>
+        {saves ? 'Uložit a zavřít' : 'Zavřít'}
       </button>
     )}
   </div>

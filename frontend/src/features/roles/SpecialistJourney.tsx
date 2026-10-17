@@ -88,8 +88,11 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
     setBusy(false)
   }
   const write = async () => {
-    if (text !== null && (await sign({ text: text.trim(), origin: 'human', sources: [] }))) setText(null)
+    const ok = text !== null && (await sign({ text: text.trim(), origin: 'human', sources: [] }))
+    if (ok) setText(null)
+    return ok
   }
+  const editing = text !== null // unsaved text: Zavřít saves it first
   const S = renderer(record, () => own && void sign(own))
 
   return (
@@ -143,7 +146,12 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
           )}
         </div>
       )}
-      <Nav prev={prev} close={() => (location.hash = '#/')} />
+      <Nav
+        prev={prev}
+        close={editing ? () => void write().then((ok) => ok && (location.hash = '#/')) : () => (location.hash = '#/')}
+        saves={editing}
+        disabled={editing && (!text.trim() || !name.trim())}
+      />
     </>
   )
 }
