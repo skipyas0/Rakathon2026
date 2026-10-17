@@ -1378,6 +1378,10 @@ button.back {
   border-radius: var(--radius);
   background: var(--surface);
 }
+.compare .big {
+  font-size: var(--fs-m); /* chosen vs recommended side by side: body size, so Potvrdit fits */
+  margin: 0.4rem 0 0;
+}
 .intent-label {
   display: flex;
   align-items: center;
