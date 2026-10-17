@@ -466,12 +466,12 @@ function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
     <>
       <h1>Potvrzení</h1>
       <div className="compare">
-        <section className="chosen">
+        <section>
           <p className="eyebrow">Zvolený postup</p>
           {d.intent && <IntentLabel intent={d.intent} />}
           <p className="big">{d.plan}</p>
         </section>
-        <section className="recommended">
+        <section>
           <p className="eyebrow">
             Doporučený postup{' '}
             {rec?.statement.model === 'ukázka' && <span className="chip muted-chip">ukázka</span>}
@@ -485,21 +485,21 @@ function ConfirmStep({ c, record, rec, save, next, prev, user }: StepProps) {
             <p className="muted">Doporučení k porovnání není k dispozici.</p>
           )}
         </section>
+        {/* soulad s doporučenými postupy belongs to the comparison: the card's footer */}
+        {rec ? (
+          <p className={`verdict soulad ${compliant ? 'ok' : 'warn'}`}>
+            {compliant ? <Check /> : <Alert />} {compliant ? 'V souladu s doporučeným postupem' : 'Odchylka od doporučeného postupu'}
+          </p>
+        ) : (
+          <div className="bubbles small-bubbles soulad" role="group" aria-label="Soulad s doporučenými postupy">
+            {[true, false].map((v) => (
+              <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManual(v)}>
+                {v ? 'V souladu s postupy' : 'Odchylka od postupů'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
-
-      {rec ? (
-        <p className={`verdict ${compliant ? 'ok' : 'warn'}`}>
-          {compliant ? <Check /> : <Alert />} {compliant ? 'V souladu s doporučeným postupem' : 'Odchylka od doporučeného postupu'}
-        </p>
-      ) : (
-        <div className="bubbles small-bubbles" role="group" aria-label="Soulad s doporučenými postupy">
-          {[true, false].map((v) => (
-            <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManual(v)}>
-              {v ? 'V souladu s postupy' : 'Odchylka od postupů'}
-            </button>
-          ))}
-        </div>
-      )}
 
       <Stanoviska c={c} record={record} save={save} />
       {against.length > 0 && !locked && (

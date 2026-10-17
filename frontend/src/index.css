@@ -1366,24 +1366,36 @@ button.back {
 .tile.intent-deferred .icon {
   color: var(--deferred);
 }
-/* Potvrzení: the board's choice (teal edge) beside the AI's recommendation (blue edge), in the
-   same card style as the question card; each only as tall as its content */
+/* Potvrzení: chosen and recommended postup as two columns of one card (equal height, no colour
+   but the AI's own blue), soulad as the card's footer; stacked on narrow screens */
 .compare {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  align-items: start;
-  gap: 1rem;
+  grid-template-columns: 1fr 1fr;
   margin-bottom: 0.75rem;
-}
-.compare section {
-  padding: 1rem 1.25rem;
-  border-left: 4px solid var(--teal);
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
-.compare section.recommended {
-  border-left-color: var(--ai);
+.compare section {
+  padding: 1rem 1.25rem;
+}
+.compare section + section {
+  border-left: 1px solid var(--line);
+}
+.compare .soulad {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.65rem 1.25rem;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 640px) {
+  .compare {
+    grid-template-columns: 1fr;
+  }
+  .compare section + section {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
 }
 .compare .big {
   font-size: var(--fs-m); /* chosen vs recommended side by side: body size, so Potvrdit fits */
@@ -1395,33 +1407,27 @@ button.back {
   gap: 0.4rem;
   font-weight: 700;
 }
-/* status lines (soulad, potvrzeno) as cards like the findings: tinted, with a coloured edge */
+/* status lines (soulad, potvrzeno): coloured text and icon only */
 .verdict {
   display: flex;
   align-items: center;
   gap: 0.45rem;
   margin: 0.5rem 0;
-  padding: 0.5rem 0.9rem;
-  border-left: 4px solid currentColor;
-  border-radius: 8px;
   font-size: var(--fs-m);
   font-weight: 600;
 }
 .verdict.ok {
   color: var(--ok);
-  background: var(--ok-soft);
 }
 .verdict.warn {
   color: var(--warn);
-  background: var(--warn-soft);
 }
 .stanoviska {
   align-items: center;
   margin: 0.5rem 0 0;
 }
 .bubble.yes {
-  border-color: var(--ok);
-  background: var(--ok-soft);
+  border-color: var(--line); /* calm when everyone agrees; only the icon is green */
 }
 .bubble.yes .icon {
   color: var(--ok);
