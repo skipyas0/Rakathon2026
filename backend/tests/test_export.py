@@ -26,7 +26,7 @@ def test_template_structure():
 
 def test_header_from_board_and_patient_never_invented():
     s = template()
-    d = records.Decision(attendees=[{"name": "", "specialty": "Chirurgie"},
+    d = records.Decision(attendees=[{"name": "MUDr. S", "specialty": "Chirurgie"},
                                     {"name": "MUDr. R", "specialty": "Radiologie"},
                                     {"name": "", "specialty": "Radiační onkologie"}])  # fmt: skip
     d.confirmed_by = "Koordinátor/ka"  # the rest of a complete decision doesn't matter here
@@ -34,10 +34,10 @@ def test_header_from_board_and_patient_never_invented():
     values = {f.label: f.value for f in export.leaves(s["HEADER"])}
     assert values["Jméno, příjmení pacienta"] == "Pacientka P09 (fiktivní)"
     assert values["Rodné číslo (pojišťovna) pacienta"] == NOT_FOUND  # not in the dataset
-    assert values["III.chirurgická klinika"] == "přítomen/a"
-    assert values["Klinika zobrazovacích metod"] == "MUDr. R"
+    assert values["III.chirurgická klinika"] == "Jméno, Chirurgie"
+    assert values["Klinika zobrazovacích metod"] == "Jméno, Radiologie"
     assert values["Ústav Patologie"] == "–"  # not on the board
-    assert values["Další odbornosti"] == "Radiační onkologie"
+    assert "Další odbornosti" not in values
     assert values["Koordinátor/ka onkologické péče"] == "přítomen/a"
     assert s["HEADER"][0].label == "GIT komise, multidisciplinární tým"
 
