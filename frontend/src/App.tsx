@@ -7,6 +7,7 @@ import { Journey } from './Journey'
 import { STEPS } from './layout'
 import { Overview } from './Overview'
 import { SourceDrawer } from './SourceDrawer'
+import { hasUnsaved, mayLeave } from './unsaved'
 
 /** #/ = Přehled, #/new = upload (step 1), #/case/<id>/<step> = the journey through one case (the
  * coordinator's, or the specialist's when a specialist role is set). */
@@ -24,17 +25,28 @@ export default function App() {
   const route = parse(hash)
   const [role, setRoleState] = useState(getRole)
   const pick = (r: string) => {
+    if (!mayLeave()) return // asked before the role changes the screen
     setRole(r)
     setRoleState(r)
     location.hash = '#/' // the role's Přehled
   }
   useEffect(() => {
+    let shown = location.hash
     const onHash = () => {
+      // unsaved input and the user stays: put the address back, the screen keeps its input
+      if (!mayLeave()) return history.replaceState(null, '', shown || location.pathname)
+      shown = location.hash
       setHash(location.hash)
       scrollTo(0, 0)
     }
+    // closing or reloading the tab: the browser's own "leave site?" dialog
+    const onUnload = (e: BeforeUnloadEvent) => hasUnsaved() && e.preventDefault()
     addEventListener('hashchange', onHash)
-    return () => removeEventListener('hashchange', onHash)
+    addEventListener('beforeunload', onUnload)
+    return () => {
+      removeEventListener('hashchange', onHash)
+      removeEventListener('beforeunload', onUnload)
+    }
   }, [])
 
   return (

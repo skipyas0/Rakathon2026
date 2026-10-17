@@ -100,6 +100,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band, axis labels and "norma" as HTML around it; every point opens its source) |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
 | `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records (the cited excerpt as plain text, then a row with the reference and "Zobrazit celý záznam"; the whole record opens below with the excerpt highlighted and scrolled into view); `useSources()` opens it |
+| `unsaved.ts`        | The current screen's unsaved input (`useUnsaved` on Komise, Záměr, Závěr, Potvrzení and the specialist's Stanovisko); App asks before any navigation away and before closing the tab; a successful save clears it |
 | `render.tsx`        | `renderer`, `now` helpers                                     |
 | `layout.ts`         | Labels (specialties, tumours, intents), journey `STEPS`, formatting, localStorage |
 | `icons.tsx`         | Inline SVG icons (robot, intents, …)                          |

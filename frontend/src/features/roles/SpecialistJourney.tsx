@@ -7,6 +7,7 @@ import { load, save as remember, SPECIALTIES } from '../../layout'
 import type { Statement } from '../../provenance'
 import { now, renderer } from '../../render'
 import { Steps } from '../../Steps'
+import { setUnsaved, useUnsaved } from '../../unsaved'
 import { SPECIALIST_STEPS, type SpecialistStep } from './role'
 
 type Data = { c: Case; record: CaseRecord }
@@ -89,10 +90,14 @@ function StanoviskoStep({ c, record, role, setRecord, prev }: StepProps) {
   }
   const write = async () => {
     const ok = text !== null && (await sign({ text: text.trim(), origin: 'human', sources: [] }))
-    if (ok) setText(null)
+    if (ok) {
+      setUnsaved(false) // saved: Uložit a zavřít leaves without asking
+      setText(null)
+    }
     return ok
   }
   const editing = text !== null // unsaved text: Zavřít saves it first
+  useUnsaved(editing && text.trim() !== (own?.text ?? ''))
   const S = renderer(record, () => own && void sign(own))
 
   return (

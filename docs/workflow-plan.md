@@ -4,8 +4,9 @@
 One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, **Další** per screen and a grey **Předchozí** to the previous
 tab (Vývoj: previous chart page first; screens with input save first, either way, and say so:
-**Uložit a další** on Komise, Záměr and Závěr until the conclusion is locked; a chevron click
-leaves without saving).
+**Uložit a další** on Komise, Záměr and Závěr until the conclusion is locked). Leaving a screen
+with unsaved input any other way (chevrons, top bar, role pick, closing the tab) asks first:
+"Máte neuložené změny. Odejít bez uložení?"; cancelling keeps the screen and its input.
 
 | # | Screen | What's on it |
 |---|--------|--------------|

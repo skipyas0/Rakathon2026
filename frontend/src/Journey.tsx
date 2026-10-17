@@ -8,6 +8,7 @@ import { fmtDate, fmtDateTime, INTENTS, KIND, load, MIN_SPECIALTIES, save as rem
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
+import { setUnsaved, useUnsaved } from './unsaved'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 
@@ -55,6 +56,7 @@ export function Journey({ id, step }: { id: string; step: Step }) {
   const save = async (r: CaseRecord) => {
     try {
       setData({ ...data, record: await api.saveRecord(id, r) })
+      setUnsaved(false) // a step saves all its input, so it may leave without asking
       setError('')
       return true
     } catch (e) {
@@ -158,6 +160,7 @@ export const Nav = ({ next, prev, close, disabled, saves }: NavProps) => (
 function BoardStep({ record, save, next }: StepProps) {
   const [chosen, setChosen] = useState(() => record.board.map((m) => m.specialty))
   const toggle = (s: string) => setChosen(chosen.includes(s) ? chosen.filter((x) => x !== s) : [...chosen, s])
+  useUnsaved([...chosen].sort().join() !== record.board.map((m) => m.specialty).sort().join())
   const submit = async () => {
     const board = chosen.map((s) => record.board.find((m) => m.specialty === s) ?? { name: '', specialty: s, chair: false, supports: true })
     if (await save({ ...record, board })) next()
@@ -434,6 +437,7 @@ function TrendsStep({ c, next, prev }: StepProps) {
 function IntentStep({ record, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [intent, setIntent] = useState(record.decision.intent)
+  useUnsaved(!locked && intent !== record.decision.intent)
   const keep = async (go: () => void) => {
     if (locked || !intent || (await save({ ...record, decision: { ...record.decision, intent } }))) go()
   }
@@ -458,6 +462,7 @@ function PlanStep({ c, record, save, setRecord, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
   const [plan, setPlan] = useState(record.decision.plan)
   const [rationale, setRationale] = useState(record.decision.rationale)
+  useUnsaved(!locked && (plan.trim() !== record.decision.plan || rationale.trim() !== record.decision.rationale))
   const keep = async (go: () => void) => {
     if (locked || (await save({ ...record, decision: { ...record.decision, plan: plan.trim(), rationale: rationale.trim() } }))) go()
   }
@@ -491,6 +496,7 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
   // who confirms, typed here; the last signer in this browser is pre-filled
   const [signer, setSigner] = useState(() => load('mdt.signer', ''))
   const against = record.board.filter((m) => !m.supports) // consensus = everyone supports
+  useUnsaved(!locked && (manual !== null || reason.trim() !== d.deviation_reason))
 
   const confirm = async () => {
     if (compliant === false && !reason.trim()) return setAsking(true)
