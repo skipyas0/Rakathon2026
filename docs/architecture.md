@@ -91,7 +91,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | `Stanoviska.tsx`    | Stance bubbles per board specialty (green supports / red doesn't, `Member.supports`), pop-up with the stanovisko (the agent's verdict for that specialty, else example text) and the specialty's facts; used on Závěr and Potvrzení |
 | `Charts.tsx`        | `TrendChart` (SVG line + reference band; every point opens its source) |
 | `StatementView.tsx` | Renders a `Statement` (`card` or `inline`); AI = blue + robot |
-| `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records (excerpt, then a row with the reference and "Zobrazit celý záznam", the whole record below once loaded); `useSources()` opens it |
+| `SourceDrawer.tsx` + `sources.ts` | Side panel with the exact source records (the cited excerpt as plain text, then a row with the reference and "Zobrazit celý záznam"; the whole record opens below with the excerpt highlighted and scrolled into view); `useSources()` opens it |
 | `render.tsx`        | `renderer`, `now` helpers                                     |
 | `layout.ts`         | Labels (specialties, tumours, intents), journey `STEPS`, formatting, localStorage |
 | `icons.tsx`         | Inline SVG icons (robot, intents, …)                          |
