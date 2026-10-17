@@ -1452,8 +1452,21 @@ button.back {
   margin: 0;
 }
 .dialog-body .plain {
-  max-height: 50vh;
+  max-height: 45vh;
   overflow: auto;
+}
+/* the specialty's stanovisko in its own card, its other facts under a separate heading */
+.question-card.stanovisko {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1.1rem;
+}
+.question-card.stanovisko p:last-child {
+  margin-bottom: 0;
+}
+.dialog-body h4.eyebrow {
+  display: block;
+  margin: 0 0 0.5rem;
+  color: var(--muted);
 }
 .deviation {
   padding: 1rem 1.25rem;
