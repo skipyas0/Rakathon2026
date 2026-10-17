@@ -1627,9 +1627,6 @@ button.back {
     aspect-ratio: auto;
     padding: 1rem 0.5rem;
   }
-  button.next {
-    margin-top: 1rem;
-  }
   .topnav a {
     white-space: nowrap;
     padding: 0.3rem 0.5rem;
