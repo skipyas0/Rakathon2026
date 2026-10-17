@@ -137,3 +137,12 @@ def test_no_lock_without_consensus(client):
     body = {"board": against, "decision": FINAL}
     assert client.put("/api/cases/example/record", json=body).status_code == 422
     assert client.put("/api/cases/example/record", json={**body, "board": BOARD}).status_code == 200
+
+
+def test_reset_deletes_even_a_confirmed_record(client):
+    body = {"board": BOARD, "decision": FINAL}
+    assert client.put("/api/cases/example/record", json=body).status_code == 200
+    assert client.delete("/api/cases/example/record").status_code == 204
+    assert client.get("/api/cases/example/record").json()["decision"]["confirmed_by"] is None
+    assert status_of(client, "example") == "prep"
+    assert client.delete("/api/cases/nope/record").status_code == 404

@@ -65,7 +65,7 @@ output are labelled "ukázka"; everything else (record data, clinician input) is
 Endpoints: `GET /api/health`, `GET /api/patients` (FHIR passthrough),
 `GET /api/cases` (agenda: label, question, high-flag count, intent, `status` =
 `prep`/`meeting`/`followup`/`closed`, board `specialties`, `ai` (as `/ai` below); specialists see only their cases), `GET /api/cases/{id}` (`Case`),
-`GET /api/cases/{id}/history` (patient's MDT history), `GET /api/cases/{id}/recommendation`, `GET /api/cases/{id}/ai` (`{status}`: `running` while `mdt-agent` briefs the patient, `done`, or null), `POST /api/cases/{id}/zaver/draft`, `GET /api/cases/{id}/zaver.pdf` + `.docx`, `GET|PUT /api/cases/{id}/record` (`CaseRecord`; 409 once the decision is locked, 422 when marking a
+`GET /api/cases/{id}/history` (patient's MDT history), `GET /api/cases/{id}/recommendation`, `GET /api/cases/{id}/ai` (`{status}`: `running` while `mdt-agent` briefs the patient, `done`, or null), `POST /api/cases/{id}/zaver/draft`, `GET /api/cases/{id}/zaver.pdf` + `.docx`, `GET|PUT|DELETE /api/cases/{id}/record` (`CaseRecord`; DELETE resets the case to new, even a confirmed one; 409 once the decision is locked, 422 when marking a
 case prepared without an MDT question or with fewer than 3 specialties on the board, or locking
 the decision while a board member doesn't support it), `GET /api/sources/{type}/{id}` (title, date, author, full
 text of one record — for the source drawer), `POST /api/intake` (upload a
@@ -84,7 +84,7 @@ Confirmations are keyed by the statement's path in the briefing (`summary.0`,
 | File                | Role                                                          |
 |---------------------|---------------------------------------------------------------|
 | `App.tsx`           | Shell: top bar (Přehled / Nový případ, user name), hash routing `#/`, `#/new`, `#/case/<id>/<step>` |
-| `Overview.tsx`      | Přehled: cases, confirmed or in progress; opens where the work continues |
+| `Overview.tsx`      | Přehled: one line per case (name, tumour, board, MDT date, status), columns folding away as the window narrows; opens where the work continues; reset button (after a confirm dialog) deletes the meeting's record |
 | `Intake.tsx`        | Step 1: FHIR bubble (pick or drop, uploads at once), PDF bubble greyed out |
 | `Journey.tsx`       | Steps 2–10 for one case: board bubbles, patient (+ the patient's wishes), key facts (urgent red flags first), up to 3 trends, the agent's questions for discussion, léčebný záměr bubbles, závěr, potvrzení (compare with the recommendation, stanoviska in a pop-up, důvod odchylky, Potvrdit), export (preview of `zaver.pdf` beside PDF / DOCX downloads, FHIR greyed out; asks for the AI draft first) |
 | `Steps.tsx`         | Progress through the journey; finished steps link back        |

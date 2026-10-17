@@ -98,6 +98,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(record),
     }),
+  resetRecord: (id: string) => fetch(`${caseUrl(id)}/record`, { method: 'DELETE' }),
   history: (id: string) => call<History>(`${caseUrl(id)}/history`),
   recommendation: (id: string) => call<Recommendation>(`${caseUrl(id)}/recommendation`),
   ai: (id: string) => call<{ status: AiStatus }>(`${caseUrl(id)}/ai`),

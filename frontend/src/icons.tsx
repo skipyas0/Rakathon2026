@@ -47,6 +47,12 @@ export const Doc = () => (
     <path d="M9.5 1.5v3h3M6 8h4.5M6 10.5h4.5" />
   </Icon>
 )
+export const Reset = () => (
+  <Icon>
+    <path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9" />
+    <path d="M2.5 1.8v2.7h2.7" />
+  </Icon>
+)
 export const User = () => (
   <Icon>
     <circle cx="8" cy="5.5" r="2.8" />
