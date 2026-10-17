@@ -1288,10 +1288,37 @@ button.close:hover {
   overflow: auto;
   margin-top: 0.5rem;
 }
-.journey-trends {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.25rem 1.5rem;
+/* Grafy: a row like the groups beside it, opening one chart at a time in a pop-up */
+.more-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  font-size: var(--fs-m);
+}
+.more-btn .icon {
+  color: var(--teal);
+  margin-right: 0.15rem;
+}
+.charts-dialog {
+  width: min(760px, 92vw);
+}
+.charts-dialog .trend {
+  margin-top: 1rem;
+}
+.chart-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.chart-nav button {
+  font-size: var(--fs-l);
+  line-height: 1;
+  min-width: 3rem;
 }
 .page-count {
   font-size: var(--fs-m);

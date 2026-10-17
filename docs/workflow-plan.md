@@ -3,7 +3,7 @@
 **Audience:** the team and their coding agents. Agreed target for the frontend (decision #20).
 One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, **Další** per screen and a grey **Předchozí** to the previous
-tab (Vývoj: previous chart page first; screens with input save first, either way, and say so:
+tab (screens with input save first, either way, and say so:
 **Uložit a další** on Komise, Záměr and Závěr until the conclusion is locked). Leaving a screen
 with unsaved input any other way (chevrons, top bar, role pick, closing the tab) asks first:
 "Máte neuložené změny. Odejít bez uložení?"; cancelling keeps the screen and its input.
@@ -14,13 +14,12 @@ with unsaved input any other way (chevrons, top bar, role pick, closing the tab)
 | 2 | Komise | Specialty bubbles; a tap adds it (green outline). At least 3 |
 | 3 | Pacient | Labelled facts (patient, diagnosis, board, MDT date), up to 2 critical findings (else the 2 most important) as red/amber cards, the MDT question in a highlighted card (red when missing), the patient's wishes right under it (AI, when the agent briefed the case; 2 shown) |
 | 4 | Průběh | Diagnoses (4 facts shown) + výkonnostní stav (ECOG), course of the disease (4 latest events); the rest of each one click away |
-| 5 | Klíčové informace | Critical (high) and important (medium) red flags unrolled as red / amber cards; the rest in collapsible groups (minor warnings, missing data, each specialty's facts) |
-| 6 | Vývoj | Four charts per screen (2×2) when the window is at least 981 × 820 px, else two; no scrolling; Další and Předchozí page through the series first, then leave the tab |
-| 7 | Otázky k diskusi | The agent's 2–3 questions for the board, numbered, each with its source (AI); "not available" until the agent has briefed the case. Preliminary study screening below, with AI-labelled verdicts and expandable criteria/source links; never confirmed eligibility |
-| 8 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
-| 9 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
-| 10 | Potvrzení | Chosen vs recommended postup side by side; a separate LLM assessment compares the board's actual plan and rationale with the recommendation and its cited guideline passages; the AI explains its verdict and links the original passages. On uncertainty the coordinator resolves the verdict manually; without a recommendation compliance is marked manually. On a deviation, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); Potvrdit signs as "Koordinátor/ka", no name (decision #27). Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
-| 11 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once); the format boxes carry a download icon; dark grey Zavřít (next to Předchozí) returns to Přehled |
+| 5 | Klíčové informace | Critical (high) and important (medium) red flags unrolled as red / amber cards; the rest in collapsible groups (minor warnings, missing data, each specialty's facts); last, **Grafy** opens a pop-up with one chart per screen, ‹ › (or the arrow keys) switch between them |
+| 6 | Otázky k diskusi | The agent's 2–3 questions for the board, numbered, each with its source (AI); "not available" until the agent has briefed the case. Preliminary study screening below, with AI-labelled verdicts and expandable criteria/source links; never confirmed eligibility |
+| 7 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
+| 8 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
+| 9 | Potvrzení | Chosen vs recommended postup side by side; a separate LLM assessment compares the board's actual plan and rationale with the recommendation and its cited guideline passages; the AI explains its verdict and links the original passages. On uncertainty the coordinator resolves the verdict manually; without a recommendation compliance is marked manually. On a deviation, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); Potvrdit signs as "Koordinátor/ka", no name (decision #27). Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
+| 10 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once); the format boxes carry a download icon; dark grey Zavřít (next to Předchozí) returns to Přehled |
 
 **Specialists** (decision #27): the role button at the top right opens the **Vaše role** pop-up, one
 bubble per role as on Komise (Koordinátor, Chirurgie, Klinická onkologie, Radiologie, Patologie;

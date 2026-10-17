@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AI_POLL_MS, api, type CaseRecord, type Decision, type GuidelineAssessment, type Intent, type Recommendation } from './api'
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
-import { TrendChart } from './Charts'
+import { ChartsDialog } from './Charts'
 import { Alert, Check, Download, IntentIcon, Lock, Robot } from './icons'
 import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
@@ -85,7 +85,6 @@ export function Journey({ id, step }: { id: string; step: Step }) {
       {step === 'patient' && <PatientStep {...props} />}
       {step === 'course' && <CourseStep {...props} />}
       {step === 'facts' && <FactsStep {...props} />}
-      {step === 'trends' && <TrendsStep {...props} />}
       {step === 'questions' && <QuestionsStep {...props} />}
       {step === 'intent' && <IntentStep {...props} />}
       {step === 'plan' && <PlanStep {...props} />}
@@ -133,7 +132,7 @@ type StepProps = Data & {
 }
 type ViewProps = Pick<StepProps, 'c' | 'record' | 'next' | 'prev'> // screens the specialists share
 
-/** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
+/** Předchozí (grey: the previous tab) and Další, or Zavřít (dark grey, back to
  * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
  * going either way never loses what was entered; `saves` says so on the button ("Uložit a další",
  * "Uložit a zavřít"), since a chevron click leaves without saving. */
@@ -372,6 +371,7 @@ export function FactsStep({ c, record, next, prev }: ViewProps) {
               </ul>
             </details>
           ))}
+        <ChartsDialog trends={c.trends} />
       </div>
       <Nav next={next} prev={prev} />
     </>
@@ -379,20 +379,6 @@ export function FactsStep({ c, record, next, prev }: ViewProps) {
 }
 
 const TRIAL_VERDICTS = { eligible: 'Potenciálně vhodný', ineligible: 'Nevhodný', missing_data: 'Chybí údaj' }
-// charts per screen, so nothing scrolls: a 2×2 grid when the window is wide and tall enough
-const WIDE = '(min-width: 981px) and (min-height: 820px)'
-
-function useMedia(query: string) {
-  const [match, setMatch] = useState(() => window.matchMedia(query).matches)
-  useEffect(() => {
-    const m = window.matchMedia(query)
-    const on = () => setMatch(m.matches)
-    m.addEventListener('change', on)
-    return () => m.removeEventListener('change', on)
-  }, [query])
-  return match
-}
-
 /** The 2–3 questions the agent says the board must settle, before it picks the léčebný záměr. */
 function QuestionsStep({ c, record, next, prev }: StepProps) {
   const S = renderer(record)
@@ -432,28 +418,6 @@ function QuestionsStep({ c, record, next, prev }: StepProps) {
         </section>
       )}
       <Nav next={next} prev={prev} />
-    </>
-  )
-}
-
-function TrendsStep({ c, next, prev }: StepProps) {
-  const perPage = useMedia(WIDE) ? 4 : 2
-  const [first, setFirst] = useState(0) // index of the page's first chart, kept when perPage changes
-  const pages = Math.ceil(c.trends.length / perPage)
-  const page = Math.min(Math.floor(first / perPage), Math.max(0, pages - 1))
-  return (
-    <>
-      <h1>
-        Vývoj {pages > 1 && <span className="muted page-count">{page + 1} / {pages}</span>}
-      </h1>
-      <div className="journey-trends">
-        {c.trends.slice(page * perPage, (page + 1) * perPage).map((t) => (
-          <TrendChart key={t.id} trend={t} />
-        ))}
-        {!c.trends.length && <p className="muted">Bez měřených hodnot.</p>}
-      </div>
-      {/* both buttons page through the charts first, then leave the tab */}
-      <Nav next={() => (page + 1 < pages ? setFirst((page + 1) * perPage) : next())} prev={page > 0 ? () => setFirst((page - 1) * perPage) : prev} />
     </>
   )
 }

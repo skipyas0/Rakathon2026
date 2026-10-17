@@ -1,4 +1,6 @@
+import { useRef, useState } from 'react'
 import type { Trend, TrendPoint } from './briefing'
+import { Chart } from './icons'
 import { fmtDate } from './layout'
 import { useSources } from './sources'
 
@@ -87,5 +89,49 @@ export function TrendChart({ trend }: { trend: Trend }) {
         </div>
       </div>
     </figure>
+  )
+}
+
+/** The case's charts behind one row of Klíčové informace: a pop-up with one chart at a time,
+ * ‹ › or the arrow keys switch between them (wrapping round). */
+export function ChartsDialog({ trends }: { trends: Trend[] }) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const [i, setI] = useState(0)
+  if (!trends.length) return null
+  const go = (d: number) => setI((i + d + trends.length) % trends.length)
+  return (
+    <>
+      <button className="more more-btn" onClick={() => dialog.current?.showModal()}>
+        <Chart /> Grafy <span className="muted">({trends.length})</span>
+      </button>
+      <dialog
+        ref={dialog}
+        className="dialog charts-dialog"
+        onClick={(e) => e.target === dialog.current && dialog.current.close()}
+        onKeyDown={(e) => (e.key === 'ArrowLeft' ? go(-1) : e.key === 'ArrowRight' ? go(1) : undefined)}
+      >
+        <div className="dialog-body">
+          <header>
+            <h3>
+              Grafy {trends.length > 1 && <span className="muted page-count">{i + 1} / {trends.length}</span>}
+            </h3>
+            <button className="icon-btn" onClick={() => dialog.current?.close()} aria-label="Zavřít">
+              ×
+            </button>
+          </header>
+          <TrendChart key={trends[i].id} trend={trends[i]} />
+          {trends.length > 1 && (
+            <div className="chart-nav">
+              <button onClick={() => go(-1)} aria-label="Předchozí graf">
+                ‹
+              </button>
+              <button onClick={() => go(1)} aria-label="Další graf">
+                ›
+              </button>
+            </div>
+          )}
+        </div>
+      </dialog>
+    </>
   )
 }

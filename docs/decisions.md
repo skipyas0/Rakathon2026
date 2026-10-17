@@ -193,9 +193,9 @@ the qualification says "předseda". The coordinator can adopt it; it is never ap
 Why: The board for a repeat MDT is usually the same team; the coordinator starts from facts.
 
 ## 20. One simple journey for the coordinator; the board decides by consensus — 2026-10-17, yes-and
-Status: accepted | updated 2026-10-17 (#27: specialist journeys)
+Status: accepted | updated 2026-10-17 (#27: specialist journeys; Vývoj tab folded into Klíčové informace → Grafy)
 Decision: The coordinator's frontend is one linear journey (`docs/workflow-plan.md`): upload → board
-(specialty bubbles) → patient → key facts → trends → questions → léčebný záměr → závěr → potvrzení
+(specialty bubbles) → patient → course → key facts (charts behind Grafy) → questions → léčebný záměr → závěr → potvrzení
 → export, plus a case overview. Specialists get their own short journey (#27). No triage,
 visibility or section configuration in the UI (the backend keeps those record fields for later). The final conclusion
 needs consensus of all board members (`MDT_ZASEDANI_PROCES.md` §4.3): the coordinator records it,

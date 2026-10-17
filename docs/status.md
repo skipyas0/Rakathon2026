@@ -13,6 +13,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   sees all of them) and the batch adds a pathology view.
 - Fly: the web app (https://mdt-copilot-rakathon.fly.dev, yes-and's account) runs the IRIS build
   against the private app `mdt-copilot-iris` (#14); `/api/health` reports `fhir: true`.
+- `yes-and/charts-popup`: the Vývoj tab is gone; its charts open from Klíčové informace → Grafy,
+  one per screen in a pop-up (‹ › / arrow keys). Specialists get it too (shared `FactsStep`).
 - Next, by the scope (`problem_statement.md`): trial screening (POVINNÉ, empty); section
   order/detail configuration (POVINNÉ, 20 % of the score); PDF intake and FHIR export (CORE);
   running the agent from the app; LLM red flags and an LLM guideline-compliance check instead of

@@ -60,6 +60,12 @@ export const Download = () => (
     <path d="M2.5 11v2.5h11V11" />
   </Icon>
 )
+export const Chart = () => (
+  <Icon>
+    <path d="M2 2v12h12" />
+    <path d="M4.5 10.5 7.5 7l2 2 4-5" />
+  </Icon>
+)
 export const Lock = () => (
   <Icon>
     <rect x="3" y="7" width="10" height="7.5" rx="1.5" />
