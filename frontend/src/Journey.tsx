@@ -85,7 +85,7 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
 /** Shown where a confirmed conclusion makes the fields read-only, so they don't look broken. */
 const Locked = () => (
   <p className="locked-note">
-    <Lock /> Závěr je potvrzen a uzamčen. Změnit ho lze po vymazání případu v Přehledu.
+    <Lock /> Rozhodnutí komise je potvrzeno a uzamčeno. Změnit ho lze po vymazání případu v Přehledu.
   </p>
 )
 
@@ -423,18 +423,16 @@ function PlanStep({ c, record, save, next, prev }: StepProps) {
     <>
       <h1>Závěr</h1>
       {locked && <Locked />}
-      <section className="card form-card">
-        <label className="big-field">
-          Zvolený postup
-          <textarea value={plan} disabled={locked} onChange={(e) => setPlan(e.target.value)} />
-        </label>
-        <label className="big-field">
-          Zdůvodnění
-          <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
-        </label>
-        <Stanoviska c={c} record={record} save={save} />
-        <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} />
-      </section>
+      <label className="big-field">
+        Zvolený postup
+        <textarea value={plan} disabled={locked} onChange={(e) => setPlan(e.target.value)} />
+      </label>
+      <label className="big-field">
+        Zdůvodnění
+        <textarea value={rationale} disabled={locked} onChange={(e) => setRationale(e.target.value)} />
+      </label>
+      <Stanoviska c={c} record={record} save={save} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!plan.trim() || !rationale.trim()} />
     </>
   )
 }

@@ -1307,12 +1307,12 @@ button.back {
 .big-field textarea {
   display: block;
   width: 100%;
-  min-height: 8rem;
+  min-height: 6.5rem;
   margin-top: 0.5rem;
   padding: 0.8rem 1rem;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: var(--surface-2);
+  background: var(--surface); /* white on the page background: the fields need no card around them */
   font-size: var(--fs-l);
   font-weight: 400;
   text-transform: none;
@@ -1325,14 +1325,6 @@ button.back {
   border-color: var(--teal);
   background: var(--surface);
   box-shadow: 0 0 0 3px var(--teal-soft);
-}
-.form-card {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 1.5rem 2rem;
-}
-.form-card .nav-row {
-  margin-top: 0.5rem;
 }
 .tiles {
   display: grid;
