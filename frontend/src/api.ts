@@ -76,7 +76,10 @@ export type History = {
 
 async function call<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, init)
-  const body = await r.json()
+  // a crash answers plain text, not JSON: say "server error" instead of a JSON parse error
+  const body = await r.json().catch(() => {
+    throw new Error(`Chyba serveru (HTTP ${r.status})`)
+  })
   if (!r.ok) {
     const d = body.detail
     throw new Error(typeof d === 'string' ? d : (d?.[0]?.msg?.replace(/^Value error, /, '') ?? r.statusText))
