@@ -424,10 +424,13 @@ function QuestionsStep({ c, record, next, prev }: StepProps) {
 
 function IntentStep({ record, save, next, prev }: StepProps) {
   const locked = !!record.decision.confirmed_by
-  const [intent, setIntent] = useState(record.decision.intent)
-  useUnsaved(!locked && intent !== record.decision.intent)
+  const [intents, setIntents] = useState(record.decision.intents)
+  // several may apply at once; kept in the tiles' order so the record reads the same either way
+  const toggle = (k: Intent) =>
+    setIntents(intents.includes(k) ? intents.filter((x) => x !== k) : (Object.keys(INTENTS) as Intent[]).filter((x) => x === k || intents.includes(x)))
+  useUnsaved(!locked && intents.join() !== record.decision.intents.join())
   const keep = async (go: () => void) => {
-    if (locked || !intent || (await save({ ...record, decision: { ...record.decision, intent } }))) go()
+    if (locked || !intents.length || (await save({ ...record, decision: { ...record.decision, intents } }))) go()
   }
   return (
     <>
@@ -435,13 +438,13 @@ function IntentStep({ record, save, next, prev }: StepProps) {
       {locked && <Locked />}
       <div className="tiles">
         {(Object.keys(INTENTS) as Intent[]).map((k) => (
-          <button key={k} className={`tile intent-${k} ${intent === k ? 'on' : ''}`} aria-pressed={intent === k} disabled={locked} onClick={() => setIntent(k)}>
+          <button key={k} className={`tile intent-${k} ${intents.includes(k) ? 'on' : ''}`} aria-pressed={intents.includes(k)} disabled={locked} onClick={() => toggle(k)}>
             <IntentIcon intent={k} />
             {INTENTS[k].label}
           </button>
         ))}
       </div>
-      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intent} saves={!locked} />
+      <Nav next={() => keep(next)} prev={prev && (() => keep(prev))} disabled={!intents.length} saves={!locked} />
     </>
   )
 }
@@ -478,6 +481,8 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
   const d = record.decision
   const locked = !!d.confirmed_by
   const savedAssessment = d.guideline_assessment
+  // the record reloads on a timer: a string, so a fresh but equal list doesn't re-run the AI check
+  const intents = d.intents.join()
   const sourcesMatch =
     !!rec &&
     savedAssessment?.recommendation_sources.length === rec.statement.sources.length &&
@@ -491,9 +496,9 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
     sourcesMatch &&
     savedAssessment?.compared_plan === d.plan &&
     savedAssessment.compared_rationale === d.rationale &&
-    savedAssessment.compared_intent === d.intent &&
+    savedAssessment.compared_intents.join() === intents &&
     savedAssessment?.recommendation === rec.statement.text
-  const assessmentKey = JSON.stringify([c.id, d.intent, d.plan, d.rationale, rec?.statement.text, rec?.statement.sources])
+  const assessmentKey = JSON.stringify([c.id, intents, d.plan, d.rationale, rec?.statement.text, rec?.statement.sources])
   const [assessmentResult, setAssessmentResult] = useState<
     { key: string; status: 'done'; assessment: GuidelineAssessment } | { key: string; status: 'error'; error: string } | null
   >(null)
@@ -520,7 +525,7 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
     if (!assessmentNeeded) return
     let active = true
     api
-      .assessGuideline(c.id, { intent: d.intent, plan: d.plan, rationale: d.rationale })
+      .assessGuideline(c.id, { intents: intents ? (intents.split(',') as Intent[]) : [], plan: d.plan, rationale: d.rationale })
       .then(({ assessment: result }) => {
         if (active) setAssessmentResult({ key: requestKey, status: 'done', assessment: result })
       })
@@ -530,7 +535,7 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
     return () => {
       active = false
     }
-  }, [assessmentNeeded, c.id, d.intent, d.plan, d.rationale, requestKey])
+  }, [assessmentNeeded, c.id, intents, d.plan, d.rationale, requestKey])
   const assessedCompliance =
     assessment?.status === 'compliant' ? true : assessment?.status === 'deviation' ? false : null
   const compliant = rec ? (assessedCompliance ?? manual) : manual
@@ -561,7 +566,9 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
       <div className="compare">
         <section>
           <p className="eyebrow">Zvolený postup</p>
-          {d.intent && <IntentLabel intent={d.intent} />}
+          {d.intents.map((k) => (
+            <IntentLabel key={k} intent={k} />
+          ))}
           <p className="big">{d.plan}</p>
         </section>
         <section>

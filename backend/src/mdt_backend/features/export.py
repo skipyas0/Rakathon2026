@@ -263,7 +263,7 @@ def filled(case_id: str) -> tuple[dict[str, list[Field | None]], dict | None]:
 
     response: list[Field | None] = [
         Field("Závěr MDT", 0, "", True, "Závěr MDT"),
-        line("Léčebný záměr", INTENTS.get(d.intent or "", "–")),
+        line("Léčebný záměr", ", ".join(INTENTS[i] for i in d.intents) or "–"),
         line("Zvolený postup", d.plan),
         line("Zdůvodnění", d.rationale),
     ]

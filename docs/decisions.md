@@ -301,6 +301,15 @@ recommendation exists, compliance remains manual.
 Why: A treatment-intent match is not enough to establish whether the board's actual plan follows
 the recommended procedure; the final claim needs a reason and clickable primary sources.
 
+## 29. The board may choose several léčebné záměry — 2026-10-17, yes-and
+Status: accepted
+Decision: `Decision.intents` is a list (at least one once confirmed), replacing the single
+`intent`; likewise `ComplianceRequest.intents`, `GuidelineAssessment.compared_intents` and the
+overview's `intents`, kept in the tiles' order. Records saved with the single `intent` /
+`compared_intent` load as a one-item list. The recommendation keeps its one `intent`. Any
+combination may be chosen; the app doesn't judge which ones go together.
+Why: A plan often has more than one aim (e.g. paliativní + podpůrná péče); the board decides.
+
 ## 25-backend. Reconcile the backend branch with the coordinator journey — 2026-10-17, Copilot
 Status: accepted | updated 2026-10-17 (second main merge)
 Decision: Merge `main` into `backend` without rewriting the original backend commits.

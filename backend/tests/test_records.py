@@ -11,7 +11,7 @@ from mdt_backend.provenance import Statement
 
 FINAL = {
     "attendees": [{"name": "MUDr. A", "specialty": "Chirurg"}],
-    "intent": "curative",
+    "intents": ["curative"],
     "plan": "Resekce",
     "rationale": "Resekabilní",
     "guideline_compliant": True,
@@ -26,8 +26,16 @@ def test_deviation_needs_reason():
 
 def test_confirmed_decision_must_be_complete():
     with pytest.raises(ValidationError):
-        Decision(**{**FINAL, "intent": None})
+        Decision(**{**FINAL, "intents": []})
     Decision(**FINAL)
+    Decision(**{**FINAL, "intents": ["palliative", "supportive"]})
+
+
+def test_records_with_one_intent_still_load():
+    assert Decision(intent="palliative").intents == ["palliative"]
+    assert Decision(intent=None).intents == []
+    final = {k: v for k, v in FINAL.items() if k != "intents"}
+    Decision(**final, intent="curative")
 
 
 def test_guideline_assessment_is_saved_with_decision():
@@ -49,7 +57,7 @@ def test_guideline_assessment_is_saved_with_decision():
             },
             "compared_plan": "Resekce",
             "compared_rationale": "Zvolená možnost",
-            "compared_intent": "curative",
+            "compared_intent": "curative",  # saved before several could be chosen
             "recommendation": "Doporučená systémová léčba",
             "recommendation_sources": [
                 {
@@ -62,6 +70,7 @@ def test_guideline_assessment_is_saved_with_decision():
     }
     decision = Decision(**body)
     assert decision.guideline_assessment.statement.sources[0].reference == "guideline:PRS-3.3"
+    assert decision.guideline_assessment.compared_intents == ["curative"]
 
 
 def case(case_id: str, question: str | None) -> Case:

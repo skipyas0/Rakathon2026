@@ -10,6 +10,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, model_validator
 
+from mdt_backend.briefing import Intent
 from mdt_backend.features.cases import ai_status, case_ids, get_case
 from mdt_backend.provenance import Source, Statement
 
@@ -82,23 +83,34 @@ class Attendee(BaseModel):
     specialty: str
 
 
+def _one_intent(data, old: str, new: str):
+    """Records saved when the board could pick only one léčebný záměr: `old` (a value or null)
+    becomes the list `new`."""
+    if isinstance(data, dict) and old in data:
+        data = dict(data)
+        value = data.pop(old)
+        data.setdefault(new, [value] if value else [])
+    return data
+
+
 class GuidelineAssessment(BaseModel):
     status: Literal["compliant", "deviation", "uncertain"]
     statement: Statement
     compared_plan: str
     compared_rationale: str
-    compared_intent: (
-        Literal["curative", "palliative", "supportive", "surveillance", "deferred"] | None
-    )
+    compared_intents: list[Intent] = []
     recommendation: str
     recommendation_sources: list[Source]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _legacy(cls, data):
+        return _one_intent(data, "compared_intent", "compared_intents")
 
 
 class Decision(BaseModel):
     attendees: list[Attendee] = []
-    intent: Literal["curative", "palliative", "supportive", "surveillance", "deferred"] | None = (
-        None
-    )
+    intents: list[Intent] = []  # léčebný záměr: one or more
     options_considered: str = ""
     plan: str = ""
     rationale: str = ""
@@ -111,13 +123,23 @@ class Decision(BaseModel):
     confirmed_by: str | None = None  # who confirmed the board's consensus; set = final and locked
     confirmed_at: dt.datetime | None = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _legacy(cls, data):
+        return _one_intent(data, "intent", "intents")
+
     @model_validator(mode="after")
     def _final_decision_is_complete(self):
         if self.guideline_compliant is False and not self.deviation_reason.strip():
             raise ValueError("Odchylka od doporučených postupů vyžaduje zdůvodnění")
         if self.confirmed_by:
             missing = [f for f in ("plan", "rationale") if not getattr(self, f).strip()]
-            if missing or not self.attendees or None in (self.guideline_compliant, self.intent):
+            if (
+                missing
+                or not self.attendees
+                or not self.intents
+                or self.guideline_compliant is None
+            ):
                 raise ValueError(
                     "Potvrzený závěr musí obsahovat přítomné, cíl léčby, postup, zdůvodnění "
                     "a soulad s postupy"
@@ -201,7 +223,7 @@ def agenda() -> list[dict]:
                 "board": c.board,
                 "mdt_date": c.mdt_date,
                 "flags": sum(f.severity == "high" for f in c.red_flags),
-                "intent": r.decision.intent,
+                "intents": r.decision.intents,
                 "status": status(r),
                 "specialties": sorted({m.specialty for m in r.board}),  # who may open it
                 "ai": ai_status(c.patient.split("/")[-1].lower()),
