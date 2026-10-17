@@ -8,7 +8,15 @@ from fastapi.staticfiles import StaticFiles
 
 from mdt_backend import fhir
 from mdt_backend.config import settings
-from mdt_backend.features import cases, export, history, intake, recommendation, records
+from mdt_backend.features import (
+    cases,
+    export,
+    history,
+    intake,
+    recommendation,
+    records,
+    stanovisko,
+)
 
 app = FastAPI(title="MDT Copilot")
 
@@ -39,6 +47,7 @@ app.include_router(intake.router)
 app.include_router(history.router)
 app.include_router(recommendation.router)
 app.include_router(export.router)
+app.include_router(stanovisko.router)
 
 
 @app.get("/api/health")

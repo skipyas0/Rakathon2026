@@ -146,3 +146,33 @@ def test_reset_deletes_even_a_confirmed_record(client):
     assert client.get("/api/cases/example/record").json()["decision"]["confirmed_by"] is None
     assert status_of(client, "example") == "prep"
     assert client.delete("/api/cases/nope/record").status_code == 404
+
+
+def test_specialist_stanovisko_and_stance(client, monkeypatch):
+    from mdt_backend.config import settings
+    from mdt_backend.provenance import Source
+
+    url = "/api/cases/example/stanovisko/surgery"
+    assert client.patch(url, json={"supports": False}).status_code == 404  # not on the board yet
+    assert client.put("/api/cases/example/record", json={"board": BOARD}).status_code == 200
+    draft = Statement(
+        text="Resekabilní.", origin="ai", model="m", sources=[Source(reference="X/1")]
+    )
+    monkeypatch.setattr(settings, "azure_api_key", "test")
+    monkeypatch.setattr(agent, "Record", lambda patient: None)
+    monkeypatch.setattr(agent, "stanovisko", lambda rec, key: draft)
+    assert client.post(f"{url}/generate").json()["stanoviska"]["surgery"]["origin"] == "ai"
+
+    edited = {**draft.model_dump(mode="json"), "text": "Neresekabilní.", "confirmed_by": "MUDr. A"}
+    assert client.patch(url, json={"statement": edited}).status_code == 422  # AI text, edited
+    signed = {**draft.model_dump(mode="json"), "confirmed_by": "MUDr. A"}
+    assert client.patch(url, json={"statement": signed, "supports": False}).status_code == 200
+    # the coordinator's stale copy (no stanovisko, everyone supports) doesn't overwrite them
+    r = client.put("/api/cases/example/record", json={"board": BOARD}).json()
+    assert r["stanoviska"]["surgery"]["confirmed_by"] == "MUDr. A"
+    assert next(m for m in r["board"] if m["specialty"] == "surgery")["supports"] is False
+    # anyone against blocks the lock, then the lock freezes the stanoviska
+    assert client.put("/api/cases/example/record", json={**r, "decision": FINAL}).status_code == 422
+    assert client.patch(url, json={"supports": True}).status_code == 200
+    assert client.put("/api/cases/example/record", json={**r, "decision": FINAL}).status_code == 200
+    assert client.patch(url, json={"supports": False}).status_code == 409

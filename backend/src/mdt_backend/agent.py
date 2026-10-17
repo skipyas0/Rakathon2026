@@ -85,6 +85,14 @@ SPECIALISTS = {
             "výkonnostní stav"
         ),
     ),
+    "pathology": (
+        "Patologie",
+        (
+            "patolog – hodnotí histologii: histologický typ, grading, imunohistochemie a molekulární "
+            "biomarkery (ER/PR, HER2, MMR/MSI, KRAS, PD-L1…), stáří a adekvátnost vzorku, potřeba "
+            "rebiopsie nebo doplnění vyšetření"
+        ),
+    ),
 }
 SEVERITY = {"RED": "high", "YELLOW": "medium"}
 SECTION_TITLES = {"pathology": "Patologie", "patient": "Pacient"}
@@ -500,6 +508,21 @@ Nic nepřidávej, co ve stanovisku není.
     return {"key": key, "title": title, "context": list(context), "text": text, **verdict}
 
 
+def stanovisko(rec: Record, key: str) -> Statement | None:
+    """One specialist's step on its own (the app's Vygenerovat): their verdict on the board's
+    question, cited; None when no citation holds. ponytail: without the batch's checklist and
+    findings (build_cacc, find_issues, +2 calls); pass them in when the step should see them."""
+    case = build_case(rec.case_id, rec.bundle)
+    dx = diagnosis(rec.bundle)
+    question = case.question.text if case.question else NOT_FOUND
+    trace: dict = {"steps": {}}
+    v = specialist(key, rec, dx, {"prerequisites": []}, {"findings": []}, question, trace)
+    vd = v["verdict"]
+    return Citations(rec, dx["passages"]).statement(
+        vd["text"], vd["refs"], vd["guideline_ids"], f"{key}.verdict"
+    )
+
+
 def executive_summary(
     dx: dict, record_text: str, question: str, known_flags: list[str], trace: dict
 ) -> dict:
@@ -767,7 +790,8 @@ def run(case_id: str) -> tuple[Case, dict]:
     for i, f in enumerate(issues["findings"]):
         s = cite.statement(f["text"], f["refs"], f["guideline_ids"], f"findings.{i}")
         if s:
-            case.red_flags.append(RedFlag(severity=SEVERITY[f["severity"]], statement=s))
+            flag = RedFlag(severity=SEVERITY[f["severity"]], statement=s, area=f["area"])
+            case.red_flags.append(flag)
         elif f["kind"] == "chybejici_udaj":
             gaps.setdefault(f["area"], set()).add(f["text"])
     # extra flags from the executive summary (ones the checks above didn't raise)
