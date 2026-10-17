@@ -82,6 +82,29 @@ export function Journey({ id, step, user }: { id: string; step: Step; user: stri
   )
 }
 
+/** A wait on the AI: moving bar, elapsed seconds and the usual duration. ponytail: no stages, the
+ * request is one LLM call the browser can't see into; add server-sent stages if waits get long. */
+function Working({ label, typical }: { label: string; typical: number }) {
+  const [seconds, setSeconds] = useState(0)
+  useEffect(() => {
+    const t = window.setInterval(() => setSeconds((s) => s + 1), 1000)
+    return () => window.clearInterval(t)
+  }, [])
+  return (
+    <div className="working" role="status">
+      <p>
+        <Robot /> {label}…
+      </p>
+      <div className="working-bar" aria-hidden>
+        <span />
+      </div>
+      <p className="working-time">
+        {seconds} s · {seconds <= typical * 2 ? `obvykle kolem ${typical} s` : 'trvá déle než obvykle'}
+      </p>
+    </div>
+  )
+}
+
 /** Shown where a confirmed conclusion makes the fields read-only, so they don't look broken. */
 const Locked = () => (
   <p className="locked-note">
@@ -564,9 +587,7 @@ function ExportStep({ c, record, prev }: StepProps) {
         <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
       </p>
       {!draft ? (
-        <p className="ai-note">
-          <Robot /> AI doplňuje podklady ze zdravotního záznamu…
-        </p>
+        <Working label="AI doplňuje podklady ze zdravotního záznamu" typical={20} />
       ) : (
         <>
           {draft.error && <div className="banner bad">{draft.error}</div>}
