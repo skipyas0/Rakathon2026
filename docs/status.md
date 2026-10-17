@@ -19,6 +19,9 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 - Gaps against `MDT_ZASEDANI_PROCES.md`: the decision doesn't separate the MDT recommendation, the
   patient's decision, the agreed plan and the care delivered (§6); PROMs are only partly split by
   specialty (§2).
+- Open issue: every board member's stance starts as "Podporuje" (`Member.supports = True`), so
+  consensus exists by default; proposed: start undecided, Potvrdit only once every stance is set.
+- The agent's output leaks "[refs: …]" placeholders into some statements; strip them in the agent.
 - `data/ai_cases/` is from the first agent run (old intent prompt); rerun `mdt-agent --all`.
   Ground truth (`ground_truth/` in the dataset README) is not delivered.
 
