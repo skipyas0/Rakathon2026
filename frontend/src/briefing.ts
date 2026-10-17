@@ -1,5 +1,6 @@
 // Mirror of backend/src/mdt_backend/briefing.py. Keep both in sync (see AGENTS.md).
 // GET /api/cases/:id → Case (the agenda list lives in api.ts)
+import type { Intent } from './api'
 import type { Source, Statement } from './provenance'
 
 export type TimelineEvent = {
@@ -18,7 +19,12 @@ export type TrialMatch = {
   criteria: Statement[]
 }
 
-export type DecisionSupport = { options: Statement[]; trials: TrialMatch[]; questions: Statement[] }
+export type DecisionSupport = {
+  options: Statement[]
+  trials: TrialMatch[]
+  questions: Statement[]
+  intent?: Intent | null // léčebný záměr of the first option, compared with the conclusion
+}
 
 export type Case = {
   id: string

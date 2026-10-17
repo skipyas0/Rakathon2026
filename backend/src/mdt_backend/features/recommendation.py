@@ -1,7 +1,7 @@
 """The recommended postup the board's conclusion is compared with (soulad s doporučenými postupy).
 
-ponytail: hand-written examples ("ukázka") per dataset patient until the AI pipeline recommends
-from the guidelines. Each paraphrases and cites a real passage from Dataset/guidelines (verbatim
+The agent's first option with its léčebný záměr when the agent has briefed the case (agent.py →
+`decision_support`); otherwise ponytail: a hand-written example ("ukázka") per dataset patient. Each paraphrases and cites a real passage from Dataset/guidelines (verbatim
 text via knowledge.py), so the source is one click away. Not clinical advice."""
 
 from fastapi import APIRouter
@@ -65,7 +65,10 @@ EXAMPLES: dict[str, tuple[str, str, list[str]]] = {
 @router.get("/{case_id}/recommendation")
 def recommendation(case_id: str) -> dict | None:
     """{intent, statement} for the case's patient, or null when there is none to compare with."""
-    patient = cases.get_case(case_id).patient.split("/")[-1].lower()  # 404 for an unknown case
+    case = cases.get_case(case_id)  # 404 for an unknown case
+    if (ds := case.decision_support).intent and ds.options:
+        return {"intent": ds.intent, "statement": ds.options[0]}
+    patient = case.patient.split("/")[-1].lower()
     if patient not in EXAMPLES:
         return None
     intent, text, passages = EXAMPLES[patient]

@@ -138,9 +138,27 @@ def fake_llm(system, user, schema, name):
     assert "Pacientka si nepřeje chemoterapii. [ServiceRequest/P01-zad01]" in user
     return {
         "options": [
-            {"rank": 2, "text": "Druhá.", "refs": [], "guideline_ids": ["PRS-2.3"]},
-            {"rank": 1, "text": "První.", "refs": [HB], "guideline_ids": ["PRS-2.2"]},
-            {"rank": 3, "text": "Bez pasáže.", "refs": [HB], "guideline_ids": ["XYZ-9.9"]},
+            {
+                "rank": 2,
+                "intent": "supportive",
+                "text": "Druhá.",
+                "refs": [],
+                "guideline_ids": ["PRS-2.3"],
+            },
+            {
+                "rank": 1,
+                "intent": "palliative",
+                "text": "První.",
+                "refs": [HB],
+                "guideline_ids": ["PRS-2.2"],
+            },
+            {
+                "rank": 3,
+                "intent": "curative",
+                "text": "Bez pasáže.",
+                "refs": [HB],
+                "guideline_ids": ["XYZ-9.9"],
+            },
         ],
         "preference": {
             "stated": True,
@@ -212,6 +230,7 @@ def test_options_follow_guidelines_and_mention_preference(result):
     case, _ = result
     opts = case.decision_support.options
     assert [o.text.split(" ")[0] for o in opts] == ["První.", "Druhá."]  # by rank, max 2
+    assert case.decision_support.intent == "palliative"  # the first option's
     assert all(any(s.reference.startswith("guideline:") for s in o.sources) for o in opts)
     assert "Preference pacienta: Nechce chemoterapii." in opts[0].text
     assert any(s.reference == "ServiceRequest/P01-zad01" for s in opts[0].sources)

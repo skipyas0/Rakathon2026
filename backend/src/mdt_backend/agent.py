@@ -38,7 +38,7 @@ from typing import get_args
 import httpx
 
 from mdt_backend import bundles, fhir
-from mdt_backend.briefing import Case, RedFlag, Section, TimelineEvent, Trend, TrendPoint
+from mdt_backend.briefing import Case, Intent, RedFlag, Section, TimelineEvent, Trend, TrendPoint
 from mdt_backend.bundles import (
     Bundle,
     answers,
@@ -164,7 +164,15 @@ VERDICT_SCHEMA = _obj(
     missing=_arr(_STR),
 )
 RECOMMEND_SCHEMA = _obj(
-    options=_arr(_obj(rank={"type": "integer"}, text=_STR, refs=_REFS, guideline_ids=_GL)),
+    options=_arr(
+        _obj(
+            rank={"type": "integer"},
+            intent={"type": "string", "enum": list(get_args(Intent))},
+            text=_STR,
+            refs=_REFS,
+            guideline_ids=_GL,
+        )
+    ),
     preference=_obj(stated={"type": "boolean"}, text=_STR, refs=_REFS, matches_option=_STR),
     questions=_arr(_obj(text=_STR, refs=_REFS, guideline_ids=_GL)),
 )
@@ -618,6 +626,8 @@ radiologa, chirurga a klinického onkologa navrhni 1 až 2 možnosti léčby (op
 volba) PŘÍSNĚ podle dodaných pasáží doporučených postupů:
 - každá možnost musí odpovídat konkrétní pasáži (guideline_ids, alespoň jedna) a stavu pacienta
   (refs); text ≤ 2 věty, uveď podmínky (např. co je třeba nejprve doplnit),
+- intent = léčebný záměr možnosti: curative (kurativní), palliative (paliativní), supportive
+  (podpůrná péče), surveillance (sledování), deferred (rozhodnutí odloženo do doplnění údajů),
 - pokud podle pasáží nelze rozhodnout bez chybějících údajů, uveď to jako podmínku možnosti,
 - preference: stated = zda pacient uvedl preferenci léčby; text = preference stručně a zda ji
   možnosti respektují; matches_option = rank možnosti, která jí odpovídá, nebo „žádná“.
@@ -832,6 +842,7 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
             match = str(o["rank"]) == pref["matches_option"].strip()
             text += f" Preference pacienta: {pref['text'].strip()}" if i == 0 or match else ""
             sources += pref_sources if (i == 0 or match) else []
+        case.decision_support.intent = case.decision_support.intent or o["intent"]
         case.decision_support.options.append(
             Statement(text=text, origin="ai", sources=sources, model=model_tag())
         )

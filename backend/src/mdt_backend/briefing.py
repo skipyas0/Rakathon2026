@@ -46,10 +46,17 @@ class TrialMatch(BaseModel):
     criteria: list[Statement]  # one per inclusion/exclusion criterion, with reason
 
 
+Intent = Literal[
+    "curative", "palliative", "supportive", "surveillance", "deferred"
+]  # léčebný záměr
+
+
 class DecisionSupport(BaseModel):
     options: list[Statement]  # treatment options, each citing a guideline passage
     trials: list[TrialMatch]
     questions: list[Statement]  # 2–3 questions for the board to resolve
+    # léčebný záměr of the first option, the recommendation the conclusion is compared with
+    intent: Intent | None = None
 
 
 class BoardMember(BaseModel):

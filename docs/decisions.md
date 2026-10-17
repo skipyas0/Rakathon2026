@@ -210,3 +210,13 @@ Until the AI pipeline recommends, a hand-written example per dataset patient ("u
 real guideline passage) stands in; stanoviska are examples too. Potvrdit is the board's consensus,
 no per-member consent. The full role-based version stays on branch `yes-and/meeting-records`.
 Why: The demo has to be simple and legible end to end; the role-based screens were too much.
+
+## 21. The agent recommends a léčebný záměr — 2026-10-17, yes-and
+Status: accepted (builds on #18, #20)
+Decision: Each option the agent proposes carries its léčebný záměr (`curative` / `palliative` /
+`supportive` / `surveillance` / `deferred`); the first kept option's goes to
+`DecisionSupport.intent` (backend `briefing.py`, frontend `briefing.ts`). `/recommendation` returns
+that option and intent when present, so Potvrzení compares the conclusion with real AI output; the
+"ukázka" examples remain only for cases the agent hasn't briefed.
+Why: Soulad s doporučenými postupy is derived from the léčebný záměr (#20); without one per option
+the app could only compare with the hand-written examples.

@@ -333,7 +333,8 @@ function ConfirmStep({ c, record, rec, save, next, user }: StepProps) {
         </section>
         <section>
           <p className="eyebrow">
-            Doporučený postup <span className="chip muted-chip">ukázka</span>
+            Doporučený postup{' '}
+            {rec?.statement.model === 'ukázka' && <span className="chip muted-chip">ukázka</span>}
           </p>
           {rec ? (
             <>
