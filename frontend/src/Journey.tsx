@@ -325,7 +325,19 @@ function FactsStep({ c, record, next, prev }: StepProps) {
   )
 }
 
-const PER_PAGE = 2 // charts per screen, so nothing scrolls
+// charts per screen, so nothing scrolls: a 2×2 grid when the window is wide and tall enough
+const WIDE = '(min-width: 981px) and (min-height: 820px)'
+
+function useMedia(query: string) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const on = () => setMatch(m.matches)
+    m.addEventListener('change', on)
+    return () => m.removeEventListener('change', on)
+  }, [query])
+  return match
+}
 
 /** The 2–3 questions the agent says the board must settle, before it picks the léčebný záměr. */
 function QuestionsStep({ c, record, next, prev }: StepProps) {
@@ -349,20 +361,22 @@ function QuestionsStep({ c, record, next, prev }: StepProps) {
 }
 
 function TrendsStep({ c, next, prev }: StepProps) {
-  const [page, setPage] = useState(0)
-  const pages = Math.ceil(c.trends.length / PER_PAGE)
+  const perPage = useMedia(WIDE) ? 4 : 2
+  const [first, setFirst] = useState(0) // index of the page's first chart, kept when perPage changes
+  const pages = Math.ceil(c.trends.length / perPage)
+  const page = Math.min(Math.floor(first / perPage), Math.max(0, pages - 1))
   return (
     <>
       <h1>
         Vývoj {pages > 1 && <span className="muted page-count">{page + 1} / {pages}</span>}
       </h1>
       <div className="journey-trends">
-        {c.trends.slice(page * PER_PAGE, (page + 1) * PER_PAGE).map((t) => (
+        {c.trends.slice(page * perPage, (page + 1) * perPage).map((t) => (
           <TrendChart key={t.id} trend={t} />
         ))}
         {!c.trends.length && <p className="muted">Bez měřených hodnot.</p>}
       </div>
-      <Nav next={() => (page + 1 < pages ? setPage(page + 1) : next())} prev={prev} />
+      <Nav next={() => (page + 1 < pages ? setFirst((page + 1) * perPage) : next())} prev={prev} />
     </>
   )
 }

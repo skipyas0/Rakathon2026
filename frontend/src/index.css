@@ -1278,12 +1278,7 @@ button.back {
 .journey-trends {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-}
-.journey-trends svg {
-  width: 100%;
-  height: auto;
-  max-height: 38vh;
+  gap: 1.25rem 1.5rem;
 }
 .page-count {
   font-size: var(--fs-m);
@@ -1645,9 +1640,6 @@ button.back {
   .key-facts.crit li,
   .key-facts.warn li {
     padding: 0.5rem 0.75rem;
-  }
-  .journey-trends svg {
-    max-height: 28vh;
   }
   .tile {
     aspect-ratio: auto;
