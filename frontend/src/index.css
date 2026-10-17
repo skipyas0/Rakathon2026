@@ -1213,8 +1213,7 @@ button.back {
   align-items: baseline;
 }
 .key-facts.questions {
-  counter-reset: q;
-  font-size: var(--fs-xl);
+  counter-reset: q; /* size: as .key-facts, L wide / M narrow */
 }
 .key-facts.questions li::before {
   counter-increment: q;
