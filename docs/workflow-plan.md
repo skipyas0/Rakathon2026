@@ -23,8 +23,10 @@ case opens Export; a started case has a reset button (confirm dialog) that clear
 says "AI připravuje…" and every screen of the case shows a blue banner; both check every 10 s and
 the case reloads itself when the briefing is ready.
 
-Narrow screens (≤ 640 px): one-line progress ("3 / 10 · Pacient"), compact top bar and type, the
-disease course only as a collapsible list, so no screen scrolls.
+Progress: green chevrons above every screen (finished ones link back, the current one solid). Below
+980 px only the current step ("3 / 10 · Pacient") between a back arrow and a disabled forward arrow.
+Narrow screens (≤ 640 px): compact top bar and type, the disease course only as a collapsible list,
+so no screen scrolls.
 
 Rules that still hold: every statement opens its source; AI output is blue; examples standing in
 where there's no AI output (recommended postup and stanoviska of cases the agent hasn't briefed, the
