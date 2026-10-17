@@ -1,6 +1,7 @@
-"""Case/source API reads patient data from the FHIR server, falling back to disk when it's down."""
+"""Case/source API reads patient data only from the FHIR server; 503 while it's unreachable."""
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from mdt_backend import fhir
@@ -43,10 +44,60 @@ def test_source_not_on_server_is_404(monkeypatch):
     assert client.get("/api/sources/bad type/x").status_code == 404
 
 
-def test_case_list_falls_back_to_disk_when_server_is_down(monkeypatch):
+def test_unreachable_server_is_503_not_a_crash(monkeypatch):
     def get(path, **params):
         raise DOWN
 
     monkeypatch.setattr(fhir, "get", get)
-    monkeypatch.setattr(cases.bundles, "bundle_paths", lambda: {"p77": None})
-    assert cases.patient_case_ids() == ["p77"]
+    assert client.get("/api/cases").status_code == 503
+    assert client.get("/api/sources/Observation/x").json() == {"detail": "FHIR server nedostupný"}
+    assert client.get("/api/health").json() == {"status": "ok", "fhir": False}
+
+
+def test_cases_are_the_patients_nominated_on_the_server(monkeypatch):
+    task = {
+        "resourceType": "Task",
+        "id": "P09-task01",
+        "for": {"reference": "Patient/P09"},
+        "restriction": {"period": {"start": "2026-10-21T14:00:00+02:00"}},
+    }
+    monkeypatch.setattr(fhir, "get", lambda path, **params: {"entry": [{"resource": task}]})
+    assert cases.meetings() == {"p09-2026-10-21": "p09"}  # a patient without a Task is no case
+
+
+def test_ai_status_follows_the_agent(tmp_path, monkeypatch):
+    from mdt_backend import agent
+
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(cases, "meetings", lambda: {"p09-2026-10-21": "p09"})
+    status = lambda: client.get("/api/cases/p09-2026-10-21/ai").json()["status"]
+    assert status() is None
+    agent.running_path("P09").touch()
+    assert status() == "running"
+    (tmp_path / "p09.json").write_text("{}")
+    agent.running_path("P09").unlink()
+    assert status() == "done"
+    assert client.get("/api/cases/nope/ai").status_code == 404
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_agent_running_marker_is_cleaned_up(tmp_path, monkeypatch, fails):
+    from mdt_backend import agent
+
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    marker = agent.running_path("P09")
+
+    def run(patient, runs):
+        assert patient == "P09" and runs == 1
+        assert marker.exists()
+        if fails:
+            raise RuntimeError("pipeline failed")
+        return {"options": []}
+
+    monkeypatch.setattr(agent, "_run_patient", run)
+    if fails:
+        with pytest.raises(RuntimeError, match="pipeline failed"):
+            agent.run_patient("P09", 1)
+    else:
+        assert agent.run_patient("P09", 1) == {"options": []}
+    assert not marker.exists()

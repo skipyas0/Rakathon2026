@@ -2,12 +2,13 @@ import base64
 import secrets
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 
 from mdt_backend import fhir
 from mdt_backend.config import settings
-from mdt_backend.features import cases, records
+from mdt_backend.features import cases, export, history, intake, recommendation, records
 
 app = FastAPI(title="MDT Copilot")
 
@@ -34,11 +35,21 @@ async def shared_password(request: Request, call_next):
 # Register them here; removing a feature = delete its file + its line below.
 app.include_router(cases.router)
 app.include_router(records.router)
+app.include_router(intake.router)
+app.include_router(history.router)
+app.include_router(recommendation.router)
+app.include_router(export.router)
 
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok"}
+    """The app is up (200, for Fly's check: restarting the app wouldn't fix IRIS); `fhir` says
+    whether IRIS answers an authenticated read."""
+    try:
+        fhir.get("Patient", _summary="count")
+        return {"status": "ok", "fhir": True}
+    except httpx.HTTPError:
+        return {"status": "ok", "fhir": False}
 
 
 @app.get("/api/patients")

@@ -3,27 +3,33 @@
 Who is working on what. Each contributor (and their agent) edits **only their own section**.
 Keep it short: current branch, what's in progress, what's blocked, what others should know.
 
-## Open questions (anyone)
-
-- FHIR server: stay on HAPI or switch to the sponsor's InterSystems IRIS for Health
-  (https://github.com/intersystems-community/FHIR-AI-Hackathon-Kit/tree/V2)? Backend works with
-  either via `.env`.
-
 ## yes-and (Claude Code)
+
+- Branch `yes-and/trim-dead-files`: repo cleanup, step 1 — holdout files moved to
+  `Dataset/holdout/` (decision 23), `brief.docx` removed (`brief.md` is the same text); scope
+  rewritten as core + checklist in `problem_statement.md` (decision 24); IRIS only, FHIR only (`iris/`, no
+  HAPI/stubs/disk fallback). Next: one conclusion PDF following `template_zaver_zasedani`; docs
+  trim. Future: patient deletion (clean re-uploads, holdout P07 evaluation).
 
 - Done (on `main`): three-phase MDT app (#1) on dataset v1.1, Docker image + Fly deploy (#2) at
   https://mdt-copilot-rakathon.fly.dev behind a shared password (ask yes-and; Fly app is on
   yes-and's personal account).
-- Branch `yes-and/mdt-workflow`: role-based workflow per [workflow-plan.md](workflow-plan.md) (#16).
-  Step 1 next: records per meeting + role switcher. Needs backend changes (listed in the plan),
-  kept in `features/` to avoid clashing with Contributor 2.
-- Next: decision support (guideline options, trial screening, questions) from `knowledge.py` via
-  `llm.chat_json` (#13). Ground truth (`ground_truth/` in the dataset README) is not delivered.
+- Branch `yes-and/meeting-records` (pushed, not merged): the full role-based workflow (#16).
+- Branch `yes-and/journey-meets-pipeline` (on top of `backend`): the simple coordinator journey
+  (#20, docs/workflow-plan.md) joined with Contributor 2's agent. Cases are meetings over the
+  FHIR server's nominated patients; the agent's briefing feeds every screen, its first option +
+  léčebný záměr is the recommendation (#21), its verdicts the stanoviska, its questions a new step,
+  the patient's wishes a card on Pacient (#22). "ukázka" examples remain only where the agent has
+  no output (pathology stanovisko, unbriefed cases).
+- The agent also runs against the local HAPI (`FHIR_BASE_URL=http://localhost:8080/fhir`, empty
+  `FHIR_USER`), loaded with `mdt-load-fhir`.
+- Next: trial screening (still empty). Ground truth (`ground_truth/` in the dataset README) is not
+  delivered.
 - Not done yet: bulk-confirm per section, AI-generated patient/GP summaries, FHIR export.
 - Gaps against `MDT_ZASEDANI_PROCES.md` + the record template (not started):
   - The app's decision form doesn't follow `docs/template_zaver_zasedani/form.md`; the filled
-    template exists only as the `mdt-zaver` CLI PDF, and the app's export is a print of the
-    follow-up page.
+    template exists only as the `mdt-zaver` CLI PDF; the app's PDF (`features/export.py`) has its
+    own simpler layout.
   - The decision doesn't separate the MDT recommendation, the patient's decision, the agreed plan
     and the care actually delivered (§6).
   - PROMs answers are only partly split by specialty: surgery gets walking + weight change, the
@@ -103,3 +109,16 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   cancer types consistently marked non-match.
 - Browser verified six studies, expandable criteria and source drawers with both study/patient
   evidence; P02 → COLUMBA-LM now shows non-match with the cited cancer-type explanation.
+
+## Copilot - backend/frontend branch reconciliation
+
+- Merged `main` into `backend` after saving the original backend tip and partial rebase under
+  `recovery/backend-before-main-20261017` and `recovery/partial-rebase-20261017`.
+- Preserve the v2 rules, symptom classifier and study screening; adopt the current coordinator
+  journey, meeting ids, treatment intent, patient preference and AI-running status from `main`.
+- The current IRIS-only policy supersedes older notes about HAPI, disk fallback and offline
+  agent input. Study evidence moves to the journey discussion step; the old case view stays deleted.
+- Validation: `cd backend && uv run pytest` (93 passed), `uv run ruff check .` and
+  `uv run ruff format --check .` (passed); `cd frontend && npm run lint && npm run build`
+  (passed). Regression tests cover the full pipeline output served under a meeting id, including
+  v2 flags, studies, preference, intent and AI status, plus running-marker cleanup on failure.

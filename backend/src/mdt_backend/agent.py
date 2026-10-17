@@ -2,8 +2,7 @@
 
 Pipeline (a fixed chain of tool steps and strict-JSON LLM calls, decision #16):
   1. gather      – the patient's record from the IRIS FHIR server only (Patient/$everything;
-                   ids mapped back to the dataset's via the loader's tag), or, for offline
-                   tests, from the bundle on disk (`source="file"`)
+                   ids mapped back to the dataset's via the loader's tag)
   2. diagnosis   – primary ICD-10 code → the tumour's guideline (KRC/PLI/PRS) + general MDT rules (OBC)
   3. CACC        – LLM: completeness-and-consistency checklist (decision prerequisites the record
                    should contain, symptoms expected for the diagnosis), each item tied to passages
@@ -46,6 +45,7 @@ from mdt_backend import bundles, fhir
 from mdt_backend import concepts as C
 from mdt_backend.briefing import (
     Case,
+    Intent,
     RedFlag,
     Section,
     TimelineEvent,
@@ -185,7 +185,15 @@ VERDICT_SCHEMA = _obj(
     missing=_arr(_STR),
 )
 RECOMMEND_SCHEMA = _obj(
-    options=_arr(_obj(rank={"type": "integer"}, text=_STR, refs=_REFS, guideline_ids=_GL)),
+    options=_arr(
+        _obj(
+            rank={"type": "integer"},
+            intent={"type": "string", "enum": list(get_args(Intent))},
+            text=_STR,
+            refs=_REFS,
+            guideline_ids=_GL,
+        )
+    ),
     preference=_obj(stated={"type": "boolean"}, text=_STR, refs=_REFS, matches_option=_STR),
     questions=_arr(_obj(text=_STR, refs=_REFS, guideline_ids=_GL)),
 )
@@ -266,36 +274,25 @@ RULES = f"""Pravidla (závazná):
 # --- 1. gather ---------------------------------------------------------------------------------
 class Record:
     """The patient's record as the agent sees it: a Bundle keyed by dataset ids, and a `fetch`
-    tool that reads one resource from where the record came from (IRIS or the bundle file)."""
+    tool that reads one resource from IRIS."""
 
-    def __init__(self, case_id: str, source: str = "iris"):
+    def __init__(self, case_id: str):
         self.case_id = case_id.lower()
         self.patient_id = case_id.upper()
-        self.source = source
-        if source == "file":
-            path = bundles.bundle_paths().get(self.case_id)
-            if not path:
-                raise SystemExit(f"{case_id}: no bundle in {settings.dataset_dir / 'pacienti'}")
-            self.bundle = bundles.load(path)
-            self.iris_ids: dict[str, str] = {}
-        else:
-            # Only the FHIR server is read. IRIS rejects "_" in ids (decision #12); the loader
-            # keeps the original id as a tag, so citations use the dataset's ids (the app's source
-            # drawer and the frontend resolve those)
-            by_ref, self.iris_ids = {}, {}
-            for r in fhir.get_patient_record(self.patient_id):
-                ref = f"{r['resourceType']}/{dataset_id(r)}"
-                self.iris_ids[ref] = f"{r['resourceType']}/{r['id']}"
-                by_ref[ref] = {**r, "id": ref.split("/", 1)[1]}
-            self.bundle = Bundle({"entry": [{"resource": r} for r in by_ref.values()]})
+        # IRIS rejects "_" in ids (decision #12); the loader keeps the original id as a tag, so
+        # citations use the dataset's ids (the app's source drawer and the frontend resolve those)
+        by_ref, self.iris_ids = {}, {}
+        for r in fhir.get_patient_record(self.patient_id):
+            ref = f"{r['resourceType']}/{dataset_id(r)}"
+            self.iris_ids[ref] = f"{r['resourceType']}/{r['id']}"
+            by_ref[ref] = {**r, "id": ref.split("/", 1)[1]}
+        self.bundle = Bundle({"entry": [{"resource": r} for r in by_ref.values()]})
 
     def fetch(self, ref: str) -> dict | None:
-        """Tool: one resource by dataset reference (read from IRIS when that's the source)."""
+        """Tool: one resource by dataset reference, read from IRIS."""
         base = ref.split("#")[0]
         if base not in self.bundle.by_ref:
             return None
-        if self.source == "file":
-            return self.bundle.by_ref[base]
         rtype, rid = self.iris_ids.get(base, base).split("/", 1)
         r = fhir.get(f"{rtype}/{rid}")
         return {**r, "id": base.split("/", 1)[1]}
@@ -717,6 +714,10 @@ radiologa, chirurga a klinického onkologa navrhni 1 až 2 možnosti léčby (op
 volba) PŘÍSNĚ podle dodaných pasáží doporučených postupů:
 - každá možnost musí odpovídat konkrétní pasáži (guideline_ids, alespoň jedna) a stavu pacienta
   (refs); text ≤ 2 věty, uveď podmínky (např. co je třeba nejprve doplnit),
+- intent = léčebný záměr, ke kterému možnost vede, i když má podmínky (např. nejprve doplnit
+  vyšetření): curative (kurativní), palliative (paliativní), supportive (podpůrná péče),
+  surveillance (sledování); deferred jen tehdy, když možnost sama spočívá v odložení rozhodnutí
+  a cíl léčby z dokumentace nelze určit,
 - pokud podle pasáží nelze rozhodnout bez chybějících údajů, uveď to jako podmínku možnosti,
 - preference: stated = zda pacient uvedl preferenci léčby; text = preference stručně a zda ji
   možnosti respektují; matches_option = rank možnosti, která jí odpovídá, nebo „žádná“.
@@ -916,17 +917,16 @@ Konečné rozhodnutí vždy náleží lékaři."""
 
 
 # --- assemble ----------------------------------------------------------------------------------
-def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
+def run(case_id: str) -> tuple[Case, dict]:
     """The whole pipeline for one patient: returns the AI-augmented Case and a trace."""
     t0 = time.monotonic()
-    rec = Record(case_id, source)
+    rec = Record(case_id)
     b = rec.bundle
     case = build_case(rec.case_id, b)
     dx = diagnosis(b)
     question = case.question.text if case.question else NOT_FOUND
     trace: dict = {
         "case": rec.case_id,
-        "source": source,
         "model": model_tag(),
         "created": dt.datetime.now().isoformat(timespec="seconds"),
         "diagnosis": {k: v for k, v in dx.items() if k != "passages"},
@@ -1044,8 +1044,8 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
                 known.add(_norm(item))
                 section(area).items.append(missing(item))
     # the patient's own preference leads the patient section (the meeting shows its first items)
-    patient = section("patient")
-    patient.items[:0] = pref_items or [missing("Preference pacienta ohledně léčby")]
+    case.preference = pref_items or [missing("Preference pacienta ohledně léčby")]
+    section("patient").items[:0] = case.preference
 
     # options (max 2, each must keep a guideline citation) + preference + questions
     pref = rec_out["preference"]
@@ -1062,6 +1062,7 @@ def run(case_id: str, source: str = "iris") -> tuple[Case, dict]:
             match = str(o["rank"]) == pref["matches_option"].strip()
             text += f" Preference pacienta: {pref['text'].strip()}" if i == 0 or match else ""
             sources += pref_sources if (i == 0 or match) else []
+        case.decision_support.intent = case.decision_support.intent or o["intent"]
         case.decision_support.options.append(
             Statement(text=text, origin="ai", sources=sources, model=model_tag())
         )
@@ -1121,18 +1122,35 @@ def save(case: Case, trace: dict, out_dir: Path = OUT_DIR, suffix: str = "") -> 
 
 
 def patient_ids() -> list[str]:
-    """Every patient on the IRIS FHIR server, as dataset ids (P01…)."""
-    found = fhir.get("Patient", _count=200).get("entry", [])
-    return sorted(dataset_id(e["resource"]) for e in found)
+    """Every patient nominated for an MDT on the FHIR server (a Task for them), as dataset ids
+    (P01…); a patient without a nomination has no briefing to build."""
+    found = fhir.get("Task", _count=200).get("entry", [])
+    refs = (e["resource"].get("for", {}).get("reference", "") for e in found)
+    return sorted({r.split("/", 1)[1] for r in refs if r.startswith("Patient/")})
 
 
-def run_patient(patient: str, runs: int, source: str) -> dict:
+def running_path(patient: str) -> Path:
+    """Exists while the agent works on the patient, so the app can say the briefing is coming."""
+    return OUT_DIR / f"{patient.lower()}.running"
+
+
+def run_patient(patient: str, runs: int) -> dict:
+    marker = running_path(patient)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.touch()
+    try:
+        return _run_patient(patient, runs)
+    finally:
+        marker.unlink(missing_ok=True)
+
+
+def _run_patient(patient: str, runs: int) -> dict:
     cases, trace = [], {}
     for n in range(1, runs + 1):
         try:
-            case, trace = run(patient, source)
+            case, trace = run(patient)
         # one patient failing (LLM/server error, malformed output) must not lose the others
-        except (httpx.HTTPError, RuntimeError, ValueError, KeyError) as e:
+        except (httpx.HTTPError, RuntimeError, ValueError, KeyError, IndexError) as e:
             print(f"{patient} run {n}: FAILED {e!r}", file=sys.stderr)
             return {"error": repr(e)}
         path = save(case, trace, suffix=f".run{n}" if runs > 1 else "")
@@ -1147,20 +1165,17 @@ def run_patient(patient: str, runs: int, source: str) -> dict:
 
 
 def main() -> None:
-    """CLI: uv run mdt-agent P01 [P02 …] | --all  [--runs 2] [--source iris|file]"""
+    """CLI: uv run mdt-agent P01 [P02 …] | --all  [--runs 2]"""
     ap = argparse.ArgumentParser(prog="mdt-agent", description=__doc__.splitlines()[0])
     ap.add_argument("patients", nargs="*", help="patient ids, e.g. P01 P03")
-    ap.add_argument("--all", action="store_true", help="every patient on the FHIR server")
-    ap.add_argument("--source", choices=["iris", "file"], default="iris")
+    ap.add_argument("--all", action="store_true", help="every patient nominated on the FHIR server")
     ap.add_argument("--runs", type=int, default=1, help="run N times and compare recommendations")
     args = ap.parse_args()
     patients = patient_ids() if args.all else args.patients
     if not patients:
         ap.error("give patient ids or --all")
     with ThreadPoolExecutor(len(patients)) as pool:  # each run waits on the LLM, not the CPU
-        results = dict(
-            zip(patients, pool.map(lambda p: run_patient(p, args.runs, args.source), patients))
-        )
+        results = dict(zip(patients, pool.map(lambda p: run_patient(p, args.runs), patients)))
     print(
         json.dumps(
             results if len(results) > 1 else results[patients[0]], ensure_ascii=False, indent=2

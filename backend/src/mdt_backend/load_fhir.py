@@ -96,21 +96,26 @@ def to_transaction(bundle: dict) -> dict:
     return {"resourceType": "Bundle", "type": "transaction", "entry": entries}
 
 
-def load(path: Path = DEFAULT_PATH) -> None:
+def put(tx: dict) -> httpx.Response:
+    """Send one transaction bundle to the FHIR server."""
     auth = (settings.fhir_user, settings.fhir_password) if settings.fhir_user else None
+    return httpx.post(
+        settings.fhir_base_url,
+        json=tx,
+        auth=auth,
+        headers={"Content-Type": "application/fhir+json", "Accept": "application/fhir+json"},
+        timeout=300,
+    )
+
+
+def load(path: Path = DEFAULT_PATH) -> None:
     lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     for i, line in enumerate(lines, 1):
         tx = to_transaction(json.loads(line))
         patient = next(
             e["resource"]["id"] for e in tx["entry"] if e["request"]["url"].startswith("Patient/")
         )
-        r = httpx.post(
-            settings.fhir_base_url,
-            json=tx,
-            auth=auth,
-            headers={"Content-Type": "application/fhir+json", "Accept": "application/fhir+json"},
-            timeout=300,
-        )
+        r = put(tx)
         if r.is_error:
             sys.exit(f"[{i}/{len(lines)}] {patient}: HTTP {r.status_code}\n{r.text[:2000]}")
         print(f"[{i}/{len(lines)}] {patient}: {len(tx['entry'])} resources -> HTTP {r.status_code}")

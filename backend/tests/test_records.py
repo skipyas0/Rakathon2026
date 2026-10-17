@@ -2,10 +2,11 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from mdt_backend import agent
 from mdt_backend.app import app
 from mdt_backend.briefing import Case, DecisionSupport
 from mdt_backend.features import cases, records
-from mdt_backend.features.records import Decision
+from mdt_backend.features.records import Decision, Triage
 from mdt_backend.provenance import Statement
 
 FINAL = {
@@ -14,7 +15,7 @@ FINAL = {
     "plan": "Resekce",
     "rationale": "Resekabilní",
     "guideline_compliant": True,
-    "confirmed_by": "MUDr. Předseda",
+    "confirmed_by": "Koordinátorka K",
 }
 
 
@@ -38,14 +39,21 @@ def case(case_id: str, question: str | None) -> Case:
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
-    # own test cases as stubs: the dataset isn't in git, so CI has no FHIR cases
-    stubs = tmp_path / "stubs"
-    stubs.mkdir()
-    for c in (case("example", "Resekabilita?"), case("lung-incomplete", None)):
-        (stubs / f"{c.id}.json").write_text(c.model_dump_json(), "utf-8")
-    monkeypatch.setattr(cases, "STUBS", stubs)
+    # own test cases, served as finished agent briefings, so no FHIR server is needed
+    test_cases = (case("example", "Resekabilita?"), case("lung-incomplete", None))
+    for c in test_cases:
+        (tmp_path / f"{c.id}.json").write_text(c.model_dump_json(), "utf-8")
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(cases, "meetings", lambda: {c.id: c.id for c in test_cases})
+    monkeypatch.setattr(cases, "record", lambda patient: cases.Bundle({"entry": []}))
     monkeypatch.setattr(records, "RECORDS", tmp_path / "records")
     return TestClient(app)
+
+
+BOARD = [
+    {"name": n, "specialty": s}
+    for n, s in (("A", "surgery"), ("B", "oncology"), ("C", "radiology"))
+]
 
 
 def status_of(client, case_id):
@@ -55,11 +63,17 @@ def status_of(client, case_id):
 def test_phases_and_lock(client):
     assert status_of(client, "example") == "prep"
     prep = {"prepared_by": "MUDr. P", "question": ""}  # nomination question exists in the stub
-    assert client.put("/api/cases/example/record", json={"prep": prep}).status_code == 200
+    assert client.put("/api/cases/example/record", json={"prep": prep}).status_code == 422  # board
+    assert (
+        client.put("/api/cases/example/record", json={"prep": prep, "board": BOARD}).status_code
+        == 200
+    )
     assert status_of(client, "example") == "meeting"
+    agenda = {c["id"]: c for c in client.get("/api/cases").json()}
+    assert agenda["example"]["specialties"] == ["oncology", "radiology", "surgery"]
 
     task = {"what": "Informovat pacienta", "done": False}
-    body = {"prep": prep, "decision": FINAL, "tasks": [task]}
+    body = {"prep": prep, "board": BOARD, "decision": FINAL, "tasks": [task]}
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     assert status_of(client, "example") == "followup"
 
@@ -72,11 +86,50 @@ def test_phases_and_lock(client):
 
 
 def test_cannot_prepare_without_question(client):
-    body = {"prep": {"prepared_by": "MUDr. P"}}
+    body = {"prep": {"prepared_by": "MUDr. P"}, "board": BOARD}
     assert client.put("/api/cases/lung-incomplete/record", json=body).status_code == 422
     body["prep"]["question"] = "Indikace k biopsii?"
     assert client.put("/api/cases/lung-incomplete/record", json=body).status_code == 200
 
 
+def test_triage_needs_assignee_or_reason():
+    by = {"by": "K", "at": "2026-10-17T10:00:00Z"}
+    with pytest.raises(ValidationError):
+        Triage(action="before", **by)
+    with pytest.raises(ValidationError):
+        Triage(action="dismissed", **by)
+    Triage(action="before", assignee="pathology", **by)
+
+
 def test_unknown_case_is_404(client):
     assert client.get("/api/cases/nope/record").status_code == 404
+
+
+def test_history_lists_the_patients_meetings(client):
+    h = client.get("/api/cases/example/history").json()
+    # both test cases belong to "Patient/t": one patient, two meetings
+    assert {m["id"] for m in h["meetings"]} == {"example", "lung-incomplete"}
+    assert h["documents"] == []  # no health record behind the test cases
+    assert client.get("/api/cases/nope/history").status_code == 404
+
+
+def test_confirmed_conclusion_downloads_as_pdf(client):
+    try:
+        from mdt_backend.pdf import _font_paths
+
+        _font_paths()
+    except FileNotFoundError:
+        pytest.skip("no TrueType font with Czech glyphs on this machine")
+    assert client.get("/api/cases/example/zaver.pdf").status_code == 409  # not confirmed yet
+    body = {"board": BOARD, "decision": FINAL}
+    assert client.put("/api/cases/example/record", json=body).status_code == 200
+    r = client.get("/api/cases/example/zaver.pdf")
+    assert r.status_code == 200 and r.content.startswith(b"%PDF")
+    assert "attachment" in r.headers["content-disposition"]
+
+
+def test_no_lock_without_consensus(client):
+    against = [{**BOARD[0], "supports": False}, *BOARD[1:]]
+    body = {"board": against, "decision": FINAL}
+    assert client.put("/api/cases/example/record", json=body).status_code == 422
+    assert client.put("/api/cases/example/record", json={**body, "board": BOARD}).status_code == 200

@@ -1,11 +1,14 @@
-"""Serves MDT briefings: the AI-augmented briefing when the agent has been run for the case
+"""Serves MDT briefings: the AI-augmented briefing when the agent has been run for the patient
 (agent.py → data/ai_cases/), otherwise the deterministic one built from the patient's record
-(from_fhir.py), or hand-made stubs in data/stubs/. All are the same `Case` shape, so the frontend
-can't tell them apart. Patient data come from the IRIS FHIR server; the bundles on disk are only
-a fallback while the server is unreachable (decision #18)."""
+(from_fhir.py). Both are the same `Case` shape, so the frontend can't tell them apart. Patient
+data come only from the IRIS FHIR server; while it's unreachable the API answers 503 (decision #24).
+A case is one meeting about one patient: its id is the patient plus the planned MDT date
+("p03-2026-10-21"), so a patient's next MDT gets its own case and record."""
 
 import re
-from pathlib import Path
+import time
+from contextlib import contextmanager
+from typing import Literal
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -13,48 +16,75 @@ from fastapi import APIRouter, HTTPException
 from mdt_backend import agent, bundles, fhir
 from mdt_backend.briefing import Case
 from mdt_backend.bundles import Bundle
-from mdt_backend.from_fhir import build_case
+from mdt_backend.from_fhir import build_case, planned_date
 from mdt_backend.load_fhir import fhir_id
 
-STUBS = Path(__file__).parents[4] / "data" / "stubs"
 _AUTHOR_FIELDS = ("performer", "author", "requester", "recorder")
 
 router = APIRouter(prefix="/api")
 
 
-def stub_paths() -> dict[str, Path]:
-    return {p.stem: p for p in sorted(STUBS.glob("*.json"))}
-
-
-def patient_case_ids() -> list[str]:
+@contextmanager
+def fhir_server():
+    """Turns an unreachable FHIR server into 503; 4xx/5xx answers propagate as they are."""
     try:
-        return [p.lower() for p in agent.patient_ids()]
-    except httpx.HTTPError:
-        return list(bundles.bundle_paths())
+        yield
+    except httpx.TransportError:
+        raise HTTPException(503, "FHIR server nedostupný") from None
+
+
+def meeting_id(patient: str, b: Bundle) -> str:
+    """ "p03-2026-10-21", or just "p03" without a planned date."""
+    date = planned_date(b)
+    return f"{patient}-{date}" if date else patient
+
+
+def meetings() -> dict[str, str]:
+    """Case id → patient: the patients nominated on the FHIR server (a `Task` for them)."""
+    with fhir_server():
+        tasks = [e["resource"] for e in fhir.get("Task", _count=200).get("entry", [])]
+    found = {
+        t["for"]["reference"].split("/")[-1].lower(): Bundle({"entry": [{"resource": t}]})
+        for t in tasks
+        if t.get("for", {}).get("reference", "").startswith("Patient/")
+    }
+    return {meeting_id(p, b): p for p, b in found.items()}
 
 
 def case_ids() -> list[str]:
-    return [*patient_case_ids(), *stub_paths()]
+    return list(meetings())
 
 
-def _record(case_id: str) -> Bundle:
-    try:
-        return agent.Record(case_id, "iris").bundle
-    except httpx.HTTPError:
-        if path := bundles.bundle_paths().get(case_id):
-            return bundles.load(path)
-        raise HTTPException(503, "FHIR server nedostupný") from None
+def record(patient: str) -> Bundle:
+    with fhir_server():
+        return agent.Record(patient).bundle
+
+
+def ai_status(patient: str) -> Literal["running", "done"] | None:
+    """Whether the agent is briefing the patient now, has briefed them, or never ran for them."""
+    marker = agent.running_path(patient)
+    # ponytail: a run killed mid-way leaves its marker; treat it as stale after an hour (a full
+    # batch takes ~10 min)
+    if marker.exists() and time.time() - marker.stat().st_mtime < 3600:
+        return "running"
+    return "done" if (agent.OUT_DIR / f"{patient}.json").exists() else None
+
+
+@router.get("/cases/{case_id}/ai")
+def get_ai_status(case_id: str) -> dict:
+    if (patient := meetings().get(case_id)) is None:
+        raise HTTPException(404, f"No case {case_id!r}")
+    return {"status": ai_status(patient)}
 
 
 @router.get("/cases/{case_id}")
 def get_case(case_id: str) -> Case:
     # lookups, not path joins: case_id never reaches the filesystem unchecked
-    if case_id in patient_case_ids():
-        if (ai := agent.OUT_DIR / f"{case_id}.json").exists():
-            return Case.model_validate_json(ai.read_text(encoding="utf-8"))
-        return build_case(case_id, _record(case_id))
-    if path := stub_paths().get(case_id):
-        return Case.model_validate_json(path.read_text(encoding="utf-8"))
+    if patient := meetings().get(case_id):
+        if (ai := agent.OUT_DIR / f"{patient}.json").exists():
+            case = Case.model_validate_json(ai.read_text(encoding="utf-8"))
+            return case.model_copy(update={"id": case_id})
+        return build_case(case_id, record(patient))
     raise HTTPException(404, f"No case {case_id!r}")
 
 
@@ -87,10 +117,8 @@ def get_source(resource_type: str, resource_id: str) -> dict:
         r"[\w.-]+", resource_id
     ):
         raise HTTPException(404, "Záznam není v dostupných datech")
-    try:
+    with fhir_server():
         found = _from_iris(resource_type, resource_id)
-    except httpx.HTTPError:  # server unreachable
-        found = bundles.find(f"{resource_type}/{resource_id}")
     if not found:
         raise HTTPException(404, "Záznam není v dostupných datech")
     b, r = found

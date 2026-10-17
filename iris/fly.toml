@@ -1,0 +1,18 @@
+# IRIS for Health on Fly, private: no public service, the app reaches it over Fly's private network
+# at http://mdt-copilot-iris.internal:52773/fhir/r4. First deploy (from this folder):
+#   fly apps create mdt-copilot-iris && fly volumes create iris_data -r fra -s 5
+#   fly secrets set IRIS_PASSWORD=… && fly deploy
+# Load the dataset once: `fly proxy 52773 -a mdt-copilot-iris`, then mdt-load-fhir (AGENTS.md).
+app = "mdt-copilot-iris"
+primary_region = "fra"
+
+[env]
+  ISC_DATA_DIRECTORY = "/durable"
+
+[mounts]
+  source = "iris_data"
+  destination = "/durable"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "2gb"

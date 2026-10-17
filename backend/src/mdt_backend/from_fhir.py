@@ -8,6 +8,7 @@ import datetime as dt
 import re
 
 from mdt_backend.briefing import (
+    BoardMember,
     Case,
     DecisionSupport,
     Section,
@@ -58,6 +59,30 @@ def rec(text: str, *sources: Source) -> Statement:
     return Statement(text=text, origin="record", sources=list(sources))
 
 
+def previous_board(b: Bundle) -> list[BoardMember]:
+    """Members of the latest previous MDT (CareTeam); the chair is the practitioner whose
+    qualification says "předseda"."""
+    teams = sorted(b.all("CareTeam"), key=lambda t: t["id"])
+    members = []
+    for p in teams[-1]["participant"] if teams else []:
+        ref = p.get("member", {}).get("reference")
+        members.append(
+            BoardMember(
+                name=ref.split("/")[-1] if ref else "",
+                role=p["role"][0]["text"],
+                chair="předseda" in (b.name(ref) or ""),
+            )
+        )
+    return members
+
+
+def planned_date(b: Bundle) -> dt.date | None:
+    """Planned meeting = the nomination Task's restriction (ServiceRequest.occurrence is another
+    date)."""
+    task = next(iter(b.all("Task")), {})
+    return date_of({"date": task.get("restriction", {}).get("period", {}).get("start", "")})
+
+
 def build_case(case_id: str, b: Bundle, symptoms: list[Symptom] | None = None) -> Case:
     """`symptoms`: free-text symptoms classified by the agent's LLM (None = keyword fallback)."""
     patient = b.all("Patient")[0]
@@ -70,9 +95,7 @@ def build_case(case_id: str, b: Bundle, symptoms: list[Symptom] | None = None) -
     pathology = [r for r in reports if category_text(r).startswith("Patologie")]
     imaging = [r for r in reports if category_text(r).startswith("Zobrazovací")]
     notes = {n["text"].split(":")[0]: n["text"] for n in nomination.get("note", [])}
-    # planned meeting = the nomination Task's restriction (ServiceRequest.occurrence is another date)
-    task = next(iter(b.all("Task")), {})
-    mdt_date = date_of({"date": task.get("restriction", {}).get("period", {}).get("start", "")})
+    mdt_date = planned_date(b)
 
     age = next((e["valueInteger"] for e in patient.get("extension", []) if "vek" in e["url"]), None)
     label = patient["name"][0]["text"] + (f", {age} let" if age else "")
@@ -126,6 +149,7 @@ def build_case(case_id: str, b: Bundle, symptoms: list[Symptom] | None = None) -
         sections=build_sections(b, conditions, observations, proms, pathology, imaging, note),
         decision_support=DecisionSupport(options=[], trials=[], questions=[]),
         trends=trends,
+        previous_board=previous_board(b),
     )
 
 

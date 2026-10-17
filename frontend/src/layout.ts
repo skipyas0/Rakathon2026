@@ -1,32 +1,28 @@
-// Labels and the board template (which specialist sections show, in what order). The template is a
-// per-browser setting in localStorage. ponytail: per-tumour-board templates (brief BONUS) can
-// replace DEFAULT_TEMPLATE later.
-import type { Intent, Status } from './api'
-import type { Case, Section, TimelineEvent } from './briefing'
+// Labels, the journey's steps, formatting and per-browser settings.
+import type { Intent } from './api'
+import type { TimelineEvent } from './briefing'
 
-export const SECTIONS: Record<string, string> = {
+/** Specialties that can sit on the board (the dataset's board members plus the brief's extra
+ * roles); the id is also the briefing's section id (the converter fills only the first four). */
+export const SPECIALTIES: Record<string, string> = {
   surgery: 'Chirurgie',
   oncology: 'Klinická onkologie',
   radiology: 'Radiologie',
   pathology: 'Patologie',
-  patient: 'Pacient',
+  radiotherapy: 'Radiační onkologie',
   nuclear: 'Nukleární medicína',
+  pneumology: 'Pneumologie',
+  gastroenterology: 'Gastroenterologie',
+  urology: 'Urologie',
+  cardiology: 'Kardiologie',
+  genetics: 'Klinická genetika',
+  pharmacy: 'Klinická farmacie',
   palliative: 'Paliativní péče',
   geriatric: 'Geriatrie',
-  genetics: 'Klinická genetika',
-  coordinator: 'Koordinátor',
 }
 
-export const SPECIALTIES = [
-  'Předseda komise',
-  'Klinický onkolog',
-  'Chirurg',
-  'Radiační onkolog',
-  'Radiolog',
-  'Patolog',
-  'Koordinátor / sestra',
-  'Jiná odbornost',
-]
+export const MIN_SPECIALTIES = 3 // brief: at least 3 specialist roles (the backend enforces it too)
+
 
 export const TUMOURS: Record<string, string> = {
   colorectal: 'Kolorektální karcinom',
@@ -56,32 +52,20 @@ export const KIND: Record<TimelineEvent['kind'], string> = {
   mdt: 'MDT',
 }
 
-export const SEVERITY_RANK = { high: 0, medium: 1, low: 2 } as const
-
-export const PHASES = [
-  { id: 'prep', label: 'Před zasedáním', hint: 'Podklady a otázky' },
-  { id: 'meeting', label: 'Zasedání', hint: 'Přehled pro komisi' },
-  { id: 'followup', label: 'Po zasedání', hint: 'Závěr a úkoly' },
+/** The coordinator's journey (docs/workflow-plan.md); `upload` lives at #/new, the rest at #/case/<id>/<id>. */
+export const STEPS = [
+  { id: 'upload', label: 'Nahrání' },
+  { id: 'board', label: 'Komise' },
+  { id: 'patient', label: 'Pacient' },
+  { id: 'facts', label: 'Klíčové informace' },
+  { id: 'trends', label: 'Vývoj' },
+  { id: 'questions', label: 'Otázky k diskusi' },
+  { id: 'intent', label: 'Léčebný záměr' },
+  { id: 'plan', label: 'Závěr' },
+  { id: 'confirm', label: 'Potvrzení' },
+  { id: 'export', label: 'Export' },
 ] as const
-export type Phase = (typeof PHASES)[number]['id']
-
-/** Index of the phase a case is in; `closed` = all three done. */
-export const STATUS_STEP: Record<Status, number> = { prep: 0, meeting: 1, followup: 2, closed: 3 }
-export const STATUS_LABEL: Record<Status, string> = {
-  prep: 'V přípravě',
-  meeting: 'Připraveno k projednání',
-  followup: 'Realizace závěru',
-  closed: 'Uzavřeno',
-}
-
-export type Template = { order: string[]; hidden: string[] }
-export const DEFAULT_TEMPLATE: Template = { order: Object.keys(SECTIONS), hidden: [] }
-
-/** The case's sections in template order; sections the template doesn't know go last. */
-export function orderedSections(c: Case, t: Template): Section[] {
-  const rank = (id: string) => (t.order.includes(id) ? t.order.indexOf(id) : t.order.length)
-  return c.sections.filter((s) => !t.hidden.includes(s.id)).sort((a, b) => rank(a.id) - rank(b.id))
-}
+export type Step = (typeof STEPS)[number]['id']
 
 export const fmtDate = (d: string) => new Date(d).toLocaleDateString('cs-CZ')
 export const fmtDateTime = (d: string) => new Date(d).toLocaleString('cs-CZ', { dateStyle: 'short', timeStyle: 'short' })
@@ -89,7 +73,9 @@ export const fmtDateTime = (d: string) => new Date(d).toLocaleString('cs-CZ', { 
 export function load<T>(key: string, fallback: T): T {
   try {
     const v = localStorage.getItem(key)
-    return v ? (JSON.parse(v) as T) : fallback
+    const parsed: unknown = v ? JSON.parse(v) : fallback
+    // storage outlives app versions: a value of another type (e.g. an old object) is ignored
+    return typeof parsed === typeof fallback ? (parsed as T) : fallback
   } catch {
     return fallback
   }

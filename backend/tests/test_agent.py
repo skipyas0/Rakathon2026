@@ -1,14 +1,17 @@
-"""MDT agent pipeline offline: the LLM is mocked, the record comes from the dataset bundle on disk.
-Skipped when the dataset folder isn't present (it's not in git)."""
+"""MDT agent pipeline offline: the LLM is mocked, the record comes from a fake FHIR server holding
+the dataset. Skipped when the dataset folder isn't present (it's not in git)."""
 
 import pytest
+from conftest import BUNDLES
+from fastapi.testclient import TestClient
 
 from mdt_backend import agent
-from mdt_backend.bundles import bundle_paths
+from mdt_backend.app import app
+from mdt_backend.features import cases
 from mdt_backend.knowledge import trials
 from mdt_backend.provenance import NOT_FOUND
 
-pytestmark = pytest.mark.skipif("p01" not in bundle_paths(), reason="no dataset")
+pytestmark = pytest.mark.skipif("p01" not in BUNDLES, reason="no dataset")
 
 HB = {"ref": "Observation/P01-lab06-hb_f", "excerpt": "104"}
 BAD_REF = {"ref": "Observation/NOPE", "excerpt": "x"}
@@ -160,9 +163,27 @@ def fake_llm(system, user, schema, name):
     assert "Pacientka si nepřeje chemoterapii. [ServiceRequest/P01-zad01]" in user
     return {
         "options": [
-            {"rank": 2, "text": "Druhá.", "refs": [], "guideline_ids": ["PRS-2.3"]},
-            {"rank": 1, "text": "První.", "refs": [HB], "guideline_ids": ["PRS-2.2"]},
-            {"rank": 3, "text": "Bez pasáže.", "refs": [HB], "guideline_ids": ["XYZ-9.9"]},
+            {
+                "rank": 2,
+                "intent": "supportive",
+                "text": "Druhá.",
+                "refs": [],
+                "guideline_ids": ["PRS-2.3"],
+            },
+            {
+                "rank": 1,
+                "intent": "palliative",
+                "text": "První.",
+                "refs": [HB],
+                "guideline_ids": ["PRS-2.2"],
+            },
+            {
+                "rank": 3,
+                "intent": "curative",
+                "text": "Bez pasáže.",
+                "refs": [HB],
+                "guideline_ids": ["XYZ-9.9"],
+            },
         ],
         "preference": {
             "stated": True,
@@ -177,9 +198,9 @@ def fake_llm(system, user, schema, name):
 
 
 @pytest.fixture
-def result(monkeypatch):
+def result(monkeypatch, fake_fhir):
     monkeypatch.setattr(agent, "chat_json", fake_llm)
-    return agent.run("P01", source="file")
+    return agent.run("P01")
 
 
 def test_output_is_a_valid_case_with_ai_statements(result):
@@ -255,6 +276,7 @@ def test_options_follow_guidelines_and_mention_preference(result):
     case, _ = result
     opts = case.decision_support.options
     assert [o.text.split(" ")[0] for o in opts] == ["První.", "Druhá."]  # by rank, max 2
+    assert case.decision_support.intent == "palliative"  # the first option's
     assert all(any(s.reference.startswith("guideline:") for s in o.sources) for o in opts)
     assert "Preference pacienta: Nechce chemoterapii." in opts[0].text
     assert any(s.reference == "ServiceRequest/P01-zad01" for s in opts[0].sources)
@@ -305,3 +327,25 @@ def test_preference_leads_patient_section(result):
     patient = next(s for s in case.sections if s.id == "patient")
     assert patient.items[0].text == "Pacientka si nepřeje chemoterapii."
     assert patient.items[0].sources[0].reference == "ServiceRequest/P01-zad01"
+    assert case.preference == patient.items[: len(case.preference)]  # also on its own for Pacient
+
+
+def test_pipeline_output_reaches_the_meeting_journey(result, tmp_path, monkeypatch):
+    case, trace = result
+    monkeypatch.setattr(agent, "OUT_DIR", tmp_path)
+    agent.save(case, trace, out_dir=tmp_path)
+    meeting = next(mid for mid, patient in cases.meetings().items() if patient == case.id)
+    client = TestClient(app)
+
+    response = client.get(f"/api/cases/{meeting}")
+    assert response.status_code == 200
+    served = response.json()
+    assert served == {**case.model_dump(mode="json"), "id": meeting}
+    assert len(served["decision_support"]["trials"]) == 6
+    assert served["preference"] and served["previous_board"]
+    assert any(f["statement"]["model"].startswith("pravidla-v2:") for f in served["red_flags"])
+
+    recommendation = client.get(f"/api/cases/{meeting}/recommendation").json()
+    assert recommendation["intent"] == "palliative"
+    assert recommendation["statement"] == case.decision_support.options[0].model_dump(mode="json")
+    assert client.get(f"/api/cases/{meeting}/ai").json() == {"status": "done"}
