@@ -111,10 +111,11 @@ Other contributors' agents only know what's written down. In the same PR as the 
 | When you…                                          | Update                                         |
 |----------------------------------------------------|------------------------------------------------|
 | add/remove/move a module, endpoint, or data flow   | [docs/architecture.md](docs/architecture.md)   |
-| make a choice others must follow (lib, model, API shape, reverting something) | append to [docs/decisions.md](docs/decisions.md) |
+| make a choice others must follow (lib, model, API shape, reverting something) | add or edit an entry in [docs/decisions.md](docs/decisions.md) |
 | start, finish or abandon work                      | your own section in [docs/status.md](docs/status.md) |
 | change commands, layout or rules                   | this file                                      |
 
-Rules: edit only your own section of `status.md` (avoids merge conflicts). Never rewrite past
-entries in `decisions.md` — supersede them with a new entry. Keep this file agent-neutral: no
+Rules: edit only your own section of `status.md` (avoids merge conflicts). `decisions.md` holds
+only the decisions in force: change one in place (date on its Status line), delete one that no
+longer holds, never renumber (code and docs cite the numbers). Keep this file agent-neutral: no
 tool-specific syntax; tool-specific config goes in that tool's own folder.

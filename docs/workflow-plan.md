@@ -1,7 +1,7 @@
 # MDT workflow: the simple journey
 
-**Audience:** the team and their coding agents. Agreed target for the frontend (decision #20,
-replacing the role-based plan of #16). One linear journey for the coordinator, bare essentials only:
+**Audience:** the team and their coding agents. Agreed target for the frontend (decision #20).
+One linear journey for the coordinator, bare essentials only:
 no descriptions, no extra buttons, one **Další** per screen.
 
 | # | Screen | What's on it |
@@ -31,7 +31,6 @@ pathology stanovisko) carry a visible "ukázka" label; Potvrdit records
 who confirmed and when, and means the board agreed (consensus).
 
 Known gaps (mandatory items in `problem_statement.md` left out for simplicity): section order and
-detail level, trial screening. The backend keeps the board, finding
-triage, visibility and history data for a later access-control / admin view. Against
-`MDT_ZASEDANI_PROCES.md`: no per-member sign-off; the stanovisko bubbles stand in (anyone against
-blocks Potvrdit).
+detail level, trial screening. The backend keeps triage, visibility, notes, tasks and the patient's
+stance in the record for later screens. Against `MDT_ZASEDANI_PROCES.md`: no per-member sign-off;
+the stanovisko bubbles stand in (anyone against blocks Potvrdit).
