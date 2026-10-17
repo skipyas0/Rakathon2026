@@ -60,6 +60,12 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
 
 -
 
+## Codex
+
+- PDF export typography now follows the 15 pt / 11.5 pt / 9.5 pt legend; AI-source captions remain
+  at 6.5 pt. Header uses the gender-neutral coordinator label, lists each mapped member as
+  `Jméno, odbornost`, and no longer adds a "Další odbornosti" row. Export tests pass (4/4).
+
 ## Copilot - synthetic holdout fixture
 
 - Created isolated root-level `secret_bundles.ndjson` (P07) and evaluator-only
