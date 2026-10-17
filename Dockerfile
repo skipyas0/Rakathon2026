@@ -20,6 +20,7 @@ COPY backend/ ./
 RUN uv sync --frozen --no-dev
 COPY Dataset/guidelines/ /app/Dataset/guidelines/
 COPY Dataset/studie/ /app/Dataset/studie/
+COPY Dataset/dotaznik/ /app/Dataset/dotaznik/
 COPY data/ai_cases/ /app/data/ai_cases/
 # the conclusion template the export fills (features/export.py)
 COPY docs/template_zaver_zasedani/form.md /app/docs/template_zaver_zasedani/form.md

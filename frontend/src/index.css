@@ -1505,6 +1505,24 @@ button.close:hover {
 .dialog-body h3 {
   margin: 0;
 }
+.report-review-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin: 1rem 0;
+}
+.report-dialog {
+  width: min(1100px, 96vw);
+  max-height: 90vh;
+}
+.report-dialog section {
+  margin-block: 1.5rem;
+}
+.report-dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .dialog-body .plain {
   max-height: 45vh;
   overflow: auto;

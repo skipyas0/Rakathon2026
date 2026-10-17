@@ -4,6 +4,7 @@ ponytail: one JSON file per case in data/records/; swap for FHIR CarePlan/Task/P
 (or a DB) when export to the health record is built."""
 
 import datetime as dt
+import re
 from pathlib import Path
 from typing import Literal
 
@@ -122,6 +123,7 @@ class Decision(BaseModel):
     reevaluation: dt.date | None = None
     confirmed_by: str | None = None  # who confirmed the board's consensus; set = final and locked
     confirmed_at: dt.datetime | None = None
+    report_revision: str | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -191,9 +193,14 @@ def status(record: CaseRecord) -> Status:
 
 
 def _path(case_id: str) -> Path:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9.-]*", case_id):
+        raise HTTPException(404, f"No case {case_id!r}")
+    path = RECORDS / f"{case_id}.json"
+    if path.is_file():
+        return path
     if case_id not in case_ids():  # whitelist: case_id never reaches the filesystem unchecked
         raise HTTPException(404, f"No case {case_id!r}")
-    return RECORDS / f"{case_id}.json"
+    return path
 
 
 def _load(case_id: str) -> CaseRecord:
@@ -245,24 +252,50 @@ def reset_record(case_id: str) -> None:
     _path(case_id).unlink(missing_ok=True)
 
 
+def merge_specialists(old: CaseRecord, record: CaseRecord) -> CaseRecord:
+    stance = {m.specialty: m.supports for m in old.board}
+    board = [
+        m.model_copy(update={"supports": stance.get(m.specialty, m.supports)}) for m in record.board
+    ]
+    return record.model_copy(update={"board": board, "stanoviska": old.stanoviska})
+
+
 @router.put("/{case_id}/record")
 def put_record(case_id: str, record: CaseRecord) -> CaseRecord:
     old = _load(case_id)
     # stances and stanoviska are the specialists' (features/stanovisko.py): the coordinator's
     # copy of the record may be stale, so it never overwrites them
-    stance = {m.specialty: m.supports for m in old.board}
-    board = [
-        m.model_copy(update={"supports": stance.get(m.specialty, m.supports)}) for m in record.board
-    ]
-    record = record.model_copy(update={"board": board, "stanoviska": old.stanoviska})
+    record = merge_specialists(old, record)
+    legacy_review = bool(old.decision.confirmed_by and not old.decision.report_revision)
     if old.decision.confirmed_by and record.decision != old.decision:
-        raise HTTPException(409, "Závěr je potvrzen a uzamčen")
+        signing = {"report_revision", "confirmed_by", "confirmed_at"}
+        if (
+            not legacy_review
+            or not record.decision.confirmed_by
+            or not record.decision.report_revision
+            or (
+                old.decision.model_dump(exclude=signing)
+                != record.decision.model_dump(exclude=signing)
+            )
+        ):
+            raise HTTPException(409, "Závěr je potvrzen a uzamčen")
     if record.prep.prepared_by and not (record.prep.question.strip() or get_case(case_id).question):
         raise HTTPException(422, "Případ nelze připravit bez otázky pro komisi")
     against = [m.specialty for m in record.board if not m.supports]
-    if record.decision.confirmed_by and not old.decision.confirmed_by and against:
+    needs_review = bool(
+        record.decision.confirmed_by and (not old.decision.confirmed_by or legacy_review)
+    )
+    if needs_review and against:
         raise HTTPException(422, f"Komise nemá konsenzus (nesouhlasí: {', '.join(against)})")
     if record.prep.prepared_by and len({m.specialty for m in record.board}) < MIN_SPECIALTIES:
         raise HTTPException(422, f"Komise musí mít alespoň {MIN_SPECIALTIES} odbornosti")
+    if needs_review:
+        from mdt_backend.features.report import clinical_record, validate_confirmation
+
+        if record.decision.confirmed_at is None:
+            raise HTTPException(422, "Chybí čas potvrzení zprávy")
+        validate_confirmation(case_id, record)
+        if clinical_record(_load(case_id)) != clinical_record(old):
+            raise HTTPException(409, "Záznam se během kontroly změnil. Otevřete zprávu znovu.")
     save(case_id, record)
     return record

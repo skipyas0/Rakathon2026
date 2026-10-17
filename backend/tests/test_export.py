@@ -68,3 +68,60 @@ def test_pdf_and_docx_mark_ai_values_and_list_sources():
     docx = Document(io.BytesIO(export.to_docx("P09", s, draft)))
     runs = [r for p in docx.paragraphs for r in p.runs if r.text == "C18.7"]
     assert runs and all(r.font.color.rgb == export.RGBColor(0x1C, 0x5E, 0xBF) for r in runs)
+
+
+def _stanovisko(**kw):
+    from mdt_backend.provenance import Source, Statement
+
+    base = {"text": "Nadledvinu nutno ověřit (biopsie / MR).", "origin": "ai", "model": "m",
+            "sources": [Source(reference="DiagnosticReport/P09-img1")]}  # fmt: skip
+    return Statement(**{**base, **kw})
+
+
+def test_imaging_field_is_the_radiologists_signed_opinion_only():
+    rec = records.CaseRecord()
+    value, sources = export.radiology_opinion(rec)
+    assert value.startswith(export.NO_RADIOLOGY) and sources is None
+    rec.stanoviska["radiology"] = _stanovisko()  # AI draft, not confirmed: never printed
+    value, _ = export.radiology_opinion(rec)
+    assert "Nadledvinu" not in value and "nepotvrdil" in value
+    rec.stanoviska["radiology"] = _stanovisko(confirmed_by="Radiologie")
+    value, sources = export.radiology_opinion(rec)
+    assert "Nadledvinu" in value and "potvrdil(a) Radiologie" in value
+    assert sources == ["DiagnosticReport/P09-img1"]  # AI → blue, cited
+    rec.stanoviska["radiology"] = _stanovisko(origin="human", sources=[], model=None,
+                                              confirmed_by="Radiologie")  # fmt: skip
+    value, sources = export.radiology_opinion(rec)
+    assert value.startswith("Nadledvinu") and sources is None  # the radiologist's own → black
+
+
+def test_history_draft_never_fills_the_imaging_opinion(monkeypatch):
+    monkeypatch.setattr(
+        export.llm,
+        "chat_json",
+        lambda s, u, schema, name: {
+            k: {"hodnota": "x", "zdroje": []} for k in schema["properties"]
+        },
+    )
+    assert export.IMAGING not in {p.split(" > ")[-1] for p in export.draft_history(RESOURCES)}
+
+
+def test_compliance_keeps_the_board_reasons_beside_the_ai_assessment():
+    a = records.GuidelineAssessment(
+        status="compliant",
+        statement=_stanovisko(text="Postup odpovídá PLI-2.1.", model="m"),
+        compared_plan="p", compared_rationale="r", compared_intents=["curative"],
+        recommendation="x", recommendation_sources=[],
+    )  # fmt: skip
+    d = records.Decision(rationale="Kurativní záměr, pacient souhlasí.", guideline_compliant=True,
+                         guideline_assessment=a)  # fmt: skip
+    lines = {f.label: f for f in export.compliance_lines(d)}
+    ai = lines["Hodnocení AI (m)"]
+    assert ai.value.startswith("V souladu – Postup") and ai.sources  # AI, blue, cited
+    assert lines["Zdůvodnění komise"].value == "Kurativní záměr, pacient souhlasí."
+    assert lines["Zdůvodnění komise"].sources is None  # the board's words, black
+    d = records.Decision(guideline_compliant=False, deviation_reason="Pacient odmítá operaci.")
+    lines = {f.label: f.value for f in export.compliance_lines(d)}
+    assert lines["Soulad dle komise"] == "Ne"  # no AI assessment: the board's own verdict
+    assert lines["Důvod odchylky"] == "Pacient odmítá operaci."
+    assert lines["Zdůvodnění komise"] == export.NOT_FILLED

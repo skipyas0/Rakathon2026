@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from mdt_backend import agent
 from mdt_backend.app import app
 from mdt_backend.briefing import Case, DecisionSupport
-from mdt_backend.features import cases, export, records
+from mdt_backend.features import cases, export, records, report
 from mdt_backend.features.records import Decision, Triage
 from mdt_backend.provenance import Statement
 
@@ -16,6 +16,7 @@ FINAL = {
     "rationale": "Resekabilní",
     "guideline_compliant": True,
     "confirmed_by": "Koordinátor/ka",
+    "confirmed_at": "2026-10-17T10:00:00Z",
 }
 
 
@@ -91,6 +92,13 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(cases, "record", lambda patient: cases.Bundle({"entry": []}))
     monkeypatch.setattr(records, "RECORDS", tmp_path / "records")
     monkeypatch.setattr(export, "DRAFTS", tmp_path / "zavery")  # no AI draft: history unfilled
+    monkeypatch.setattr(
+        report,
+        "_evidence",
+        lambda patient: [
+            {"resourceType": "Patient", "id": "t", "name": [{"text": "Test"}]},
+        ],
+    )
     return TestClient(app)
 
 
@@ -102,6 +110,13 @@ BOARD = [
 
 def status_of(client, case_id):
     return next(c["status"] for c in client.get("/api/cases").json() if c["id"] == case_id)
+
+
+def reviewed(client, body):
+    draft = {**body, "decision": {**body["decision"], "confirmed_by": None, "confirmed_at": None}}
+    result = client.post("/api/cases/example/report", json=draft)
+    assert result.status_code == 200, result.text
+    return {**body, "decision": {**body["decision"], "report_revision": result.json()["revision"]}}
 
 
 def test_phases_and_lock(client):
@@ -117,7 +132,7 @@ def test_phases_and_lock(client):
     assert agenda["example"]["specialties"] == ["oncology", "radiology", "surgery"]
 
     task = {"what": "Informovat pacienta", "done": False}
-    body = {"prep": prep, "board": BOARD, "decision": FINAL, "tasks": [task]}
+    body = reviewed(client, {"prep": prep, "board": BOARD, "decision": FINAL, "tasks": [task]})
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     assert status_of(client, "example") == "followup"
 
@@ -165,7 +180,7 @@ def test_confirmed_conclusion_downloads_as_pdf(client):
     except FileNotFoundError:
         pytest.skip("no TrueType font with Czech glyphs on this machine")
     assert client.get("/api/cases/example/zaver.pdf").status_code == 409  # not confirmed yet
-    body = {"board": BOARD, "decision": FINAL}
+    body = reviewed(client, {"board": BOARD, "decision": FINAL})
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     r = client.get("/api/cases/example/zaver.pdf")
     assert r.status_code == 200 and r.content.startswith(b"%PDF")
@@ -179,11 +194,12 @@ def test_no_lock_without_consensus(client):
     against = [{**BOARD[0], "supports": False}, *BOARD[1:]]
     body = {"board": against, "decision": FINAL}
     assert client.put("/api/cases/example/record", json=body).status_code == 422
-    assert client.put("/api/cases/example/record", json={**body, "board": BOARD}).status_code == 200
+    body = reviewed(client, {**body, "board": BOARD})
+    assert client.put("/api/cases/example/record", json=body).status_code == 200
 
 
 def test_reset_deletes_even_a_confirmed_record(client):
-    body = {"board": BOARD, "decision": FINAL}
+    body = reviewed(client, {"board": BOARD, "decision": FINAL})
     assert client.put("/api/cases/example/record", json=body).status_code == 200
     assert client.delete("/api/cases/example/record").status_code == 204
     assert client.get("/api/cases/example/record").json()["decision"]["confirmed_by"] is None
@@ -217,5 +233,6 @@ def test_specialist_stanovisko_and_stance(client, monkeypatch):
     # anyone against blocks the lock, then the lock freezes the stanoviska
     assert client.put("/api/cases/example/record", json={**r, "decision": FINAL}).status_code == 422
     assert client.patch(url, json={"supports": True}).status_code == 200
-    assert client.put("/api/cases/example/record", json={**r, "decision": FINAL}).status_code == 200
+    body = reviewed(client, {**r, "decision": FINAL})
+    assert client.put("/api/cases/example/record", json=body).status_code == 200
     assert client.patch(url, json={"supports": False}).status_code == 409

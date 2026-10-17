@@ -242,15 +242,22 @@ Why: Cuts parallel paths (HAPI vs IRIS, server vs disk) and gives every change o
 earns the sponsor bonus.
 
 ## 25. The conclusion is the filled template: PDF preview, DOCX for edits — 2026-10-17, yes-and
-Status: accepted
-Decision: Export renders `template_zaver_zasedani/form.md` for the meeting: header from the
-confirmed decision's attendees and the FHIR Patient, history fields drafted by one LLM call over
-the IRIS record (cached per meeting, each value with its FHIR sources, blue in PDF and DOCX), the
-question from the nomination, Závěr MDT from the board's confirmed decision. The coordinator
-previews the PDF; to change anything they download the DOCX and edit it. No AI writes the board's
-conclusion. Data the dataset lacks (birth number, address, phone) print as `NOT_FOUND`.
-Why: The template is the official output; a preview with an editable DOCX is the smallest flow that
-keeps AI output labelled and sourced without a per-field confirmation screen.
+Status: accepted | updated 2026-10-17 (pre-confirmation report review)
+Decision: A separate Zpráva ke kontrole / Zobrazit zprávu line below Stanoviska on Potvrzení opens
+the exact source-backed report. It reuses IRIS evidence and existing AI Statements without new
+generation. Opening the current revision is required; Potvrdit approves the report and decision
+together. A SHA-256 revision binds case/clinical inputs, source versions and mapping version.
+Changed inputs require another review; approved FHIR exports use only the frozen snapshot.
+Per subsequent user direction, PDF/DOCX retain the original hospital-template workflow, without
+the structured FHIR evidence appendix. Export requests the cached AI history draft (generating it
+if absent), keeps AI values blue with sources and the clinician-review notice, and fills the board
+conclusion from the confirmed decision. This draft is not covered by FHIR approval. PDF/DOCX remain
+available for older confirmed decisions; only FHIR requires report attestation. Downloaded DOCX
+edits do not update approval. Per explicit user choice, the coordinator demo role remains the signer, not a verified
+clinician account or cryptographic signature.
+Why: One report inspection followed by final confirmation binds the FHIR review scope. The user
+explicitly accepts separate, potentially unverified PDF/DOCX drafts for subsequent clinician review;
+do not conflate those drafts with the approved FHIR document.
 
 ## 26. One type scale that grows with the screen — 2026-10-17, yes-and
 Status: accepted | updated 2026-10-17 (one size per kind of text)
@@ -301,15 +308,6 @@ recommendation exists, compliance remains manual.
 Why: A treatment-intent match is not enough to establish whether the board's actual plan follows
 the recommended procedure; the final claim needs a reason and clickable primary sources.
 
-## 29. The board may choose several léčebné záměry — 2026-10-17, yes-and
-Status: accepted
-Decision: `Decision.intents` is a list (at least one once confirmed), replacing the single
-`intent`; likewise `ComplianceRequest.intents`, `GuidelineAssessment.compared_intents` and the
-overview's `intents`, kept in the tiles' order. Records saved with the single `intent` /
-`compared_intent` load as a one-item list. The recommendation keeps its one `intent`. Any
-combination may be chosen; the app doesn't judge which ones go together.
-Why: A plan often has more than one aim (e.g. paliativní + podpůrná péče); the board decides.
-
 ## 25-backend. Reconcile the backend branch with the coordinator journey — 2026-10-17, Copilot
 Status: accepted | updated 2026-10-17 (second main merge)
 Decision: Merge `main` into `backend` without rewriting the original backend commits.
@@ -322,3 +320,42 @@ distinguishes it from main's independently assigned export decision without chan
 The parallel branches also independently assigned 19–21; name the decision when ambiguous.
 Why: Preserve both contributors' work and published history while keeping one current UI and
 data contract.
+
+## 29. FHIR export preserves source evidence; mCODE conformance is not fabricated — 2026-10-17, Copilot
+Status: accepted
+Decision: The first export is a deterministic FHIR R4 document Bundle with Composition, original
+evidence, QuestionnaireResponse/Questionnaire, CarePlan/Task and per-claim/source/approval Provenance.
+Original Czech diagnosis codes, textual TNM and biomarker values remain unchanged. Do not declare
+mCODE profiles until the required terminology, Patient name and TNM method gaps are resolved and
+full profile validation passes. The viewer and download explicitly disclose this limitation.
+No NIS publishing, automatic orders, new task extraction or per-user authentication is implied.
+Questionnaire definition assets may be packaged; patient evidence still comes only from IRIS.
+Why: Preserving attributed evidence and visibly reporting conformance gaps is safer than silently
+inventing clinical values to make a validator pass. The versioned mCODE/ECCDM rulebook remains the
+roadmap for strict profile adoption.
+
+## 30. The exported conclusion: decisions are the board's own or marked unfilled — 2026-10-17
+Status: accepted (refines #25, #28)
+Decision: In the hospital-template PDF/DOCX (`features/export.py`) every decision is text a
+clinician wrote, or printed as "nevyplněno": intent, plan, rationale, options considered, dissent,
+trial and re-evaluation always appear, filled or not. "Zobrazovací metody MDT" is the radiologist's
+opinion on the imaging presented at the meeting (e.g. "insufficient, needs MR / biopsy"), not a
+list of past studies: it prints the radiology stanovisko only once signed (their own text in
+black, or the AI draft they confirmed in blue with its sources), otherwise "Stanovisko radiologa
+nebylo zaznamenáno"; the AI history draft no longer fills it. Guideline compliance keeps the AI
+assessment (blue, cited, with its model) and prints the board's own reasons beside it: its
+rationale, its compliance verdict when the AI could not decide, and the deviation reason.
+Why: The AI draft listed studies already in "Poslední zobrazovací vyšetření" and could not give a
+radiologist's judgement; a conclusion signed by the board must not carry AI text as its decision
+(ground rule: AI is a proposal until a clinician confirms it).
+
+## 31. The board may choose several léčebné záměry — 2026-10-17, yes-and
+Status: accepted | renumbered 2026-10-17: #29 on `yes-and/frontend-tweaks`, which `main` had
+already given to the FHIR export
+Decision: `Decision.intents` is a list (at least one once confirmed), replacing the single
+`intent`; likewise `ComplianceRequest.intents`, `GuidelineAssessment.compared_intents` and the
+overview's `intents`, kept in the tiles' order. Records saved with the single `intent` /
+`compared_intent` load as a one-item list. The recommendation keeps its one `intent`. Any
+combination may be chosen; the app doesn't judge which ones go together.
+Why: A plan often has more than one aim (e.g. paliativní + podpůrná péče); the board decides.
+
