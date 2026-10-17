@@ -1600,6 +1600,37 @@ button.close:hover {
 .dialog-body h3 {
   margin: 0;
 }
+/* Potvrzení: the soulad line (+ Porovnat pop-up, důvod odchylky), then the report row's checkbox */
+.confirm-block {
+  margin-bottom: 1rem;
+}
+.confirm-report {
+  margin-top: 1.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+.confirm-block .verdict .link {
+  margin-left: 0.5rem;
+}
+.compare-dialog {
+  width: min(1000px, 94vw);
+}
+.compare-dialog .compare {
+  margin: 1rem 0;
+  box-shadow: none;
+  border: 1px solid var(--line);
+}
+.report-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+.report-check input {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--teal);
+}
 .report-review-row {
   display: flex;
   align-items: center;

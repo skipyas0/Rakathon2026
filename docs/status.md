@@ -20,6 +20,8 @@ Keep it short: current branch, what's in progress, what's blocked, what others s
   doporučený postup as a folded AI row (robot icon) that opens a pop-up with its sources.
   Záměr is now Plán, with quick picks per specialty (decision #32), exported as "Postup podle
   odborností" and shown to each specialist. Not yet in the guideline check or FHIR CarePlan.
+  Potvrzení simplified: one soulad line + Porovnat pop-up, důvod odchylky, a required "report
+  checked" checkbox (opening the report is optional).
 - Next, by the scope (`problem_statement.md`): trial screening (POVINNÉ, empty); section
   order/detail configuration (POVINNÉ, 20 % of the score); PDF intake and FHIR export (CORE);
   running the agent from the app; LLM red flags and an LLM guideline-compliance check instead of

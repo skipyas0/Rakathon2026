@@ -8,11 +8,10 @@ import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
 import { Steps } from './Steps'
-import { useSources } from './sources'
 import { setUnsaved, useUnsaved } from './unsaved'
 import { ReportReview } from './features/report/ReportReview'
 import { ChoiceRows } from './features/choices/ChoiceRows'
-import { cleanChoices } from './features/choices/choices'
+import { CHOICE_ROWS, choiceText, cleanChoices } from './features/choices/choices'
 
 type Data = { c: Case; record: CaseRecord; rec: Recommendation }
 
@@ -484,7 +483,6 @@ function PlanStep({ c, record, save, setRecord, next, prev }: StepProps) {
 
 function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps) {
   const S = renderer(record)
-  const showSources = useSources()
   const d = record.decision
   const locked = !!d.confirmed_by
   const savedAssessment = d.guideline_assessment
@@ -562,11 +560,25 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
   const [reviewed, setReviewed] = useState<{ revision: string; key: string } | null>(null)
   const reportReady = reviewed?.key === reviewKey
   useUnsaved(!locked && (manualChoice?.key === assessmentKey || reason.trim() !== d.deviation_reason))
+  const compareDialog = useRef<HTMLDialogElement>(null)
+  // the coordinator ticks having checked the report (opening it is up to them); a later change to the
+  // decision unticks it, and Potvrdit signs the revision of the decision as it stands then
+  const [read, setRead] = useState('')
+  const affirmed = read === reviewKey
+  const [prepError, setPrepError] = useState('')
 
   const confirm = async () => {
+    let revision = reportReady ? reviewed.revision : null
+    if (!revision)
+      try {
+        revision = (await api.prepareReport(c.id, reviewRecord)).revision // not opened: prepare it now
+      } catch (e) {
+        return setPrepError((e as Error).message)
+      }
+    setPrepError('')
     const decision: Decision = {
       ...reviewRecord.decision,
-      report_revision: reviewed?.revision ?? null,
+      report_revision: revision,
       // ponytail: one coordinator, signed by the role, no name (decision #27); ask for a name once
       // several people coordinate
       confirmed_by: 'Koordinátor/ka',
@@ -575,21 +587,43 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
     if (await save({ ...record, decision })) next()
   }
 
+  const signed = locked && !!d.report_revision // this revision was approved with the decision
+  const verdict = assessment && {
+    compliant: ['ok', <Check key="i" />, 'V souladu s doporučeným postupem'],
+    deviation: ['warn', <Alert key="i" />, 'Odchylka od doporučeného postupu'],
+    uncertain: ['warn', <Alert key="i" />, 'Soulad nelze spolehlivě posoudit'],
+  }[assessment.status]
+  const manualBubbles = (yes: string, no: string) => (
+    <div className="bubbles small-bubbles soulad" role="group" aria-label="Soulad s doporučeným postupem">
+      {[true, false].map((v) => (
+        <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManualChoice({ key: assessmentKey, value: v })}>
+          {v ? yes : no}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <>
       <h1>Potvrzení</h1>
-      <div className="compare">
-        <section>
-          <p className="eyebrow">Zvolený postup</p>
-          {d.intents.map((k) => (
-            <IntentLabel key={k} intent={k} />
-          ))}
-          <p className="big">{d.plan}</p>
-        </section>
-        <Recommended rec={rec} record={record} />
+      <section className="confirm-block">
+        <p className="eyebrow">Soulad s doporučeným postupem</p>
         {rec ? (
           <>
-            {assessmentLoading && <p className="muted">AI porovnává zvolený postup s doporučením a citovanými pasážemi…</p>}
+            <p className={`verdict ${verdict ? verdict[0] : ''}`}>
+              {assessmentLoading && <span className="muted">AI porovnává zvolený postup s doporučením…</span>}
+              {verdict && (
+                <>
+                  {verdict[1]} {verdict[2]}{' '}
+                  <span className="ai-chip">
+                    <Robot /> AI
+                  </span>
+                </>
+              )}
+              <button className="link" onClick={() => compareDialog.current?.showModal()}>
+                Porovnat
+              </button>
+            </p>
             {assessmentError && (
               <p className="banner bad">
                 {assessmentError}{' '}
@@ -598,62 +632,35 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
                 </button>
               </p>
             )}
-            {assessment && (
-              <>
-                <p className={`verdict soulad ${assessment.status === 'compliant' ? 'ok' : 'warn'}`}>
-                  {assessment.status === 'compliant' ? <Check /> : <Alert />}{' '}
-                  {assessment.status === 'compliant'
-                    ? 'V souladu s doporučeným postupem'
-                    : assessment.status === 'deviation'
-                      ? 'Odchylka od doporučeného postupu'
-                      : 'Soulad nelze spolehlivě posoudit'}
-                  <button
-                    className="link"
-                    aria-label="Zobrazit guideline zdroje pro hodnocení souladu"
-                    onClick={() =>
-                      showSources({
-                        title: assessment.statement.text,
-                        sources: assessment.statement.sources,
-                        ai: assessment.statement.model,
-                      })
-                    }
-                  >
-                    Zdroje ({assessment.statement.sources.length})
-                  </button>
-                </p>
-                {S('guideline_assessment', assessment.statement)}
-              </>
-            )}
-            {assessment?.status === 'uncertain' && (
-              <div className="bubbles small-bubbles soulad" role="group" aria-label="Potvrďte soulad s doporučenými postupy">
-                {[true, false].map((v) => (
-                  <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManualChoice({ key: assessmentKey, value: v })}>
-                    {v ? 'Přesto označit jako v souladu' : 'Označit jako odchylku'}
-                  </button>
-                ))}
-              </div>
-            )}
+            {assessment?.status === 'uncertain' && manualBubbles('Přesto označit jako v souladu', 'Označit jako odchylku')}
           </>
         ) : (
-          <div className="bubbles small-bubbles soulad" role="group" aria-label="Soulad s doporučenými postupy">
-            {[true, false].map((v) => (
-              <button key={String(v)} className={`bubble ${manual === v ? 'on' : ''}`} disabled={locked} onClick={() => setManualChoice({ key: assessmentKey, value: v })}>
-                {v ? 'V souladu s postupy' : 'Odchylka od postupů'}
-              </button>
-            ))}
-          </div>
+          <>
+            <p className="muted">Doporučení k porovnání není k dispozici.</p>
+            {manualBubbles('V souladu s postupy', 'Odchylka od postupů')}
+          </>
         )}
-      </div>
+        {compliant === false &&
+          (locked ? (
+            d.deviation_reason && <p>Důvod odchylky: {d.deviation_reason}</p>
+          ) : (
+            <label className="big-field deviation">
+              Proč se komise odchyluje od doporučeného postupu
+              <textarea value={reason} onChange={(e) => setReason(e.target.value)} />
+            </label>
+          ))}
+      </section>
 
       <Stanoviska c={c} record={record} onChange={setRecord} />
-      <ReportReview id={c.id} record={reviewRecord}
-        onReady={(revision, key) => setReviewed(revision ? { revision, key } : null)} />
-      {compliant === false && !locked && (
-        <label className="big-field deviation">
-          Důvod odchylky od doporučeného postupu
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} />
-        </label>
-      )}
+      <div className="confirm-report">
+        <ReportReview id={c.id} record={reviewRecord} onReady={(revision, key) => setReviewed(revision ? { revision, key } : null)}>
+          <label className="report-check">
+            <input type="checkbox" checked={signed || affirmed} disabled={signed} onChange={(e) => setRead(e.target.checked ? reviewKey : '')} />
+            Obsah zprávy (FHIR) jsem zkontroloval(a)
+          </label>
+        </ReportReview>
+      </div>
+      {prepError && <p className="banner bad">{prepError}</p>}
       {against.length > 0 && !locked && (
         <p className="verdict warn">
           <Alert /> Komise nemá konsenzus: nesouhlasí {against.map((m) => SPECIALTIES[m.specialty] ?? m.specialty).join(', ')}
@@ -666,27 +673,55 @@ function ConfirmStep({ c, record, rec, save, setRecord, next, prev }: StepProps)
             <Check /> Potvrzeno: {d.confirmed_by}, {d.confirmed_at && fmtDateTime(d.confirmed_at)}
           </p>
           {!d.report_revision && (
-            <button className="primary" disabled={!reportReady} onClick={confirm}>
+            <button className="primary" disabled={!affirmed} onClick={confirm}>
               Potvrdit zprávu k dříve potvrzenému závěru
             </button>
           )}
           <Nav next={next} prev={prev} />
         </>
       ) : (
-        <>
-          {!reportReady && <p className="muted">Před potvrzením otevřete aktuální zprávu ke kontrole.</p>}
-          <div className="confirm-row">
-            {prev && (
-              <button className="back" onClick={prev}>
-                Předchozí
-              </button>
-            )}
-            <button className="primary next" onClick={confirm} disabled={!reportReady || compliant === null || against.length > 0 || (rec !== null && (!assessment || assessmentLoading || !!assessmentError)) || (compliant === false && !reason.trim())}>
-              {compliant === false ? 'Potvrdit s odchylkou' : 'Potvrdit'}
+        <div className="confirm-row">
+          {prev && (
+            <button className="back" onClick={prev}>
+              Předchozí
             </button>
-          </div>
-        </>
+          )}
+          <button
+            className="primary next"
+            onClick={confirm}
+            disabled={!affirmed || compliant === null || against.length > 0 || (rec !== null && (!assessment || assessmentLoading || !!assessmentError)) || (compliant === false && !reason.trim())}
+          >
+            {compliant === false ? 'Potvrdit s odchylkou' : 'Potvrdit'}
+          </button>
+        </div>
       )}
+
+      <dialog ref={compareDialog} className="dialog compare-dialog" onClick={(e) => e.target === compareDialog.current && compareDialog.current.close()}>
+        <div className="dialog-body">
+          <header>
+            <h3>Zvolený a doporučený postup</h3>
+            <button className="icon-btn" onClick={() => compareDialog.current?.close()} aria-label="Zavřít">
+              ×
+            </button>
+          </header>
+          <div className="compare">
+            <section>
+              <p className="eyebrow">Zvolený postup</p>
+              {d.intents.map((k) => (
+                <IntentLabel key={k} intent={k} />
+              ))}
+              <p className="big">{d.plan}</p>
+              {CHOICE_ROWS.filter((r) => d.choices[r.id]?.length).map((r) => (
+                <p key={r.id} className="small">
+                  <strong>{r.label}:</strong> {d.choices[r.id]!.map(choiceText).join(', ')}
+                </p>
+              ))}
+            </section>
+            <Recommended rec={rec} record={record} />
+          </div>
+          {assessment && S('guideline_assessment', assessment.statement)}
+        </div>
+      </dialog>
     </>
   )
 }
