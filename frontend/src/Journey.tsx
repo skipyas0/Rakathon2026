@@ -3,7 +3,7 @@ import { AI_POLL_MS, api, type CaseRecord, type Decision, type Intent, type Reco
 import { type Case, NOT_FOUND, type RedFlag } from './briefing'
 import type { Statement } from './provenance'
 import { TrendChart } from './Charts'
-import { Alert, Check, Doc, IntentIcon, Lock, Robot } from './icons'
+import { Alert, Check, Download, IntentIcon, Lock, Robot } from './icons'
 import { fmtDate, fmtDateTime, INTENTS, KIND, MIN_SPECIALTIES, SPECIALTIES, type Step, STEPS, TUMOURS } from './layout'
 import { now, renderer } from './render'
 import { Stanoviska } from './Stanoviska'
@@ -91,23 +91,24 @@ const Locked = () => (
 
 type StepProps = Data & { save: (r: CaseRecord) => Promise<boolean>; next: () => void; prev?: () => void; user: string }
 
-/** Předchozí (grey: the previous tab, or page on Vývoj) and Další. Steps with input pass
- * their own handlers, which save first, so going either way never loses what was entered. */
-const Nav = ({ next, prev, disabled }: { next?: () => void; prev?: () => void; disabled?: boolean }) => (
+/** Předchozí (grey: the previous tab, or page on Vývoj) and Další, or Zavřít (dark grey, back to
+ * Přehled) on the last screen. Steps with input pass their own handlers, which save first, so
+ * going either way never loses what was entered. */
+const Nav = ({ next, prev, close, disabled }: { next?: () => void; prev?: () => void; close?: () => void; disabled?: boolean }) => (
   <div className="nav-row">
     {prev && (
       <button className="back" onClick={prev}>
         Předchozí
       </button>
     )}
-    {next ? (
+    {next && (
       <button className="primary next" onClick={next} disabled={disabled}>
         Další
       </button>
-    ) : (
-      // keeps Předchozí in its usual place on the last screen, which has no Další
-      <button className="primary next" style={{ visibility: 'hidden' }} aria-hidden tabIndex={-1}>
-        Další
+    )}
+    {close && (
+      <button className="close" onClick={close}>
+        Zavřít
       </button>
     )}
   </div>
@@ -573,17 +574,17 @@ function ExportStep({ c, record, prev }: StepProps) {
             <iframe className="preview" src={`${url}.pdf?v=${draft.created ?? ''}`} title="Náhled závěru" />
             <div className="export-actions">
               <a className="upload-box" href={`${url}.pdf`} download>
-                <Doc />
+                <Download />
                 <strong>PDF</strong>
               </a>
               <a className="upload-box" href={`${url}.docx`} download>
-                <Doc />
+                <Download />
                 <strong>DOCX</strong>
                 <span className="muted small">k úpravám</span>
               </a>
               {/* ponytail: FHIR export (CarePlan/Task/Provenance) once the backend builds it */}
               <div className="upload-box soon" aria-disabled>
-                <Doc />
+                <Download />
                 <strong>FHIR</strong>
                 <span className="chip muted-chip">Připravujeme</span>
               </div>
@@ -591,7 +592,7 @@ function ExportStep({ c, record, prev }: StepProps) {
           </div>
         </>
       )}
-      <Nav prev={prev} />
+      <Nav prev={prev} close={() => (location.hash = '#/')} />
     </>
   )
 }

@@ -47,6 +47,12 @@ export const Doc = () => (
     <path d="M9.5 1.5v3h3M6 8h4.5M6 10.5h4.5" />
   </Icon>
 )
+export const Download = () => (
+  <Icon>
+    <path d="M8 2v8M4.8 7 8 10.2 11.2 7" />
+    <path d="M2.5 11v2.5h11V11" />
+  </Icon>
+)
 export const Lock = () => (
   <Icon>
     <rect x="3" y="7" width="10" height="7.5" rx="1.5" />

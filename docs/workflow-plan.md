@@ -17,7 +17,7 @@ tab (Vývoj: previous chart page first; screens with input save first, either wa
 | 8 | Léčebný záměr | Square tiles: kurativní / paliativní / podpůrná péče / sledování / odloženo |
 | 9 | Závěr | Zvolený postup, Zdůvodnění; stanovisko bubbles per specialty: green = supports, red = doesn't (click → stanovisko, stance switchable) |
 | 10 | Potvrzení | Chosen vs recommended postup side by side; soulad s doporučenými postupy is automatic (léčebný záměr chosen = recommended); on a difference, Potvrdit opens a required Důvod odchylky field ("Potvrdit s odchylkou"); a name field appears when none is set. Stanovisko bubbles as on Závěr; anyone against blocks Potvrdit (no consensus). Potvrdit leads on to Export |
-| 11 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once) |
+| 11 | Export | The conclusion as `template_zaver_zasedani` (header: board + patient; history: AI-drafted from the record, blue with sources; question; Závěr MDT: the decision) in a PDF preview, beside PDF and DOCX ("k úpravám") downloads and FHIR (greyed out, "Připravujeme"). "AI doplňuje podklady…" while the draft is made (~20 s, once); the format boxes carry a download icon; dark grey Zavřít (next to Předchozí) returns to Přehled |
 
 Plus **Přehled** (`#/`): one tidy line per case with a coloured status (Potvrzeno / Rozpracováno /
 Nový); on narrower windows the board name, then the tumour, then the date fold away. A confirmed

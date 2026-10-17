@@ -1157,6 +1157,7 @@ a.chevron.done:hover {
   .export {
     flex-direction: column-reverse;
     height: auto;
+    min-height: 0; /* the preview is hidden here, so no room is kept for it */
   }
   .export .preview {
     display: none; /* phones open PDFs themselves; the PDF box does that */
@@ -1186,7 +1187,8 @@ a.chevron.done:hover {
 
 }
 button.next,
-button.back {
+button.back,
+button.close {
   display: flex;
   font-size: var(--fs-m);
   font-weight: 600;
@@ -1206,6 +1208,14 @@ button.back {
 button.back {
   color: var(--ink-2);
   background: var(--surface-2);
+}
+button.close {
+  color: #fff;
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+}
+button.close:hover {
+  background: var(--ink);
 }
 
 .key-facts {
