@@ -1,6 +1,6 @@
 """Intake: the coordinator adds a case from one FHIR bundle. Stored as
-data/intake/<patient>/bundle.json; an uploaded patient replaces the dataset's bundle for that
-patient (cases.uploads). PDFs (one per record, as an external doctor sends them) are part of
+data/intake/<patient>/bundle.json, where it replaces that patient's record (cases.uploads), and
+loaded into the FHIR server too when it's reachable, so `mdt-agent` can brief the patient. PDFs (one per record, as an external doctor sends them) are part of
 the API but answer 501 until AI extraction exists."""
 
 import base64
@@ -9,10 +9,11 @@ import json
 import re
 from typing import Literal
 
+import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from mdt_backend import bundles
+from mdt_backend import bundles, load_fhir
 from mdt_backend.features import cases
 from mdt_backend.from_fhir import build_case
 
@@ -68,4 +69,8 @@ def upload(u: Upload) -> dict:
     folder = cases.INTAKE / key
     folder.mkdir(parents=True, exist_ok=True)
     (folder / "bundle.json").write_text(json.dumps(data, ensure_ascii=False), "utf-8")
+    try:
+        load_fhir.put(load_fhir.to_transaction(data)).raise_for_status()
+    except httpx.HTTPError:
+        pass  # ponytail: no server (e.g. on Fly) = the disk copy alone; the agent can't brief it
     return {"case_id": cases.meeting_id(key, b)}
